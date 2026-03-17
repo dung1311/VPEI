@@ -1,0 +1,390 @@
+{% extends "base.html" %}
+{% block title %}Scope 1 – Direct Emissions{% endblock %}
+
+{# ═══════════════════════════════════════════════
+   CSS riêng cho trang Scope 1
+   Không copy lại những gì đã có trong base.html
+   (button, badge, table, form, flash, navbar, ...)
+═══════════════════════════════════════════════ #}
+{% block extra_head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<style>
+  /* ── KPI Cards ── */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .kpi-card {
+    background: white;
+    border-radius: 14px;
+    padding: 18px 22px;
+    border: 1px solid var(--gray-border);
+    box-shadow: 0 2px 8px rgba(13,31,60,0.05);
+  }
+  .kpi-label {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+  .kpi-value {
+    font-family: 'Sora', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--navy);
+  }
+  .kpi-value.danger  { color: var(--danger);  font-size: 1.3rem; }
+  .kpi-value.success { color: var(--success); font-size: 1.3rem; }
+  .kpi-unit {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* ── Charts row ── */
+  .charts-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .chart-card {
+    background: white;
+    border-radius: 14px;
+    padding: 20px;
+    border: 1px solid var(--gray-border);
+    box-shadow: 0 2px 8px rgba(13,31,60,0.05);
+  }
+  .chart-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* ── Toggle buttons (6/12 tháng) ── */
+  .toggle-btn { display: flex; gap: 4px; }
+  .tbtn {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    border: 1px solid var(--gray-border);
+    background: white;
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+  }
+  .tbtn.active {
+    background: var(--navy);
+    color: white;
+    border-color: var(--navy);
+  }
+
+  /* ── Table toolbar (export buttons) ── */
+  .table-toolbar {
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--gray-border);
+  }
+  .table-toolbar-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--navy);
+  }
+
+  /* ── Device badge ── */
+  .badge-device {
+    background: rgba(46,125,247,0.1);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* ── Filter form ── */
+  .filter-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .select-pill {
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1.5px solid var(--gray-border);
+    font-size: 0.83rem;
+    font-weight: 600;
+    color: var(--navy);
+    background: white;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+  }
+  .select-pill:focus { border-color: var(--accent); }
+
+  /* ── Status badge ── */
+  .badge-open {
+    padding: 5px 14px;
+    border-radius: 20px;
+    background: var(--success-light);
+    color: var(--success);
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid #9ae6b4;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .kpi-row    { grid-template-columns: repeat(2, 1fr); }
+    .charts-row { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 560px) {
+    .kpi-row { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+
+{# ═══════════════════════════════════════════════
+   Nội dung chính
+═══════════════════════════════════════════════ #}
+{% block content %}
+<div class="page">
+
+  {# ── Page header ── #}
+  <div class="page-header">
+    <div>
+      <div class="page-title">Scope 1 – Direct Emissions</div>
+      <div class="page-subtitle">Phát thải trực tiếp từ nguồn nhiên liệu và thiết bị</div>
+    </div>
+    <span class="badge-open">● Open</span>
+  </div>
+
+  {# ── Filter row (GET form — tự submit khi đổi select) ── #}
+  <form method="get" action="{{ request.url.path }}" class="filter-row">
+    <select class="select-pill" name="year" onchange="this.form.submit()">
+      {% for y in years %}
+      <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+      {% endfor %}
+    </select>
+
+    <select class="select-pill" name="month" onchange="this.form.submit()">
+      {% for m in months %}
+      <option value="{{ m.value }}" {% if m.value == selected_month %}selected{% endif %}>{{ m.label }}</option>
+      {% endfor %}
+    </select>
+  </form>
+
+  {# ── KPI Cards ── #}
+  <div class="kpi-row">
+
+    <div class="kpi-card">
+      <div class="kpi-label">Tổng nhiên liệu tiêu thụ</div>
+      <div class="kpi-value">
+        {{ total_fuel }}
+        <span class="kpi-unit">L</span>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-label">Tổng phát thải CO₂e</div>
+      <div class="kpi-value">
+        {{ total_co2e }}
+        <span class="kpi-unit">tCO₂e</span>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-label">Thiết bị phát thải cao nhất</div>
+      <div class="kpi-value" style="font-size:1.15rem;">
+        {{ top_device_name }}
+        <span class="kpi-unit">({{ top_device_co2e }} tCO₂e)</span>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-label">So với kỳ trước</div>
+      <div class="kpi-value {% if change_is_increase %}danger{% else %}success{% endif %}">
+        {% if change_is_increase %}▲{% else %}▼{% endif %}
+        {{ change_percent }}
+      </div>
+    </div>
+
+  </div>{# /kpi-row #}
+
+  {# ── Charts ── #}
+  <div class="charts-row">
+
+    <div class="chart-card">
+      <div class="chart-title">Phát thải theo thiết bị</div>
+      <canvas id="deviceBar" height="180"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">
+        Xu hướng phát thải
+        <div class="toggle-btn">
+          <button type="button" class="tbtn" id="btn6"  onclick="switchTrend(6)">6 tháng</button>
+          <button type="button" class="tbtn active" id="btn12" onclick="switchTrend(12)">12 tháng</button>
+        </div>
+      </div>
+      <canvas id="trendLine" height="180"></canvas>
+    </div>
+
+  </div>{# /charts-row #}
+
+  {# ── Data Table ── #}
+  <div class="table-wrap">
+
+    <div class="table-toolbar">
+      <span class="table-toolbar-title">Chi tiết theo thiết bị</span>
+      <div style="display:flex; gap:8px;">
+        <a href="{{ request.url.path }}/export/excel?year={{ selected_year }}&month={{ selected_month }}"
+           class="btn btn-sm btn-secondary">📥 Xuất Excel</a>
+        <a href="{{ request.url.path }}/export/pdf?year={{ selected_year }}&month={{ selected_month }}"
+           class="btn btn-sm btn-secondary">📄 Xuất PDF</a>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Thiết bị</th>
+          <th>Nhiên liệu</th>
+          <th>Tiêu thụ</th>
+          <th>CO₂e</th>
+          <th>Tỷ trọng %</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if devices %}
+          {% for device in devices %}
+          <tr>
+            <td><span class="badge badge-device">{{ device.id }}</span></td>
+            <td>{{ device.fuel_type }}</td>
+            <td>{{ device.consumption }} L</td>
+            <td>{{ device.co2e }} tCO₂e</td>
+            <td>{{ "%.2f" | format(device.percentage) }}%</td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="5">
+              <div class="empty-state">
+                <div class="icon">📊</div>
+                Không có dữ liệu phát thải cho kỳ này.
+              </div>
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+
+  </div>{# /table-wrap #}
+
+</div>{# /page #}
+{% endblock %}
+
+
+{# ═══════════════════════════════════════════════
+   JavaScript — Chart.js
+   Dùng filter |tojson để inject mảng Python → JS an toàn
+═══════════════════════════════════════════════ #}
+{% block extra_scripts %}
+{#
+  Kỹ thuật: đưa dữ liệu Python vào <script type="application/json">
+  để tránh VSCode parse Jinja2 {{ }} như JavaScript syntax.
+  JS đọc lại bằng JSON.parse() — an toàn, không XSS.
+#}
+<script type="application/json" id="chartData">
+{
+  "barLabels":   {{ chart_bar_labels    | tojson }},
+  "barData":     {{ chart_bar_data      | tojson }},
+  "trendData12": {{ chart_trend_data_12 | tojson }},
+  "trendData6":  {{ chart_trend_data_6  | tojson }}
+}
+</script>
+
+<script>
+  // Đọc dữ liệu từ thẻ JSON — VSCode không parse block này như JS
+  const _d = JSON.parse(document.getElementById('chartData').textContent);
+
+  // ── Chart 1: Phát thải theo thiết bị (Bar) ──
+  const barLabels = _d.barLabels;
+  const barData   = _d.barData;
+
+  new Chart(document.getElementById('deviceBar').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: barLabels,
+      datasets: [{
+        data: barData,
+        backgroundColor: '#2e7df7',
+        borderRadius: 5,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+        y: { grid: { color: '#f0f0f0' }, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+
+  // ── Chart 2: Xu hướng phát thải (Line — 6 / 12 tháng) ──
+  const trendData12 = _d.trendData12;
+  const trendData6  = _d.trendData6;
+  const months12    = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const months6     = months12.slice(-6);
+
+  const trendChart = new Chart(document.getElementById('trendLine').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: months12,
+      datasets: [{
+        data: trendData12,
+        borderColor: '#2e7df7',
+        borderWidth: 2,
+        pointRadius: 3,
+        backgroundColor: 'rgba(46,125,247,0.08)',
+        fill: true,
+        tension: 0.4,
+        pointBackgroundColor: '#2e7df7'
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+        y: { grid: { color: '#f0f0f0' }, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+
+  // Toggle 6 / 12 tháng
+  function switchTrend(n) {
+    if (n === 6) {
+      trendChart.data.labels            = months6;
+      trendChart.data.datasets[0].data  = trendData6;
+      document.getElementById('btn6').classList.add('active');
+      document.getElementById('btn12').classList.remove('active');
+    } else {
+      trendChart.data.labels            = months12;
+      trendChart.data.datasets[0].data  = trendData12;
+      document.getElementById('btn12').classList.add('active');
+      document.getElementById('btn6').classList.remove('active');
+    }
+    trendChart.update();
+  }
+</script>
+{% endblock %}

@@ -203,6 +203,7 @@
       {% if _u.is_admin or (_u.get and _u.get('is_admin')) %}
       <a href="/admin" class="nav-link {% if '/admin' in request.url.path %}active{% endif %}">Admin</a>
       {% endif %}
+      <a href="/scope1" class="nav-link {% if request.url.path == '/scope1' %}active{% endif %}">Scope 1</a>
     </nav>
 
     <span class="nav-user">
