@@ -1,0 +1,19 @@
+services:
+  vpei:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vpei-app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # Force SQLite DB to a persisted volume path inside container
+      DATABASE_URL: sqlite:////data/vpei.db
+    volumes:
+      - ./vpei_data:/data
+    restart: unless-stopped
+
+volumes:
+  vpei_data:
