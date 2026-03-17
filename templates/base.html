@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}VPEI{% endblock %} – Vietnam Port Emission Inventory</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:        #0d1f3c;
+    --navy-mid:    #152850;
+    --navy-light:  #1e3a6e;
+    --accent:      #2e7df7;
+    --accent-light:#5a9bff;
+    --danger:      #e53e3e;
+    --danger-light:#fff5f5;
+    --success:     #38a169;
+    --success-light:#f0fff4;
+    --warning:     #d69e2e;
+    --warning-light:#fffff0;
+    --gray-soft:   #f4f6fb;
+    --gray-border: #dde3ef;
+    --text-muted:  #7a8aab;
+    --white:       #ffffff;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--gray-soft); color: var(--navy); }
+  h1, h2, h3 { font-family: 'Sora', sans-serif; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ── Navbar ── */
+  .navbar {
+    background: var(--navy);
+    height: 56px; padding: 0 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 12px rgba(13,31,60,0.3);
+  }
+  .nav-brand {
+    font-family: 'Sora', sans-serif; font-weight: 800;
+    font-size: 1.2rem; color: white; letter-spacing: -0.5px;
+    text-decoration: none;
+  }
+  .nav-brand span { color: var(--accent-light); }
+  .nav-brand small {
+    font-size: 0.7rem; font-weight: 400;
+    opacity: 0.45; margin-left: 8px; letter-spacing: 0;
+  }
+  .nav-right { display: flex; align-items: center; gap: 16px; }
+  .nav-user  { font-size: 0.85rem; color: rgba(255,255,255,0.6); }
+  .nav-user strong { color: white; }
+  .nav-links { display: flex; gap: 4px; }
+  .nav-link {
+    font-size: 0.85rem; color: rgba(255,255,255,0.65);
+    padding: 6px 12px; border-radius: 6px;
+    transition: background 0.15s, color 0.15s;
+    text-decoration: none;
+  }
+  .nav-link:hover, .nav-link.active {
+    background: rgba(255,255,255,0.1); color: white;
+    text-decoration: none;
+  }
+  .btn-logout {
+    font-size: 0.8rem; padding: 6px 14px;
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.8);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 6px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: background 0.2s;
+  }
+  .btn-logout:hover { background: rgba(255,255,255,0.18); color: white; }
+
+  /* ── Page wrapper ── */
+  .page { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+  .page-header {
+    display: flex; align-items: flex-start;
+    justify-content: space-between; margin-bottom: 24px;
+  }
+  .page-title { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.3px; }
+  .page-subtitle { font-size: 0.875rem; color: var(--text-muted); margin-top: 3px; }
+
+  /* ── Flash messages ── */
+  .flash {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 18px; border-radius: 10px;
+    margin-bottom: 20px; font-size: 0.9rem; font-weight: 500;
+  }
+  .flash.success { background: var(--success-light); border: 1px solid #9ae6b4; color: var(--success); }
+  .flash.error   { background: var(--danger-light);  border: 1px solid #feb2b2; color: var(--danger);  }
+  .flash.warning { background: var(--warning-light); border: 1px solid #f6e05e; color: var(--warning); }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 18px; border-radius: 8px;
+    font-size: 0.875rem; font-weight: 600;
+    border: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    text-decoration: none; transition: all 0.2s;
+  }
+  .btn:hover { text-decoration: none; }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--navy), var(--navy-light));
+    color: white; box-shadow: 0 4px 12px rgba(13,31,60,0.2);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(13,31,60,0.3); color: white; }
+  .btn-secondary {
+    background: var(--gray-soft); color: var(--text-muted);
+    border: 1.5px solid var(--gray-border);
+  }
+  .btn-secondary:hover { background: var(--gray-border); color: var(--navy); }
+  .btn-danger  { background: var(--danger-light); color: var(--danger); border: 1px solid #feb2b2; }
+  .btn-danger:hover  { background: var(--danger); color: white; }
+  .btn-warning { background: var(--warning-light); color: var(--warning); border: 1px solid #f6e05e; }
+  .btn-warning:hover { background: var(--warning); color: white; }
+  .btn-sm { padding: 5px 12px; font-size: 0.8rem; }
+
+  /* ── Cards ── */
+  .card {
+    background: white; border-radius: 14px;
+    box-shadow: 0 2px 12px rgba(13,31,60,0.07);
+  }
+
+  /* ── Badges ── */
+  .badge {
+    display: inline-flex; align-items: center;
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 0.75rem; font-weight: 600;
+  }
+  .badge-admin    { background: #ebf4ff; color: var(--accent); }
+  .badge-user     { background: var(--gray-soft); color: var(--text-muted); }
+  .badge-active   { background: var(--success-light); color: var(--success); }
+  .badge-inactive { background: var(--danger-light); color: var(--danger); }
+
+  /* ── Forms ── */
+  .form-group { margin-bottom: 18px; }
+  label.field-label {
+    display: block; font-size: 0.85rem; font-weight: 500;
+    color: #3a4a6b; margin-bottom: 6px;
+  }
+  .required { color: var(--danger); margin-left: 2px; }
+  .field-hint { font-size: 0.78rem; color: var(--text-muted); margin-top: 5px; }
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  select,
+  textarea {
+    width: 100%; padding: 11px 14px;
+    border: 1.5px solid var(--gray-border);
+    border-radius: 9px; font-size: 0.9rem;
+    color: var(--navy); background: var(--gray-soft);
+    outline: none; transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent); background: white;
+    box-shadow: 0 0 0 3px rgba(46,125,247,0.1);
+  }
+
+  /* ── Table ── */
+  .table-wrap { background: white; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 12px rgba(13,31,60,0.07); }
+  table { width: 100%; border-collapse: collapse; }
+  thead { background: var(--navy); }
+  thead th {
+    padding: 13px 18px; text-align: left;
+    font-family: 'Sora', sans-serif; font-size: 0.78rem;
+    font-weight: 600; color: rgba(255,255,255,0.7);
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  tbody tr { border-bottom: 1px solid var(--gray-border); transition: background 0.15s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--gray-soft); }
+  tbody td { padding: 13px 18px; font-size: 0.9rem; vertical-align: middle; }
+
+  /* ── Divider ── */
+  .divider { border: none; border-top: 1px solid var(--gray-border); margin: 22px 0; }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .navbar { padding: 0 16px; }
+    .page   { padding: 20px 16px; }
+    .nav-links { display: none; }
+  }
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<!-- ── Navbar ── -->
+{% if user is defined or admin is defined %}
+{% set _u = admin if admin is defined else user %}
+<nav class="navbar">
+  <a href="/dashboard" class="nav-brand">
+    V<span>P</span>EI <small>Carbon Monitoring & ESG</small>
+  </a>
+
+  <div class="nav-right">
+    <nav class="nav-links">
+      <a href="/dashboard" class="nav-link {% if request.url.path == '/dashboard' %}active{% endif %}">Dashboard</a>
+      {% if _u.is_admin or (_u.get and _u.get('is_admin')) %}
+      <a href="/admin" class="nav-link {% if '/admin' in request.url.path %}active{% endif %}">Admin</a>
+      {% endif %}
+    </nav>
+
+    <span class="nav-user">
+      Xin chào, <strong>{{ _u.sub if _u.sub is defined else _u.username }}</strong>
+    </span>
+
+    <form method="POST" action="/logout" style="display:inline">
+      <button class="btn-logout" type="submit">Đăng xuất</button>
+    </form>
+  </div>
+</nav>
+{% endif %}
+
+<!-- ── Flash (global, from query params) ── -->
+{% if flash is defined and flash %}
+<div style="padding: 0 24px; max-width: 1148px; margin: 12px auto 0;">
+  <div class="flash {{ flash_type | default('success') }}">
+    {% if flash_type == 'success' %}✅{% elif flash_type == 'error' %}⚠{% else %}ℹ{% endif %}
+    {{ flash }}
+  </div>
+</div>
+{% endif %}
+
+<!-- ── Main content ── -->
+{% block content %}{% endblock %}
+
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

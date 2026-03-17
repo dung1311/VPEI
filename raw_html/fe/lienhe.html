@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liên hệ - SYNEK</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+        * { font-family: 'Roboto', sans-serif; }
+        .dropdown:hover .dropdown-menu { display: block; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); }
+        .modal.show { display: flex; align-items: center; justify-content: center; }
+        .translate-active { color: #dc2626 !important; font-weight: bold; }
+        .contact-card { transition: all 0.3s ease; }
+        .contact-card:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(0,0,0,0.15); }
+        .info-icon { width: 70px; height: 70px; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; transition: all 0.3s ease; }
+        .info-icon:hover { transform: scale(1.1) rotate(10deg); }
+    </style>
+</head>
+<body class="bg-gray-50">
+    
+    <!-- Header -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-4">
+            <div class="hidden md:flex items-center justify-between py-2 text-sm border-b border-gray-200">
+                <div class="flex items-center space-x-6 text-gray-600">
+                    <span><i class="fas fa-phone mr-2"></i>0936211299</span>
+                    <span><i class="fas fa-envelope mr-2"></i><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="254c4b434a65565c4b404e0b534b">[email&#160;protected]</a></span>
+                </div>
+                <div class="text-gray-600">CÔNG TY CỔ PHẦN SYNEK</div>
+            </div>
+            
+            <div class="flex items-center justify-between h-20">
+                <div class="flex-shrink-0">
+                    <a href="index.html" class="flex items-center">
+                        <img src="c:\Users\84976\Downloads\12.png" alt="SYNEK Logo" class="h-12">
+                    </a>
+                </div>  
+                
+                <nav class="hidden lg:flex items-center space-x-8">
+                    <a href="index.html" class="text-gray-700 hover:text-blue-700 font-medium transition">Trang chủ</a>
+                    
+                    <div class="dropdown relative">
+                        <button class="text-blue-700 hover:text-blue-700 font-medium transition flex items-center">
+                            Về chúng tôi
+                        </button>
+                    </div>
+                    
+                    <div class="dropdown relative">
+                        <a href="giaiphap.html" class="text-gray-700 hover:text-blue-700 font-medium transition flex items-center">
+                            Giải pháp
+                        </a>
+                    </div>
+                    
+                    <div class="dropdown relative">
+                        <a href="dichvu.html" class="text-gray-700 hover:text-blue-700 font-medium transition flex items-center">
+                            Dịch vụ
+                        </a>
+                        
+                    </div>
+                    
+                    <div class="dropdown relative">
+                        <a href="tintuc.html" class="text-gray-700 hover:text-blue-700 font-medium transition flex items-center">
+                            Tin tức & Sự kiện
+                        </a>
+                    </div>
+                    
+                    <button onclick="openContactModal()" class="text-gray-700 hover:text-blue-700 font-medium transition">Liên hệ</button>
+                </nav>
+                
+                
+                <div class="hidden lg:flex items-center space-x-4">
+                    <button onclick="toggleSearch()" class="text-gray-700 hover:text-blue-700 transition">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <button id="lang-vi" onclick="changeLang('vi')" class="translate-active text-sm">VN</button>
+                        <span class="text-gray-400">|</span>
+                        <button id="lang-en" onclick="changeLang('en')" class="text-gray-500 text-sm">ENG</button>
+                    </div>
+                    <button onclick="openLoginModal()" class="bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded-lg transition">
+                        <i class="fas fa-user mr-2"></i>Đăng nhập
+                    </button>
+                </div>
+                
+                <button onclick="toggleMobileMenu()" class="lg:hidden text-gray-700 hover:text-blue-700">
+                    <i class="fas fa-bars text-2xl"></i>
+                </button>
+            </div>
+            
+            <div id="searchBar" class="hidden py-3 border-t border-gray-200">
+                <div class="flex items-center space-x-2">
+                    <input type="text" placeholder="Tìm kiếm..." class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
+                    <button onclick="performSearch()" class="bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded-lg transition">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="mobileMenu" class="hidden lg:hidden bg-white border-t border-gray-200">
+            <div class="container mx-auto px-4 py-4">
+                <nav class="flex flex-col space-y-3">
+                    <a href="index.html" class="text-gray-700 hover:text-blue-700 py-2">Trang chủ</a>
+                    <a href="chungtoi.html" class="text-gray-700 hover:text-blue-700 py-2">Về chúng tôi</a>
+                    <a href="giaiphap.html" class="text-gray-700 hover:text-blue-700 py-2">Giải pháp</a>
+                    <a href="dichvu.html" class="text-gray-700 hover:text-blue-700 py-2">Dịch vụ</a>
+                    <a href="tintuc.html" class="text-gray-700 hover:text-blue-700 py-2">Tin tức & Sự kiện</a>
+                    <a href="lienhe.html" class="text-blue-700 py-2 font-medium">Liên hệ</a>
+                    <button onclick="openLoginModal()" class="bg-blue-700 text-white px-4 py-2 rounded-lg text-left">Đăng nhập</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="relative bg-blue-900 text-white py-16" style="background: linear-gradient(rgba(30,64,175,0.8), rgba(30,64,175,0.8)), url('https://images.unsplash.com/photo-1423666639041-f56000c27a9a?w=1200'); background-size: cover; background-position: center;">
+        <div class="container mx-auto px-4">
+            <div class="max-w-3xl">
+                <h1 class="text-5xl font-bold mb-4">Liên hệ với chúng tôi</h1>
+                <p class="text-xl">Hãy để lại thông tin, chúng tôi sẽ liên hệ tư vấn trong vòng 24 giờ</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Info -->
+    <section class="py-16 bg-white">
+        <div class="container mx-auto px-4">
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+                <div class="contact-card bg-white rounded-2xl p-8 text-center shadow-lg border border-gray-100">
+                    <div class="info-icon">
+                        <i class="fas fa-map-marker-alt text-white text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Địa chỉ văn phòng</h3>
+                    <p class="text-gray-600">2B Phan Thúc Duyện</p>
+                    <p class="text-gray-600">Phường Tân Sơn Nhất</p>
+                    <p class="text-gray-600">TP. Hồ Chí Minh, Việt Nam</p>
+                </div>
+
+                <div class="contact-card bg-white rounded-2xl p-8 text-center shadow-lg border border-gray-100">
+                    <div class="info-icon">
+                        <i class="fas fa-phone text-white text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Điện thoại</h3>
+                    <p class="text-gray-600 mb-2">Hotline:</p>
+                    <a href="tel:0936211299" class="text-blue-700 hover:text-blue-800 font-semibold text-lg block">0936211299</a>
+                    <p class="text-gray-600 mt-3 mb-2">Văn phòng:</p>
+                    <a href="tel:02822029888" class="text-blue-700 hover:text-blue-800 font-semibold">028 2202 9888</a>
+                </div>
+
+                <div class="contact-card bg-white rounded-2xl p-8 text-center shadow-lg border border-gray-100">
+                    <div class="info-icon">
+                        <i class="fas fa-envelope text-white text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Email</h3>
+                    <p class="text-gray-600 mb-2">Email chung:</p>
+                    <a href="/cdn-cgi/l/email-protection#a6cfc8c0c9e6d5dfc8c3cd88d0c8" class="text-blue-700 hover:text-blue-800 font-semibold block"><span class="__cf_email__" data-cfemail="11787f777e5162687f747a3f677f">[email&#160;protected]</span></a>
+                    <p class="text-gray-600 mt-3 mb-2">Hỗ trợ khách hàng:</p>
+                    <a href="/cdn-cgi/l/email-protection#8cfff9fcfce3fef8ccfff5e2e9e7a2fae2" class="text-blue-700 hover:text-blue-800 font-semibold"><span class="__cf_email__" data-cfemail="384b4d4848574a4c784b41565d53164e56">[email&#160;protected]</span></a>
+                </div>
+
+                <div class="contact-card bg-white rounded-2xl p-8 text-center shadow-lg border border-gray-100">
+                    <div class="info-icon">
+                        <i class="fas fa-clock text-white text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Giờ làm việc</h3>
+                    <p class="text-gray-600 mb-2">Thứ 2 - Thứ 6:</p>
+                    <p class="text-gray-900 font-semibold">8:00 - 17:30</p>
+                    <p class="text-gray-600 mt-3 mb-2">Thứ 7:</p>
+                    <p class="text-gray-900 font-semibold">8:00 - 12:00</p>
+                    <p class="text-red-600 mt-3 text-sm">Chủ nhật & ngày lễ nghỉ</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Form & Map -->
+    <section class="py-16 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <div class="grid lg:grid-cols-2 gap-12">
+                <!-- Contact Form -->
+                <div>
+                    <div class="mb-8">
+                        <h2 class="text-4xl font-bold text-gray-900 mb-4">Gửi tin nhắn cho chúng tôi</h2>
+                        <p class="text-gray-600 text-lg">Vui lòng điền thông tin vào form bên dưới, chúng tôi sẽ liên hệ lại với bạn trong thời gian sớm nhất.</p>
+                    </div>
+
+                    <form onsubmit="submitContactForm(event)" class="bg-white rounded-2xl p-8 shadow-lg">
+                        <div class="grid md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-2">Họ và tên *</label>
+                                <input type="text" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition" placeholder="Nguyễn Văn A">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-2">Số điện thoại *</label>
+                                <input type="tel" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition" placeholder="0912345678">
+                            </div>
+                        </div>
+
+                        <div class="grid md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-2">Email *</label>
+                                <input type="email" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition" placeholder="example@email.com">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-2">Công ty</label>
+                                <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition" placeholder="Tên công ty">
+                            </div>
+                        </div>
+
+                        <div class="mb-6">
+                            <label class="block text-gray-700 font-medium mb-2">Dịch vụ quan tâm</label>
+                            <select class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition">
+                                <option>-- Chọn dịch vụ --</option>
+                                <option>Vận chuyển hàng không</option>
+                                <option>Vận tải đường biển</option>
+                                <option>Vận tải đường bộ</option>
+                                <option>Môi giới hải quan</option>
+                                <option>Kho bãi & Phân phối</option>
+                                <option>Giải pháp logistics tổng thể</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-6">
+                            <label class="block text-gray-700 font-medium mb-2">Nội dung *</label>
+                            <textarea required rows="5" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition" placeholder="Vui lòng mô tả chi tiết nhu cầu của bạn..."></textarea>
+                        </div>
+
+                        <div class="mb-6">
+                            <label class="flex items-start">
+                                <input type="checkbox" required class="mt-1 mr-3">
+                                <span class="text-sm text-gray-600">Tôi đồng ý cho SYNEK sử dụng thông tin này để liên hệ và cung cấp thông tin về các dịch vụ. Xem <a href="#" class="text-blue-700 hover:underline">Chính sách bảo mật</a></span>
+                            </label>
+                        </div>
+
+                        <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-4 rounded-lg transition flex items-center justify-center">
+                            <i class="fas fa-paper-plane mr-2"></i>
+                            Gửi tin nhắn
+                        </button>
+
+                        <p class="text-center text-gray-500 text-sm mt-4">
+                            <i class="fas fa-shield-alt mr-2"></i>
+                            Thông tin của bạn được bảo mật tuyệt đối
+                        </p>
+                    </form>
+                </div>
+
+                <!-- Map & Additional Info -->
+                <div>
+                    <div class="mb-8">
+                        <h2 class="text-4xl font-bold text-gray-900 mb-4">Vị trí văn phòng</h2>
+                        <p class="text-gray-600 text-lg">Văn phòng chính của SYNEK tại trung tâm TP. Hồ Chí Minh, giao thông thuận tiện.</p>
+                    </div>
+
+                    <!-- Google Maps Placeholder -->
+                    <div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-8 h-96">
+                        <iframe 
+                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.0609883230785!2d106.65246931476362!3d10.807074392307926!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752934ee7b9c9d%3A0x4bf00e752e82fcd!2zVMOibiBTxqFuIE5oYXQsIFTDom4gQsOsbmgsIEjhu5MgQ2jDrSBNaW5oLCBWaeG7h3QgTmFt!5e0!3m2!1svi!2s!4v1635741234567!5m2!1svi!2s" 
+                            width="100%" 
+                            height="100%" 
+                            style="border:0;" 
+                            allowfullscreen="" 
+                            loading="lazy">
+                        </iframe>
+                    </div>
+
+                    <!-- Quick Contact -->
+                    <div class="grid sm:grid-cols-2 gap-6">
+                        <a href="tel:0936211299" class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-2xl p-6 text-center shadow-lg transition transform hover:scale-105">
+                            <i class="fas fa-phone text-4xl mb-3"></i>
+                            <h3 class="font-bold text-lg mb-2">Gọi ngay</h3>
+                            <p class="text-blue-100 text-sm">Tư vấn miễn phí 24/7</p>
+                        </a>
+
+                        <a href="https://zalo.me/0936211299" target="_blank" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-2xl p-6 text-center shadow-lg transition transform hover:scale-105">
+                            <i class="fas fa-comments text-4xl mb-3"></i>
+                            <h3 class="font-bold text-lg mb-2">Chat Zalo</h3>
+                            <p class="text-blue-100 text-sm">Phản hồi nhanh chóng</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Branch Offices -->
+    <section class="py-16 bg-white">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Văn phòng & Chi nhánh</h2>
+                <p class="text-xl text-gray-600">SYNEK có mặt tại các tỉnh thành lớn trên cả nước</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-gray-50 rounded-2xl p-8 hover:shadow-lg transition">
+                    <div class="flex items-start mb-4">
+                        <i class="fas fa-building text-blue-700 text-3xl mr-4"></i>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">Văn phòng TP.HCM</h3>
+                            <p class="text-gray-600 mb-2">Trụ sở chính</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 mb-2"><i class="fas fa-map-marker-alt text-blue-600 mr-2"></i>2B Phan Thúc Duyện, P. Tân Sơn Nhất, TP.HCM</p>
+                    <p class="text-gray-700 mb-2"><i class="fas fa-phone text-blue-600 mr-2"></i>028 2202 9888</p>
+                    <p class="text-gray-700"><i class="fas fa-envelope text-blue-600 mr-2"></i><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="1a7279775a6963747f71346c74">[email&#160;protected]</a></p>
+                </div>
+
+                <div class="bg-gray-50 rounded-2xl p-8 hover:shadow-lg transition">
+                    <div class="flex items-start mb-4">
+                        <i class="fas fa-building text-blue-700 text-3xl mr-4"></i>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">Chi nhánh Hà Nội</h3>
+                            <p class="text-gray-600 mb-2">Miền Bắc</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 mb-2"><i class="fas fa-map-marker-alt text-blue-600 mr-2"></i>Số 10 Trần Phú, Q. Hà Đông, Hà Nội</p>
+                    <p class="text-gray-700 mb-2"><i class="fas fa-phone text-blue-600 mr-2"></i>024 3333 4444</p>
+                    <p class="text-gray-700"><i class="fas fa-envelope text-blue-600 mr-2"></i><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="fe969f909197be8d87909b95d08890">[email&#160;protected]</a></p>
+                </div>
+
+                <div class="bg-gray-50 rounded-2xl p-8 hover:shadow-lg transition">
+                    <div class="flex items-start mb-4">
+                        <i class="fas fa-building text-blue-700 text-3xl mr-4"></i>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">Chi nhánh Đà Nẵng</h3>
+                            <p class="text-gray-600 mb-2">Miền Trung</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 mb-2"><i class="fas fa-map-marker-alt text-blue-600 mr-2"></i>Số 123 Nguyễn Văn Linh, Q. Thanh Khê, Đà Nẵng</p>
+                    <p class="text-gray-700 mb-2"><i class="fas fa-phone text-blue-600 mr-2"></i>0236 3555 666</p>
+                    <p class="text-gray-700"><i class="fas fa-envelope text-blue-600 mr-2"></i><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="4622272827282106353f28232d683028">[email&#160;protected]</a></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="py-16 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <div class="max-w-4xl mx-auto">
+                <div class="text-center mb-12">
+                    <h2 class="text-4xl font-bold text-gray-900 mb-4">Câu hỏi thường gặp</h2>
+                    <p class="text-xl text-gray-600">Những câu hỏi khách hàng quan tâm nhất</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="bg-white rounded-2xl p-6 shadow-md">
+                        <button onclick="toggleFAQ(1)" class="w-full flex justify-between items-center text-left">
+                            <h3 class="text-lg font-bold text-gray-900">Thời gian vận chuyển hàng quốc tế mất bao lâu?</h3>
+                            <i class="fas fa-chevron-down text-blue-700"></i>
+                        </button>
+                        <div id="faq-1" class="hidden mt-4 text-gray-600">
+                            <p>Thời gian vận chuyển phụ thuộc vào phương thức và quốc gia đích. Đường hàng không: 3-7 ngày, đường biển: 15-30 ngày. SYNEK cam kết cập nhật tiến độ realtime cho khách hàng.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-6 shadow-md">
+                        <button onclick="toggleFAQ(2)" class="w-full flex justify-between items-center text-left">
+                            <h3 class="text-lg font-bold text-gray-900">Chi phí dịch vụ logistics được tính như thế nào?</h3>
+                            <i class="fas fa-chevron-down text-blue-700"></i>
+                        </button>
+                        <div id="faq-2" class="hidden mt-4 text-gray-600">
+                            <p>Chi phí được tính dựa trên: khối lượng/trọng lượng hàng, khoảng cách vận chuyển, loại hàng hóa và các dịch vụ đi kèm. Liên hệ để nhận báo giá chi tiết và ưu đãi.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-6 shadow-md">
+                        <button onclick="toggleFAQ(3)" class="w-full flex justify-between items-center text-left">
+                            <h3 class="text-lg font-bold text-gray-900">SYNEK có hỗ trợ khai báo hải quan không?</h3>
+                            <i class="fas fa-chevron-down text-blue-700"></i>
+                        </button>
+                        <div id="faq-3" class="hidden mt-4 text-gray-600">
+                            <p>Có. SYNEK cung cấp dịch vụ khai báo hải quan đầy đủ, bao gồm tư vấn thủ tục, giấy tờ, xin C/O, kiểm dịch và xử lý mọi vấn đề phát sinh tại hải quan.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-6 shadow-md">
+                        <button onclick="toggleFAQ(4)" class="w-full flex justify-between items-center text-left">
+                            <h3 class="text-lg font-bold text-gray-900">Làm thế nào để theo dõi lộ trình hàng hóa?</h3>
+                            <i class="fas fa-chevron-down text-blue-700"></i>
+                        </button>
+                        <div id="faq-4" class="hidden mt-4 text-gray-600">
+                            <p>Khách hàng có thể theo dõi realtime qua hệ thống tracking trên website hoặc app di động. Chúng tôi cũng gửi thông báo tự động qua email/SMS khi hàng đến các điểm trung chuyển quan trọng.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white pt-16 pb-8">
+        <div class="container mx-auto px-4">
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+                <div>
+                    <img src="c:\Users\84976\Downloads\12.png" alt="SYNEK" class="h-12 mb-6 brightness-0 invert">
+                    <p class="text-gray-400 mb-6">Giải pháp Logistics Toàn Diện, Vận Chuyển Toàn Cầu</p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="w-10 h-10 bg-gray-800 hover:bg-blue-600 rounded-full flex items-center justify-center transition"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="w-10 h-10 bg-gray-800 hover:bg-blue-400 rounded-full flex items-center justify-center transition"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="w-10 h-10 bg-gray-800 hover:bg-red-600 rounded-full flex items-center justify-center transition"><i class="fab fa-youtube"></i></a>
+                        <a href="#" class="w-10 h-10 bg-gray-800 hover:bg-pink-600 rounded-full flex items-center justify-center transition"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-6">Dịch vụ</h4>
+                    <ul class="space-y-3">
+                        <li><a href="dichvu.html#hang-khong" class="text-gray-400 hover:text-white transition">Vận chuyển hàng không</a></li>
+                        <li><a href="dichvu.html#duong-bien" class="text-gray-400 hover:text-white transition">Vận tải đường biển</a></li>
+                        <li><a href="dichvu.html#duong-bo" class="text-gray-400 hover:text-white transition">Vận tải đường bộ</a></li>
+                        <li><a href="dichvu.html#hai-quan" class="text-gray-400 hover:text-white transition">Môi giới hải quan</a></li>
+                        <li><a href="dichvu.html#kho-bai" class="text-gray-400 hover:text-white transition">Kho bãi & Phân phối</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-6">Công ty</h4>
+                    <ul class="space-y-3">
+                        <li><a href="chungtoi.html" class="text-gray-400 hover:text-white transition">Về chúng tôi</a></li>
+                        <li><a href="giaiphap.html" class="text-gray-400 hover:text-white transition">Giải pháp</a></li>
+                        <li><a href="tintuc.html" class="text-gray-400 hover:text-white transition">Tin tức & Sự kiện</a></li>
+                        <li><a href="lienhe.html" class="text-gray-400 hover:text-white transition">Liên hệ</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-6">Liên hệ</h4>
+                    <ul class="space-y-3 text-gray-400">
+                        <li class="flex items-start"><i class="fas fa-map-marker-alt mt-1 mr-3 text-blue-500"></i><span>2B Phan Thúc Duyện, P. Tân Sơn Nhất, TP.HCM</span></li>
+                        <li class="flex items-center"><i class="fas fa-phone mr-3 text-blue-500"></i><span>0936211299</span></li>
+                        <li class="flex items-center"><i class="fas fa-envelope mr-3 text-blue-500"></i><span><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="a8c1c6cec7e8dbd1c6cdc386dec6">[email&#160;protected]</a></span></li>
+                        <li class="flex items-center"><i class="fas fa-globe mr-3 text-blue-500"></i><span>www.synek.vn</span></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 pt-8 text-center text-gray-400">
+                <p>&copy; 2025 CÔNG TY CỔ PHẦN SYNEK. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modals -->
+    <div id="loginModal" class="modal">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-blue-900">Đăng nhập</h3>
+                <button onclick="closeLoginModal()" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times text-2xl"></i></button>
+            </div>
+            <form onsubmit="submitLogin(event)">
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Email hoặc Tên đăng nhập *</label>
+                    <input type="text" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="example@email.com">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Mật khẩu *</label>
+                    <input type="password" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="••••••••">
+                </div>
+                <div class="flex items-center justify-between mb-6">
+                    <label class="flex items-center"><input type="checkbox" class="mr-2"><span class="text-sm text-gray-600">Ghi nhớ đăng nhập</span></label>
+                    <a href="#" class="text-sm text-blue-700 hover:underline">Quên mật khẩu?</a>
+                </div>
+                <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 rounded-lg transition">Đăng nhập</button>
+                <div class="text-center mt-4">
+                    <span class="text-gray-600">Chưa có tài khoản? </span>
+                    <button type="button" onclick="switchToRegister()" class="text-blue-700 hover:underline font-medium">Đăng ký ngay</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="registerModal" class="modal">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-blue-900">Đăng ký tài khoản</h3>
+                <button onclick="closeRegisterModal()" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times text-2xl"></i></button>
+            </div>
+            <form onsubmit="submitRegister(event)">
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Họ và tên *</label>
+                    <input type="text" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="Nguyễn Văn A">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Email *</label>
+                    <input type="email" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="example@email.com">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Số điện thoại *</label>
+                    <input type="tel" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="0912345678">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Mật khẩu *</label>
+                    <input type="password" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="••••••••">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 font-medium mb-2">Xác nhận mật khẩu *</label>
+                    <input type="password" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="••••••••">
+                </div>
+                <div class="mb-6">
+                    <label class="flex items-center">
+                        <input type="checkbox" required class="mr-2">
+                        <span class="text-sm text-gray-600">Tôi đồng ý với <a href="#" class="text-blue-700 hover:underline">Điều khoản dịch vụ</a> và <a href="#" class="text-blue-700 hover:underline">Chính sách bảo mật</a></span>
+                    </label>
+                </div>
+                <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 rounded-lg transition">Đăng ký</button>
+                <div class="text-center mt-4">
+                    <span class="text-gray-600">Đã có tài khoản? </span>
+                    <button type="button" onclick="switchToLogin()" class="text-blue-700 hover:underline font-medium">Đăng nhập ngay</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Floating Contact -->
+    <div class="fixed bottom-6 right-6 flex flex-col space-y-3 z-40">
+        <a href="tel:0936211299" class="bg-blue-600 hover:bg-blue-700 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition">
+            <i class="fas fa-phone text-xl"></i>
+        </a>
+        <a href="https://zalo.me/0936211299" target="_blank" class="bg-blue-500 hover:bg-blue-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition">
+            <i class="fas fa-comments text-xl"></i>
+        </a>
+    </div>
+
+    <button id="backToTop" onclick="scrollToTop()" class="fixed bottom-6 left-6 bg-gray-800 hover:bg-gray-900 text-white w-12 h-12 rounded-full items-center justify-center shadow-lg transition hidden z-40">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+        function openLoginModal() { document.getElementById('loginModal').classList.add('show'); }
+        function closeLoginModal() { document.getElementById('loginModal').classList.remove('show'); }
+        function openRegisterModal() { document.getElementById('registerModal').classList.add('show'); }
+        function closeRegisterModal() { document.getElementById('registerModal').classList.remove('show'); }
+        function switchToRegister() { closeLoginModal(); openRegisterModal(); }
+        function switchToLogin() { closeRegisterModal(); openLoginModal(); }
+        function submitLogin(e) { e.preventDefault(); alert('Đăng nhập thành công!'); closeLoginModal(); }
+        function submitRegister(e) { e.preventDefault(); alert('Đăng ký thành công!'); closeRegisterModal(); }
+        function submitContactForm(e) { e.preventDefault(); alert('Cảm ơn bạn đã liên hệ! Chúng tôi sẽ phản hồi trong thời gian sớm nhất.'); }
+        window.onclick = function(e) { if (e.target.classList.contains('modal')) e.target.classList.remove('show'); }
+        function toggleSearch() { document.getElementById('searchBar').classList.toggle('hidden'); }
+        function performSearch() { alert('Chức năng tìm kiếm đang được phát triển!'); }
+        function toggleMobileMenu() { document.getElementById('mobileMenu').classList.toggle('hidden'); }
+        function changeLang(lang) {
+            docu

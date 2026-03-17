@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Bắt đầu - SYNEK Website</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap');
+        * { font-family: 'Roboto', sans-serif; }
+        .gradient-bg {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .pulse-animation {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    
+    <!-- Hero Section -->
+    <div class="gradient-bg text-white py-20">
+        <div class="container mx-auto px-4 text-center">
+            <div class="mb-6">
+                <img src="logo.svg" alt="SYNEK Logo" class="h-16 mx-auto" onerror="this.style.display='none'">
+            </div>
+            <h1 class="text-5xl md:text-6xl font-black mb-4">
+                <i class="fas fa-rocket mr-3"></i>
+                SYNEK WEBSITE
+            </h1>
+            <p class="text-2xl mb-2">Giải pháp Logistics Toàn Diện</p>
+            <p class="text-xl opacity-90">Vận Chuyển Toàn Cầu</p>
+            
+            <div class="mt-8 flex justify-center gap-4">
+                <a href="index.html" class="bg-white text-blue-700 px-8 py-4 rounded-lg text-xl font-bold hover:bg-blue-50 transition shadow-lg pulse-animation">
+                    <i class="fas fa-home mr-2"></i>
+                    VÀO WEBSITE NGAY
+                </a>
+                <a href="test_navigation.html" class="bg-blue-800 bg-opacity-50 text-white px-8 py-4 rounded-lg text-xl font-bold hover:bg-opacity-70 transition">
+                    <i class="fas fa-vial mr-2"></i>
+                    Test Navigation
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="bg-white py-8 border-b-4 border-blue-700">
+        <div class="container mx-auto px-4">
+            <div class="grid md:grid-cols-4 gap-6 text-center">
+                <div>
+                    <div class="text-4xl font-bold text-blue-700 mb-2">6</div>
+                    <div class="text-gray-600">Trang HTML</div>
+                </div>
+                <div>
+                    <div class="text-4xl font-bold text-green-600 mb-2">100%</div>
+                    <div class="text-gray-600">Đồng bộ</div>
+                </div>
+                <div>
+                    <div class="text-4xl font-bold text-purple-600 mb-2">12</div>
+                    <div class="text-gray-600">Files tổng</div>
+                </div>
+                <div>
+                    <div class="text-4xl font-bold text-red-600 mb-2">0</div>
+                    <div class="text-gray-600">Bugs</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-12">
+        
+        <!-- Hướng dẫn nhanh -->
+        <div class="max-w-4xl mx-auto mb-12">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">
+                <i class="fas fa-map-marked-alt text-blue-600 mr-2"></i>
+                Hướng dẫn sử dụng nhanh
+            </h2>
+            
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="bg-blue-50 p-6 rounded-xl border-2 border-blue-200">
+                    <div class="text-5xl text-blue-600 mb-4 text-center">1</div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2 text-center">Mở website</h3>
+                    <p class="text-gray-600 text-center">Click vào file <code class="bg-blue-200 px-2 py-1 rounded">index.html</code></p>
+                </div>
+                
+                <div class="bg-green-50 p-6 rounded-xl border-2 border-green-200">
+                    <div class="text-5xl text-green-600 mb-4 text-center">2</div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2 text-center">Khám phá</h3>
+                    <p class="text-gray-600 text-center">Duyệt qua 6 trang và test các tính năng</p>
+                </div>
+                
+                <div class="bg-purple-50 p-6 rounded-xl border-2 border-purple-200">
+                    <div class="text-5xl text-purple-600 mb-4 text-center">3</div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2 text-center">Deploy</h3>
+                    <p class="text-gray-600 text-center">Upload lên hosting khi đã hài lòng</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danh sách trang -->
+        <div class="max-w-5xl mx-auto mb-12">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">
+                <i class="fas fa-sitemap text-blue-600 mr-2"></i>
+                Các trang trong website
+            </h2>
+            
+            <div class="grid md:grid-cols-2 gap-4">
+                <a href="index.html" class="card-hover bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-xl shadow-lg transition">
+                    <div class="flex items-center mb-3">
+                        <i class="fas fa-home text-3xl mr-4"></i>
+                        <div>
+                            <h3 class="text-2xl font-bold">Trang chủ</h3>
+                            <p class="text-sm opacity-90">index.html</p>
+                        </div>
+                    </div>
+                    <p class="text-sm opacity-90">Hero banner, dịch vụ, giải pháp, thống kê, tin tức</p>
+                </a>
+                
+                <a href="chungtoi.html" class="card-hover bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6 rounded-xl shadow-lg transition">
+                    <div class="flex items-center mb-3">
+                        <i class="fas fa-users text-3xl mr-4"></i>
+                        <div>
+                            <h3 class="text-2xl font-bold">Về chúng tôi</h3>
+                            <p class="text-sm opacity-90">chungtoi.html</p>
+                        </div>
+                    </div>
+                    <p class="text-sm opacity-90">Sứ mệnh, Giá trị cốt lõi, Tầm nhìn</p>
+                </a>
+                
+                <a href="giaiphap.html" class="card-hover bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-xl shadow-lg transition">
+                    <div class="flex items-center mb-3">
+                        <i class="fas fa-lightbulb text-3xl mr-4"></i>
+                        <div>
+                            <h3 class="text-2xl font-bold">Giải pháp</h3>
+                            <p class="text-sm opacity-90">giaiphap.html</p>
+                        </div>
+                    </div>
+                    <p class="text-sm opacity-90">4 giải pháp logistics toàn diện</p>
+                </a>
+                
+                <a href="dichvu.html" class="card-hover bg-gradient-to-r from-yellow-500 to-yellow-600 text-white p-6 rounded-xl shadow-lg transition">
+                    <div class="flex items-center mb-3">
+                        <i class="fas fa-truck text-3xl mr-4"></i>
+                        <div>
+                            <h3 class="text-2xl font-bold">Dịch vụ</h3>
+                            <p class="text-sm opacity-90">dichvu.html</p>
+                        </div>
+                    </div>
+                    <p class="text-sm opacity-90">5 dịch vụ vận tải chuyên nghiệp</p>
+                </a>
+                
+                <a href="tintuc.html" class="card-hover bg-gradient-to-r from-red-500 to-red-600 text-white p-6 rounded-xl shadow-lg transition">
+                    <div class="flex items-center mb-3">
+                        <i class="fas fa-newspaper text-3xl mr-4"></i>
+                        <div>
+                            <h3 class="text-2xl font-bold">Tin tức</h3>
+                            <p class="text-sm opacity-90">tintuc.html</p>
+                        </div>
+                    </div>
+                    <p class="text-sm opacity-90">Tin tức, Tuyển dụng, Ngành nghề</p>
+                </a>
+                
+                <a href="lienhe.html" class="card-hover bg-gradient-to-r from-indigo-500 to-indigo-600 text-white p-6 rounded-xl shadow-lg transition">
+                    <div class="flex items-center mb-3">
+                        <i class="fas fa-envelope text-3xl mr-4"></i>
+                        <div>
+                            <h3 class="text-2xl font-bold">Liên hệ</h3>
+                            <p class="text-sm opacity-90">lienhe.html</p>
+                        </div>
+                    </div>
+                    <p class="text-sm opacity-90">Form liên hệ, thông tin công ty, bản đồ</p>
+                </a>
+            </div>
+        </div>
+
+        <!-- Tài liệu -->
+        <div class="max-w-3xl mx-auto mb-12">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">
+                <i class="fas fa-book-open text-blue-600 mr-2"></i>
+                Tài liệu hướng dẫn
+            </h2>
+            
+            <div class="space-y-4">
+                <a href="HUONG_DAN_SU_DUNG.txt" class="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition border-l-4 border-blue-500">
+                    <div class="flex items-center">
+                        <i class="fas fa-file-alt text-4xl text-blue-600 mr-4"></i>
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold text-gray-800">HUONG_DAN_SU_DUNG.txt</h3>
+                            <p class="text-gray-600">Hướng dẫn chi tiết bằng tiếng Việt (7.8KB)</p>
+                        </div>
+                        <i class="fas fa-download text-gray-400"></i>
+                    </div>
+                </a>
+                
+                <a href="README.md" class="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition border-l-4 border-green-500">
+                    <div class="flex items-center">
+                        <i class="fas fa-code text-4xl text-green-600 mr-4"></i>
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold text-gray-800">README.md</h3>
+                            <p class="text-gray-600">Tài liệu kỹ thuật (6.1KB)</p>
+                        </div>
+                        <i class="fas fa-download text-gray-400"></i>
+                    </div>
+                </a>
+                
+                <a href="DANH_SACH_FILES.txt" class="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition border-l-4 border-purple-500">
+                    <div class="flex items-center">
+                        <i class="fas fa-list text-4xl text-purple-600 mr-4"></i>
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold text-gray-800">DANH_SACH_FILES.txt</h3>
+                            <p class="text-gray-600">Danh sách tất cả files trong website</p>
+                        </div>
+                        <i class="fas fa-download text-gray-400"></i>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">
+                <i class="fas fa-star text-yellow-500 mr-2"></i>
+                Tính năng đã hoàn thành
+            </h2>
+            
+            <div class="grid md:grid-cols-2 gap-4">
+                <div class="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
+                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                    <strong>Navigation đồng bộ</strong> - Tất cả 6 trang
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
+                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                    <strong>Responsive design</strong> - Mobile/Tablet/Desktop
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
+                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                    <strong>Dropdown menu</strong> - Submenu cho mọi section
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
+                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                    <strong>Smooth scroll</strong> - Click section scroll mượt
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
+                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                    <strong>Modal forms</strong> - Login & Contact
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
+                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                    <strong>Search bar</strong> - Tìm kiếm nội dung
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
+                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                    <strong>Language toggle</strong> - VN/ENG
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
+                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                    <strong>Hover effects</strong> - Cards, buttons, images
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-xl font-bold mb-2">
+                <i class="fas fa-rocket mr-2"></i>
+                Website đã sẵn sàng deploy!
+            </p>
+            <p class="text-gray-400 mb-4">Không cần build process | Chạy ngay bằng trình duyệt</p>
+            
+            <div class="flex justify-center gap-4 mb-6">
+                <a href="index.html" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg transition font-bold">
+                    <i class="fas fa-play mr-2"></i>
+                    Bắt đầu ngay
+                </a>
+            </div>
+            
+            <div class="border-t border-gray-700 pt-6 mt-6">
+                <p class="text-sm text-gray-400">
+                    <i class="fas fa-building mr-2"></i>
+                    CÔNG TY CỔ PHẦN SYNEK
+                </p>
+                <p class="text-sm text-gray-400 mt-2">
+                    <i class="fas fa-phone mr-2"></i>0936211299 
+                    <span class="mx-3">|</span>
+                    <i class="fas fa-envelope mr-2"></i>info@synek.vn
+                </p>
+                <p class="text-xs text-gray-500 mt-4">
+                    Copyright © 2025 SYNEK Corporation. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

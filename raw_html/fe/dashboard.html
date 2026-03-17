@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VPEI – Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0d1f3c;
+    --navy-mid: #152850;
+    --navy-light: #1e3a6e;
+    --accent: #2e7df7;
+    --accent-light: #5a9bff;
+    --white: #ffffff;
+    --gray-soft: #f4f6fb;
+    --gray-border: #dde3ef;
+    --text-muted: #7a8aab;
+    --sidebar-width: 220px;
+    --green: #22c55e;
+    --red: #ef4444;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--gray-soft); color: var(--navy); display: flex; height: 100vh; overflow: hidden; }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: var(--sidebar-width); background: var(--white);
+    border-right: 1px solid var(--gray-border);
+    display: flex; flex-direction: column;
+    flex-shrink: 0; overflow-y: auto;
+  }
+  .sidebar-logo {
+    padding: 20px 24px; border-bottom: 1px solid var(--gray-border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-box {
+    background: linear-gradient(135deg, var(--navy), var(--navy-light));
+    border-radius: 10px; padding: 7px 12px;
+    font-family: 'Sora', sans-serif; font-weight: 800;
+    font-size: 1.1rem; color: white; letter-spacing: -0.5px;
+  }
+  .nav-items { padding: 16px 0; flex: 1; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 20px; cursor: pointer;
+    font-size: 0.9rem; font-weight: 500; color: #4a5a7b;
+    transition: all 0.2s; text-decoration: none;
+    border-left: 3px solid transparent;
+  }
+  .nav-item:hover { background: var(--gray-soft); color: var(--navy); }
+  .nav-item.active {
+    background: rgba(46,125,247,0.08);
+    color: var(--accent); border-left-color: var(--accent);
+    font-weight: 600;
+  }
+  .nav-icon { font-size: 1.1rem; width: 20px; text-align: center; }
+  .nav-bottom { padding: 16px 0; border-top: 1px solid var(--gray-border); }
+
+  /* MAIN */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* TOPBAR */
+  .topbar {
+    background: var(--white); border-bottom: 1px solid var(--gray-border);
+    padding: 0 28px; height: 60px; display: flex;
+    align-items: center; justify-content: space-between; flex-shrink: 0;
+  }
+  .topbar-title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1rem; color: var(--navy); }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .period-btn {
+    padding: 6px 13px; border-radius: 6px; border: 1.5px solid var(--gray-border);
+    background: white; font-size: 0.82rem; font-weight: 500; color: #4a5a7b;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .period-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .period-btn.active { background: var(--navy); color: white; border-color: var(--navy); }
+  .year-select {
+    padding: 6px 13px; border-radius: 6px; border: 1.5px solid var(--gray-border);
+    font-size: 0.82rem; font-weight: 600; color: var(--navy); cursor: pointer;
+    background: white;
+  }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--navy-light));
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 700; font-size: 0.85rem; cursor: pointer;
+  }
+
+  /* CONTENT */
+  .content { flex: 1; overflow-y: auto; padding: 24px 28px; }
+
+  /* KPI CARDS */
+  .kpi-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .kpi-card {
+    background: white; border-radius: 14px;
+    padding: 20px 24px; border: 1px solid var(--gray-border);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .kpi-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; margin-bottom: 8px; }
+  .kpi-label sub { font-size: 0.65rem; }
+  .kpi-value {
+    font-family: 'Sora', sans-serif; font-size: 1.9rem; font-weight: 800; color: var(--navy);
+    display: flex; align-items: baseline; gap: 6px; line-height: 1;
+  }
+  .kpi-unit { font-size: 0.85rem; font-weight: 500; color: var(--text-muted); }
+  .kpi-change { font-size: 0.82rem; color: var(--green); display: flex; align-items: center; gap: 4px; margin-top: 6px; }
+  .kpi-change.down { color: var(--green); }
+  .kpi-change.up { color: var(--red); }
+
+  .intensity-card {
+    background: white; border-radius: 14px;
+    padding: 20px 24px; border: 1px solid var(--gray-border);
+    margin-bottom: 16px;
+  }
+  .intensity-val { font-family: 'Sora', sans-serif; font-size: 1.3rem; font-weight: 700; color: var(--navy); }
+
+  /* CHARTS ROW */
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 16px; margin-bottom: 16px; }
+  .chart-card {
+    background: white; border-radius: 14px;
+    padding: 20px; border: 1px solid var(--gray-border);
+  }
+  .chart-title { font-size: 0.88rem; font-weight: 600; color: var(--navy); margin-bottom: 14px; }
+  .chart-full { grid-column: span 2; }
+
+  /* SHAP CHART */
+  .shap-card {
+    background: white; border-radius: 14px;
+    padding: 20px; border: 1px solid var(--gray-border);
+  }
+  .shap-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .shap-label { font-size: 0.72rem; color: #4a5a7b; width: 220px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .shap-bar-wrap { flex: 1; display: flex; align-items: center; position: relative; height: 14px; }
+  .shap-bar { height: 10px; border-radius: 3px; }
+  .shap-bar.pos { background: var(--red); margin-left: 2px; }
+  .shap-bar.neg { background: var(--green); margin-right: 2px; margin-left: auto; }
+
+  /* AI INSIGHT */
+  .ai-insight {
+    background: #f0f5ff; border: 1px solid #c5d8ff;
+    border-radius: 10px; padding: 14px 18px;
+    font-size: 0.82rem; color: #2a3a6b; line-height: 1.6;
+    margin-top: 12px;
+  }
+  .ai-insight strong { color: var(--accent); }
+
+  /* Bottom row */
+  .bottom-row { display: grid; grid-template-columns: 1.5fr 1.5fr 1fr; gap: 16px; }
+
+
+  /*Nav*/
+  .nav-items { padding:16px 0; flex:1; }
+.nav-item { display:flex; align-items:center; gap:12px; padding:10px 20px; cursor:pointer; font-size:0.82rem; font-weight:500; color:#4a5a7b; transition:all 0.2s; text-decoration:none; border-left:3px solid transparent; }
+.nav-item:hover { background:var(--gray-soft); color:var(--navy); }
+.nav-item.active { background:rgba(46,125,247,0.08); color:var(--accent); border-left-color:var(--accent); font-weight:600; }
+.nav-item.sub { padding-left:36px; font-size:0.78rem; }
+.nav-item.sub.active { background:rgba(46,125,247,0.06); color:var(--accent); }
+.nav-section { padding:6px 20px 4px; font-size:0.68rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.1em; }
+.nav-expand { font-size:0.65rem; margin-left:auto; color:var(--text-muted); }
+.nav-bottom { padding:16px 0; border-top:1px solid var(--gray-border); }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-box">VPEI</div>
+  </div>
+  <nav class="nav-items">
+    <div class="nav-section">Menu chính</div>
+    <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-pie" style="width:16px;color:var(--text-muted)"></i> Dashboard</a>
+    <a href="scope_01.html" class="nav-item"><i class="fa-solid fa-industry" style="width:16px;color:var(--text-muted)"></i> Scope 1</a>
+    <a href="scope_02.html" class="nav-item"><i class="fa-solid fa-bolt" style="width:16px;color:var(--text-muted)"></i> Scope 2</a>
+    <a href="scope_03.html" class="nav-item"><i class="fa-solid fa-ship" style="width:16px;color:var(--text-muted)"></i> Scope 3</a>
+    <div class="nav-section" style="margin-top:10px">Báo cáo</div>
+    <a href="reports.html" class="nav-item"><i class="fa-solid fa-file-lines" style="width:16px;color:var(--text-muted)"></i> Reports</a>
+  </nav>
+  <div class="nav-bottom">
+    <a href="settings.html" class="nav-item active"><i class="fa-solid fa-gear" style="width:16px;color:var(--accent)"></i> Settings</a>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-title">VPEI – Vietnam Port Emission Inventory</div>
+    <div class="topbar-right">
+      <button class="period-btn active">Năm</button>
+      <button class="period-btn">Ngày</button>
+      <button class="period-btn">Tuần</button>
+      <button class="period-btn">Tháng</button>
+      <button class="period-btn">Quý</button>
+      <select class="year-select"><option>2026 ▾</option><option>2025</option><option>2024</option></select>
+      <div class="avatar">A</div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+    <!-- KPI ROW -->
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Total CO<sub>2</sub>e</div>
+        <div class="kpi-value">125,840 <span class="kpi-unit">tCO<sub>2</sub>e</span></div>
+        <div class="kpi-change down">↓ 4.2% so với năm trước</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Scope 1</div>
+        <div class="kpi-value">42,500 <span class="kpi-unit">tCO<sub>2</sub>e</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Scope 2</div>
+        <div class="kpi-value">38,200 <span class="kpi-unit">tCO<sub>2</sub>e</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Scope 3</div>
+        <div class="kpi-value">45,140 <span class="kpi-unit">tCO<sub>2</sub>e</span></div>
+      </div>
+    </div>
+
+    <div class="intensity-card" style="display:inline-block;margin-bottom:16px;padding:16px 24px;width:auto;">
+      <div class="kpi-label">Emission Intensity</div>
+      <div class="intensity-val">0.82 tCO<sub>2</sub>e / 1,000 TEU</div>
+    </div>
+
+    <!-- CHARTS + SHAP -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+      <!-- Emission Trend -->
+      <div class="chart-card">
+        <div class="chart-title">
+          Emission Trend – 2026
+          <span style="float:right;font-weight:400;font-size:0.75rem;color:#7a8aab;">
+            — Scope 1 &nbsp;— Scope 2 &nbsp;— 3
+          </span>
+        </div>
+        <canvas id="trendChart" height="150"></canvas>
+      </div>
+
+      <!-- SHAP -->
+      <div class="shap-card">
+        <div class="chart-title">Key Drivers (SHAP Analysis)</div>
+        <div id="shapRows"></div>
+        <div class="ai-insight">
+          <strong>AI Insight:</strong> Emissions increased 3.8% in Q1 2026. Primary driver is increased
+          <strong>Scope 3 shipping activity</strong> (+12% impact due to longer dwelling time). Scope 2
+          showed reduction due to energy optimization in STS cranes.
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom row -->
+    <div class="bottom-row">
+      <!-- Scope by % -->
+      <div class="chart-card">
+        <div class="chart-title">Emission by Scope (%)</div>
+        <canvas id="scopeBar" height="160"></canvas>
+      </div>
+      <!-- Top 5 Equipment -->
+      <div class="chart-card">
+        <div class="chart-title">Top 5 Equipment Categories</div>
+        <canvas id="equipDoughnut" height="160"></canvas>
+      </div>
+      <!-- Spacer / info -->
+      <div class="chart-card" style="display:flex;flex-direction:column;justify-content:space-between;">
+        <div>
+          <div class="chart-title">Emission Summary</div>
+          <div style="font-size:0.82rem;color:var(--text-muted);line-height:2;">
+            <div>📦 Port Throughput: <strong>153,000 TEU</strong></div>
+            <div>🚢 Vessel calls: <strong>420</strong></div>
+            <div>⛽ Fuel consumed: <strong>18.4M L</strong></div>
+            <div>⚡ Electricity: <strong>42.6 GWh</strong></div>
+            <div>📅 Period: Jan–Dec 2026</div>
+          </div>
+        </div>
+        <div style="margin-top:16px;padding:12px;background:var(--gray-soft);border-radius:10px;font-size:0.78rem;color:var(--text-muted);">
+          Last updated: 09/03/2026 08:30
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// Trend Chart
+const trendCtx = document.getElementById('trendChart').getContext('2d');
+const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+new Chart(trendCtx, {
+  type: 'line',
+  data: {
+    labels: months,
+    datasets: [
+      { label:'Scope 1', data:[3200,3400,3600,3500,3800,3700,3900,3750,3650,3800,3700,3600], borderColor:'#0d1f3c', borderWidth:2, pointRadius:0, fill:false, tension:0.4 },
+      { label:'Scope 2', data:[2800,2900,3100,3000,3300,3200,3400,3350,3200,3300,3100,3050], borderColor:'#2e7df7', borderWidth:2, pointRadius:0, fill:false, tension:0.4 },
+      { label:'Scope 3', data:[3500,3600,3800,3700,4000,3900,4100,4000,3850,4100,3950,3800], borderColor:'#94a3b8', borderWidth:1.5, pointRadius:0, fill:false, tension:0.4, borderDash:[4,3] }
+    ]
+  },
+  options: { plugins:{legend:{display:false}}, scales:{ x:{grid:{display:false}, ticks:{font:{size:10}}}, y:{grid:{color:'#f0f0f0'}, ticks:{font:{size:10}}} } }
+});
+
+// Scope Bar
+const scopeCtx = document.getElementById('scopeBar').getContext('2d');
+new Chart(scopeCtx, {
+  type: 'bar',
+  data: {
+    labels: ['Q1','Q2','Q3','Q4','YTD'],
+    datasets: [
+      { label:'Scope 1', data:[35,33,34,33,34], backgroundColor:'#0d1f3c', stack:'s' },
+      { label:'Scope 2', data:[30,31,30,30,30], backgroundColor:'#2e7df7', stack:'s' },
+      { label:'Scope 3', data:[35,36,36,37,36], backgroundColor:'#94a3b8', stack:'s' }
+    ]
+  },
+  options: { plugins:{legend:{display:false}}, scales:{ x:{grid:{display:false},stacked:true,ticks:{font:{size:10}}}, y:{stacked:true,ticks:{font:{size:10}},max:100} } }
+});
+
+// Doughnut
+const doughCtx = document.getElementById('equipDoughnut').getContext('2d');
+new Chart(doughCtx, {
+  type: 'doughnut',
+  data: {
+    labels:['OOG Crane','Reach Stacker','Forklift','Terberg','Others'],
+    datasets:[{ data:[28,22,18,16,16], backgroundColor:['#0d1f3c','#1e3a6e','#2e7df7','#5a9bff','#b8ceff'], borderWidth:2, borderColor:'#fff' }]
+  },
+  options: { plugins:{legend:{position:'bottom', labels:{font:{size:10},boxWidth:12,padding:10}}}, cutout:'60%' }
+});
+
+// SHAP Rows
+const shapData = [
+  { label:'Thời gian neo tàu container (+4.2 t)', val:4.2 },
+  { label:'Tàu tàu (+4.2 t)', val:3.8 },
+  { label:'Thời gian neo tàu container (+4.2 t)', val:3.5 },
+  { label:'Giảm điện STS (-1.5 t)', val:-1.5 },
+  { label:'Thời gian neo to (-1.5 t)', val:2.8 },
+  { label:'Giảm điện neo tot (-1.5 t)', val:-1.2 },
+  { label:'Giảm điện STS (-1.5 t)', val:-1.0 },
+  { label:'Thời gian neo tàu container (+2.2 t)', val:1.8 },
+];
+const maxVal = Math.max(...shapData.map(d=>Math.abs(d.val)));
+const shapContainer = document.getElementById('shapRows');
+shapData.forEach(d => {
+  const pct = (Math.abs(d.val)/maxVal)*80;
+  const isPos = d.val > 0;
+  shapContainer.innerHTML += `
+    <div class="shap-row">
+      <div class="shap-label">${d.label}</div>
+      <div class="shap-bar-wrap">
+        ${isPos
+          ? `<div class="shap-bar pos" style="width:${pct}%"></div>`
+          : `<div class="shap-bar neg" style="width:${pct}%"></div>`
+        }
+      </div>
+    </div>`;
+});
+
+// Period buttons
+document.querySelectorAll('.period-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

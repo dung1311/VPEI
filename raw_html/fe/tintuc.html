@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tin tức & Sự kiện - SYNEK</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+        * { font-family: 'Roboto', sans-serif; }
+        .dropdown:hover .dropdown-menu { display: block; }
+        .news-card { transition: all 0.3s ease; overflow: hidden; }
+        .news-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+        .news-card img { transition: all 0.3s ease; }
+        .news-card:hover img { transform: scale(1.1); }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); }
+        .modal.show { display: flex; align-items: center; justify-content: center; }
+        .translate-active { color: #dc2626 !important; font-weight: bold; }
+        .category-badge { transition: all 0.3s ease; }
+        .category-badge:hover { transform: scale(1.05); }
+    </style>
+</head>
+<body class="bg-gray-50">
+    
+    <!-- Header (same as other pages) -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-4">
+            <div class="hidden md:flex items-center justify-between py-2 text-sm border-b border-gray-200">
+                <div class="flex items-center space-x-6 text-gray-600">
+                    <span><i class="fas fa-phone mr-2"></i>0936211299</span>
+                    <span><i class="fas fa-envelope mr-2"></i><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="10797e767f5063697e757b3e667e">[email&#160;protected]</a></span>
+                </div>
+                <div class="text-gray-600">CÔNG TY CỔ PHẦN SYNEK</div>
+            </div>
+            
+            <div class="flex items-center justify-between h-20">
+                <div class="flex-shrink-0">
+                    <a href="index.html" class="flex items-center">
+                        <img src="c:\Users\84976\Downloads\12.png" alt="SYNEK Logo" class="h-12">
+                    </a>
+                </div>
+                
+                <nav class="hidden lg:flex items-center space-x-8">
+                    <a href="index.html" class="text-gray-700 hover:text-blue-700 font-medium transition">Trang chủ</a>
+                    
+                    <div class="dropdown relative">
+                        <button class="text-blue-700 hover:text-blue-700 font-medium transition flex items-center">
+                            Về chúng tôi
+                        </button>
+                    </div>
+                    
+                    <div class="dropdown relative">
+                        <a href="giaiphap.html" class="text-gray-700 hover:text-blue-700 font-medium transition flex items-center">
+                            Giải pháp
+                        </a>
+                    </div>
+                    
+                    <div class="dropdown relative">
+                        <a href="dichvu.html" class="text-gray-700 hover:text-blue-700 font-medium transition flex items-center">
+                            Dịch vụ
+                        </a>
+                        
+                    </div>
+                    
+                    <div class="dropdown relative">
+                        <a href="tintuc.html" class="text-gray-700 hover:text-blue-700 font-medium transition flex items-center">
+                            Tin tức & Sự kiện
+                        </a>
+                    </div>
+                    
+                    <button onclick="openContactModal()" class="text-gray-700 hover:text-blue-700 font-medium transition">Liên hệ</button>
+                </nav>
+                
+                
+                <div class="hidden lg:flex items-center space-x-4">
+                    <button onclick="toggleSearch()" class="text-gray-700 hover:text-blue-700 transition">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <button id="lang-vi" onclick="changeLang('vi')" class="translate-active text-sm">VN</button>
+                        <span class="text-gray-400">|</span>
+                        <button id="lang-en" onclick="changeLang('en')" class="text-gray-500 text-sm">ENG</button>
+                    </div>
+                    <button onclick="openLoginModal()" class="bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded-lg transition">
+                        <i class="fas fa-user mr-2"></i>Đăng nhập
+                    </button>
+                </div>
+                
+                <button onclick="toggleMobileMenu()" class="lg:hidden text-gray-700 hover:text-blue-700">
+                    <i class="fas fa-bars text-2xl"></i>
+                </button>
+            </div>
+            
+            <div id="searchBar" class="hidden py-3 border-t border-gray-200">
+                <div class="flex items-center space-x-2">
+                    <input type="text" placeholder="Tìm kiếm tin tức..." class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
+                    <button onclick="performSearch()" class="bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded-lg transition">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="mobileMenu" class="hidden lg:hidden bg-white border-t border-gray-200">
+            <div class="container mx-auto px-4 py-4">
+                <nav class="flex flex-col space-y-3">
+                    <a href="index.html" class="text-gray-700 hover:text-blue-700 py-2">Trang chủ</a>
+                    <a href="chungtoi.html" class="text-gray-700 hover:text-blue-700 py-2">Về chúng tôi</a>
+                    <a href="giaiphap.html" class="text-gray-700 hover:text-blue-700 py-2">Giải pháp</a>
+                    <a href="dichvu.html" class="text-gray-700 hover:text-blue-700 py-2">Dịch vụ</a>
+                    <a href="tintuc.html" class="text-blue-700 py-2 font-medium">Tin tức & Sự kiện</a>
+                    <a href="lienhe.html" class="text-gray-700 hover:text-blue-700 py-2">Liên hệ</a>
+                    <button onclick="openLoginModal()" class="bg-blue-700 text-white px-4 py-2 rounded-lg text-left">Đăng nhập</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="relative bg-blue-900 text-white py-16" style="background: linear-gradient(rgba(30,64,175,0.8), rgba(30,64,175,0.8)), url('https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1200'); background-size: cover; background-position: center;">
+        <div class="container mx-auto px-4">
+            <div class="max-w-3xl">
+                <h1 class="text-5xl font-bold mb-4">Tin tức & Sự kiện</h1>
+                <p class="text-xl">Cập nhật tin tức mới nhất về logistics, vận tải và các sự kiện của SYNEK</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Category Filter -->
+    <section class="py-8 bg-white shadow-sm">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-wrap gap-3 justify-center">
+                <button onclick="filterNews('all')" class="category-badge bg-blue-700 text-white px-6 py-2 rounded-full font-medium">
+                    <i class="fas fa-th mr-2"></i>Tất cả
+                </button>
+                <button onclick="filterNews('tuyen-dung')" class="category-badge bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-2 rounded-full font-medium">
+                    <i class="fas fa-user-tie mr-2"></i>Tuyển dụng
+                </button>
+                <button onclick="filterNews('nganh-nghe')" class="category-badge bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-2 rounded-full font-medium">
+                    <i class="fas fa-industry mr-2"></i>Ngành nghề
+                </button>
+                <button onclick="filterNews('su-kien')" class="category-badge bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-2 rounded-full font-medium">
+                    <i class="fas fa-calendar-alt mr-2"></i>Sự kiện
+                </button>
+                <button onclick="filterNews('tin-tuc')" class="category-badge bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-2 rounded-full font-medium">
+                    <i class="fas fa-newspaper mr-2"></i>Tin tức
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured News -->
+    <section class="py-12 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-gray-900 mb-8">Tin nổi bật</h2>
+            <div class="grid md:grid-cols-2 gap-8 mb-12">
+                <div class="news-card bg-white rounded-2xl shadow-lg overflow-hidden" data-category="tuyen-dung">
+                    <div class="relative h-80 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800" alt="Tuyển dụng" class="w-full h-full object-cover">
+                        <div class="absolute top-4 left-4">
+                            <span class="bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium">
+                                <i class="fas fa-fire mr-2"></i>Hot
+                            </span>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex items-center space-x-4 mb-3 text-sm text-gray-500">
+                            <span><i class="fas fa-calendar-alt mr-2"></i>29/12/2025</span>
+                            <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full">Tuyển dụng</span>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-3 hover:text-blue-700 transition">
+                            <a href="#">TUYỂN CHUYÊN VIÊN GIÁ (PRICING SUPERVISOR)</a>
+                        </h3>
+                        <p class="text-gray-600 mb-4">SYNEK đang tìm kiếm chuyên viên giá có kinh nghiệm để gia nhập đội ngũ. Mức lương hấp dẫn, môi trường chuyên nghiệp...</p>
+                        <a href="#" class="text-blue-700 hover:text-blue-800 font-medium inline-flex items-center">
+                            Xem chi tiết <i class="fas fa-arrow-right ml-2"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="news-card bg-white rounded-2xl shadow-lg overflow-hidden" data-category="nganh-nghe">
+                    <div class="relative h-80 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800" alt="Vietnam Airlines" class="w-full h-full object-cover">
+                        <div class="absolute top-4 left-4">
+                            <span class="bg-green-600 text-white px-4 py-2 rounded-full text-sm font-medium">
+                                <i class="fas fa-star mr-2"></i>Nổi bật
+                            </span>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex items-center space-x-4 mb-3 text-sm text-gray-500">
+                            <span><i class="fas fa-calendar-alt mr-2"></i>26/12/2025</span>
+                            <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full">Ngành nghề</span>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-3 hover:text-blue-700 transition">
+                            <a href="#">SYNEK GIÀNH HỢP ĐỒNG DỊCH VỤ MẶT ĐẤT VỚI VIETNAM AIRLINES</a>
+                        </h3>
+                        <p class="text-gray-600 mb-4">Đánh dấu cột mốc quan trọng trong sự phát triển, SYNEK chính thức trở thành đối tác chiến lược của Vietnam Airlines...</p>
+                        <a href="#" class="text-blue-700 hover:text-blue-800 font-medium inline-flex items-center">
+                            Xem chi tiết <i class="fas fa-arrow-right ml-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- News Grid -->
+            <h2 class="text-3xl font-bold text-gray-900 mb-8">Tin tức khác</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="news-card bg-white rounded-2xl shadow-lg overflow-hidden" data-category="nganh-nghe">
+                    <div class="relative h-56 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1494412519320-aa613dfb7738?w=600" alt="Maersk" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6">
+                        <div class="flex items-center space-x-4 mb-3 text-sm text-gray-500">
+                            <span><i class="fas fa-calendar-alt mr-2"></i>11/11/2025</span>
+                            <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs">Ngành nghề</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-3 hover:text-blue-700 transition">
+                            <a href="#">Hapag-Lloyd đặt tên cho con tàu cuối cùng trong loạt tàu 24.000 TEU</a>
+                        </h3>
+                        <p class="text-gray-600 mb-4 text-sm">Hãng tàu container lớn thứ 5 thế giới hoàn thiện đội tàu hiện đại với dòng tàu siêu lớn mới nhất...</p>
+                        <a href="#" class="text-blue-700 hover:text-blue-800 font-medium inline-flex items-center text-sm">
+                            Đọc thêm <i class="fas fa-arrow-right ml-2"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="news-card bg-white rounded-2xl shadow-lg overflow-hidden" data-category="nganh-nghe">
+                    <div class="relative h-56 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1464037866556-6812c9d1c72e?w=600" alt="Maersk" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6">
+                        <div class="flex items-center space-x-4 mb-3 text-sm text-gray-500">
+                            <span><i class="fas fa-calendar-alt mr-2"></i>04/02/2026</span>
+                            <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs">Ngành nghề</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-3 hover:text-blue-700 transition">
+                            <a href="#">MAERSK KÍCH HOẠT LỚP TÀU CỠ TRUNG THẾ HỆ MỚI</a>
+                        </h3>
+                        <p class="text-gray-600 mb-4 text-sm">Maersk công bố đưa vào hoạt động 20 tàu container cỡ trung mới với công nghệ xanh tiên tiến...</p>
+                        <a href="#" class="text-blue-700 hover:text-blue-800 font-medium inline-flex items-center text-sm">
+                            Đọc thêm <i class="fas fa-arrow-right ml-2"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="news-card bg-white rounded-2xl shadow-lg overflow-hidden" data-category="nganh-nghe">
+                    <div class="relative h-56 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=600" alt="United Airlines" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6">
+                        <div class="flex items-center space-x-4 mb-3 text-sm text-gray-500">
+                            <span><i class="fas fa-calendar-alt mr-2"></i>29/10/2025</span>
+                            <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs">Ngành nghề</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-3 hover:text-blue-700 transition">
+                            <a href="#">UNITED AIRLINES TRỞ LẠI VIỆT NAM - TĂNG CƯỜNG KẾT NỐI LOGISTICS</a>
+                        </h3>
+                        <p class="text-gray-600 mb-4 text-sm">Chuyến bay đầu tiên của United Airlines sau 3 năm đánh dấu cơ hội mới cho ngành logistics Việt Nam...</p>
+                        <a href="#" class="text-blue-700 hover:text-blue-800 font-medium inline-flex items-center text-sm">
+                            Đọc thêm <i class="fas fa-arrow-right ml-2"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="news-card bg-white rounded-2xl shadow-lg overflow-hidden" data-category="su-kien">
+                    <div class="relative h-56 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1511578314322-379afb476865?w=600" alt="Hội nghị" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6">
+                        <div class="flex items-center space-x-4 mb-3 text-sm text-gray-500">
+                            <span><i class="fas fa-calendar-alt mr-2"></i>15/01/2026</span>
+                            <span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs">Sự kiện</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-3 hover:text-blue-700 transition">
+                            <a href="#">HỘI NGHỊ KHÁCH HÀNG THƯỜNG NIÊN 2026</a>
+                        </h3>
+                        <p class="text-gray-600 mb-4 text-sm">SYNEK tổ chức hội nghị khách hàng với chủ đề "Đổi mới cùng phát triển" tại TP.HCM...</p>
+                        <a href="#" class="text-blue-700 hover:text-blue-800 font-medium inline-flex items-center text-sm">
+                            Đọc thêm <i class="fas fa-arrow-right ml-2"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="news-card bg-white rounded-2xl shadow-lg overflow-hidden" data-category="tin-tuc">
+                    <div class="relative h-56 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1553413077-190dd305871c?w=600" alt="Kho mới" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6">
+                        <div class="flex items-center space-x-4 mb-3 text-sm text-gray-500">
+                            <span><i class="fas fa-calendar-alt mr-2"></i>20/12/2025</span>
+                            <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs">Tin tức</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-3 hover:text-blue-700 transition">
+                            <a href="#">KHAI TRƯƠNG KHO LOGISTICS MỚI TẠI BÌNH DƯƠNG</a>
+                        </h3>
+                        <p class="text-gray-600 mb-4 text-sm">Kho logistics hiện đại với diện tích 50.000m2 chính thức đi vào hoạt động, nâng tổng công suất...</p>
+                        <a href="#" class="text-blue-700 hover:text-blue-800 font-medium inline-flex items-center text-sm">
+                            Đọc thêm <i class="fas fa-arrow-right ml-2"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="news-card bg-white rounded-2xl shadow-lg overflow-hidden" data-category="tuyen-dung">
+                    <div class="relative h-56 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1521791136064-7986c2920216?w=600" alt="Tuyển dụng" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6">
+                        <div class="flex items-center space-x-4 mb-3 text-sm text-gray-500">
+                            <span><i class="fas fa-calendar-alt mr-2"></i>05/01/2026</span>
+                            <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs">Tuyển dụng</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-3 hover:text-blue-700 transition">
+                            <a href="#">TUYỂN DỤNG QUẢN LÝ KHO VẬN</a>
+                        </h3>
+                        <p class="text-gray-600 mb-4 text-sm">Cơ hội phát triển sự nghiệp trong môi trường chuyên nghiệp, năng động với các chế độ đãi ngộ hấp dẫn...</p>
+                        <a href="#" class="text-blue-700 hover:text-blue-800 font-medium inline-flex items-center text-sm">
+                            Đọc thêm <i class="fas fa-arrow-right ml-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="flex justify-center mt-12">
+                <nav class="flex items-center space-x-2">
+                    <button class="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300 transition">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="px-4 py-2 bg-blue-700 text-white rounded-lg">1</button>
+                    <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">2</button>
+                    <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">3</button>
+                    <button class="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300 transition">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </section>
+
+    <!-- Newsletter -->
+    <section class="py-16 bg-blue-900 text-white">
+        <div class="container mx-auto px-4">
+            <div class="max-w-3xl mx-auto text-center">
+                <i class="fas fa-envelope text-5xl mb-6"></i>
+                <h2 class="text-3xl font-bold mb-4">Đăng ký nhận tin tức</h2>
+                <p class="text-xl text-blue-100 mb-8">Cập nhật những tin tức mới nhất về logistics và vận tải</p>
+                <form class="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+                    <input type="email" placeholder="Nhập email của bạn" class="flex-1 px-6 py-3 rounded-lg text-gray-900 focus:outline-none">
+                    <button type="submit" class="bg-red-600 hover:bg-red-700 px-8 py-3 rounded-lg font-medium transition">
+                        Đăng ký
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer (same as index) -->
+    <footer class="bg-gray-900 text-white pt-16 pb-8">
+        <div class="container mx-auto px-4">
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+                <div>
+                    <img src="c:\Users\84976\Downloads\12.png" alt="SYNEK" class="h-12 mb-6 brightness-0 invert">
+                    <p class="text-gray-400 mb-6">Giải pháp Logistics Toàn Diện, Vận Chuyển Toàn Cầu</p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="w-10 h-10 bg-gray-800 hover:bg-blue-600 rounded-full flex items-center justify-center transition"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="w-10 h-10 bg-gray-800 hover:bg-blue-400 rounded-full flex items-center justify-center transition"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="w-10 h-10 bg-gray-800 hover:bg-red-600 rounded-full flex items-center justify-center transition"><i class="fab fa-youtube"></i></a>
+                        <a href="#" class="w-10 h-10 bg-gray-800 hover:bg-pink-600 rounded-full flex items-center justify-center transition"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-6">Dịch vụ</h4>
+                    <ul class="space-y-3">
+                        <li><a href="dichvu.html#hang-khong" class="text-gray-400 hover:text-white transition">Vận chuyển hàng không</a></li>
+                        <li><a href="dichvu.html#duong-bien" class="text-gray-400 hover:text-white transition">Vận tải đường biển</a></li>
+                        <li><a href="dichvu.html#duong-bo" class="text-gray-400 hover:text-white transition">Vận tải đường bộ</a></li>
+                        <li><a href="dichvu.html#hai-quan" class="text-gray-400 hover:text-white transition">Môi giới hải quan</a></li>
+                        <li><a href="dichvu.html#kho-bai" class="text-gray-400 hover:text-white transition">Kho bãi & Phân phối</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-6">Công ty</h4>
+                    <ul class="space-y-3">
+                        <li><a href="chungtoi.html" class="text-gray-400 hover:text-white transition">Về chúng tôi</a></li>
+                        <li><a href="giaiphap.html" class="text-gray-400 hover:text-white transition">Giải pháp</a></li>
+                        <li><a href="tintuc.html" class="text-gray-400 hover:text-white transition">Tin tức & Sự kiện</a></li>
+                        <li><a href="lienhe.html" class="text-gray-400 hover:text-white transition">Liên hệ</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-6">Liên hệ</h4>
+                    <ul class="space-y-3 text-gray-400">
+                        <li class="flex items-start"><i class="fas fa-map-marker-alt mt-1 mr-3 text-blue-500"></i><span>2B Phan Thúc Duyện, P. Tân Sơn Nhất, TP.HCM</span></li>
+                        <li class="flex items-center"><i class="fas fa-phone mr-3 text-blue-500"></i><span>0936211299</span></li>
+                        <li class="flex items-center"><i class="fas fa-envelope mr-3 text-blue-500"></i><span><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="acc5c2cac3ecdfd5c2c9c782dac2">[email&#160;protected]</a></span></li>
+                        <li class="flex items-center"><i class="fas fa-globe mr-3 text-blue-500"></i><span>www.synek.vn</span></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 pt-8 text-center text-gray-400">
+                <p>&copy; 2025 CÔNG TY CỔ PHẦN SYNEK. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modals (same as other pages) -->
+    <div id="contactModal" class="modal">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-blue-900">Liên hệ tư vấn</h3>
+                <button onclick="closeContactModal()" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times text-2xl"></i></button>
+            </div>
+            <form onsubmit="submitContact(event)">
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Họ và tên *</label>
+                    <input type="text" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="Nguyễn Văn A">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Số điện thoại *</label>
+                    <input type="tel" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="0912345678">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Email</label>
+                    <input type="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="example@email.com">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 font-medium mb-2">Nội dung</label>
+                    <textarea rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="Vui lòng để lại nội dung..."></textarea>
+                </div>
+                <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 rounded-lg transition">Gửi yêu cầu</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="loginModal" class="modal">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-blue-900">Đăng nhập</h3>
+                <button onclick="closeLoginModal()" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times text-2xl"></i></button>
+            </div>
+            <form onsubmit="submitLogin(event)">
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Email hoặc Tên đăng nhập *</label>
+                    <input type="text" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="example@email.com">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Mật khẩu *</label>
+                    <input type="password" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="••••••••">
+                </div>
+                <div class="flex items-center justify-between mb-6">
+                    <label class="flex items-center"><input type="checkbox" class="mr-2"><span class="text-sm text-gray-600">Ghi nhớ đăng nhập</span></label>
+                    <a href="#" class="text-sm text-blue-700 hover:underline">Quên mật khẩu?</a>
+                </div>
+                <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 rounded-lg transition">Đăng nhập</button>
+                <div class="text-center mt-4">
+                    <span class="text-gray-600">Chưa có tài khoản? </span>
+                    <button type="button" onclick="switchToRegister()" class="text-blue-700 hover:underline font-medium">Đăng ký ngay</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="registerModal" class="modal">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-blue-900">Đăng ký tài khoản</h3>
+                <button onclick="closeRegisterModal()" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times text-2xl"></i></button>
+            </div>
+            <form onsubmit="submitRegister(event)">
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Họ và tên *</label>
+                    <input type="text" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="Nguyễn Văn A">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Email *</label>
+                    <input type="email" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="example@email.com">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Số điện thoại *</label>
+                    <input type="tel" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="0912345678">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Mật khẩu *</label>
+                    <input type="password" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="••••••••">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 font-medium mb-2">Xác nhận mật khẩu *</label>
+                    <input type="password" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="••••••••">
+                </div>
+                <div class="mb-6">
+                    <label class="flex items-center">
+                        <input type="checkbox" required class="mr-2">
+                        <span class="text-sm text-gray-600">Tôi đồng ý với <a href="#" class="text-blue-700 hover:underline">Điều khoản dịch vụ</a> và <a href="#" class="text-blue-700 hover:underline">Chính sách bảo mật</a></span>
+                    </label>
+                </div>
+                <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 rounded-lg transition">Đăng ký</button>
+                <div class="text-center mt-4">
+                    <span class="text-gray-600">Đã có tài khoản? </span>
+                    <button type="button" onclick="switchToLogin()" class="text-blue-700 hover:underline font-medium">Đăng nhập ngay</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Floating Contact -->
+    <div class="fixed bottom-6 right-6 flex flex-col space-y-3 z-40">
+        <a href="tel:0936211299" class="bg-blue-600 hover:bg-blue-700 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition">
+            <i class="fas fa-phone text-xl"></i>
+        </a>
+        <a href="https://zalo.me/0936211299" target="_blank" class="bg-blue-500 hover:bg-blue-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition">
+            <i class="fas fa-comments text-xl"></i>
+        </a>
+    </div>
+
+    <button id="backToTop" onclick="scrollToTop()" class="fixed bottom-6 left-6 bg-gray-800 hover:bg-gray-900 text-white w-12 h-12 rounded-full items-center justify-center shadow-lg transition hidden z-40">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+        function openContactModal() { document.getElementById('contactModal').classList.add('show'); }
+        function closeContactModal() { document.getElementById('contactModal').classList.remove('show'); }
+        function openLoginModal() { document.getElementById('loginModal').classList.add('show'); }
+        function closeLoginModal() { document.getElementById('loginModal').classList.remove('show'); }
+        function openRegisterModal() { document.getElementById('registerModal').classList.add('show'); }
+        function closeRegisterModal() { document.getElementById('registerModal').classList.remove('show'); }
+        function switchToRegister() { closeLoginModal(); openRegisterModal(); }
+        function switchToLogin() { closeRegisterModal(); openLoginModal(); }
+        function submitContact(e) { e.preventDefault(); alert('Cảm ơn bạn đã liên hệ!'); closeContactModal(); }
+        function submitLogin(e) { e.preventDefault(); alert('Đăng nhập thành công!'); closeLoginModal(); }
+        function submitRegister(e) { e.preventDefault(); alert('Đăng ký thành công!'); closeRegisterModal(); }
+        window.onclick = function(e) { if (e.target.classList.contains('modal')) e.target.classList.remove('show'); }
+        function toggleSearch() { document.getElementById('searchBar').classList.toggle('hidden'); }
+        function performSearch() { alert('Chức năng tìm kiếm đang được phát triển!'); }
+        function toggleMobileMenu() { document.getElementById('mobileMenu').classList.toggle('hidden'); }
+        function changeLang(lang) {
+            document.querySelectorAll('[id^="lang-"]').forEach(btn => btn.classList.remove('translate-active'));
+            document.getElementById('lang-' + lang).classList.add('translate-active');
+            if (lang === 'en') alert('English version is under development!');
+        }
+        function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        window.addEventListener('scroll', function() {
+            const backToTop = document.getElementById('backToTop');
+            backToTop.style.display = window.pageYOffset > 300 ? 'flex' : 'none';
+        });
+        
+        function filterNews(category) {
+            const cards = document.querySelectorAll('.news-card');
+            const badges = document.querySelectorAll('.category-badge');
+            
+            badges.forEach(badge => {
+                badge.classList.remove('bg-blue-700', 'text-white');
+                badge.classList.add('bg-gray-200', 'text-gray-700');
+            });
+            event.target.classList.remove('bg-gray-200', 'text-gray-700');
+            event.target.classList.add('bg-blue-700', 't

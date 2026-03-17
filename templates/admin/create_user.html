@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Admin – Tạo tài khoản mới{% endblock %}
+
+{% block extra_head %}
+<style>
+  .form-card-wrap{max-width:560px;margin:48px auto;padding:0 24px;}
+  .form-card{background:white;border-radius:16px;padding:36px;box-shadow:0 4px 20px rgba(13,31,60,.08);}
+  .card-title{font-family:'Sora',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:6px;}
+  .card-sub{font-size:.875rem;color:var(--text-muted);margin-bottom:28px;}
+  .toggle-group{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--gray-border);border-radius:9px;background:var(--gray-soft);cursor:pointer;transition:border-color .2s;}
+  .toggle-group:has(input:checked){border-color:var(--accent);background:#f0f6ff;}
+  .toggle-group input[type="checkbox"]{accent-color:var(--accent);width:16px;height:16px;cursor:pointer;}
+  .toggle-label{font-size:.875rem;font-weight:500;}
+  .toggle-desc{font-size:.78rem;color:var(--text-muted);margin-top:1px;}
+  .btn-row{display:flex;gap:10px;margin-top:8px;}
+  .btn-row .btn{flex:1;justify-content:center;}
+  .error-msg{background:var(--danger-light);border:1px solid #feb2b2;border-radius:9px;padding:10px 14px;color:var(--danger);font-size:.85rem;margin-bottom:20px;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-card-wrap">
+  <div class="form-card">
+    <div class="card-title">Tạo tài khoản mới</div>
+    <div class="card-sub">Điền thông tin để tạo tài khoản người dùng mới trong hệ thống.</div>
+
+    {% if error %}<div class="error-msg">⚠ {{ error }}</div>{% endif %}
+
+    <form method="POST" action="/admin/create">
+      <div class="form-group">
+        <label class="field-label">Username <span class="required">*</span></label>
+        <input type="text" name="username" placeholder="vd: nguyenvana" required pattern="[a-zA-Z0-9_]+">
+        <div class="field-hint">Chỉ dùng chữ cái, số và dấu gạch dưới (_). Không thể thay đổi sau khi tạo.</div>
+      </div>
+      <div class="form-group">
+        <label class="field-label">Email <span class="required">*</span></label>
+        <input type="email" name="email" placeholder="vd: nguyenvana@company.com" required>
+      </div>
+      <div class="form-group">
+        <label class="field-label">Họ và tên</label>
+        <input type="text" name="full_name" placeholder="vd: Nguyễn Văn A">
+      </div>
+      <hr class="divider">
+      <div class="form-group">
+        <label class="field-label">Mật khẩu <span class="required">*</span></label>
+        <input type="password" name="password" placeholder="Tối thiểu 8 ký tự" minlength="8" required>
+        <div class="field-hint">Người dùng nên đổi mật khẩu sau khi đăng nhập lần đầu.</div>
+      </div>
+      <div class="form-group">
+        <label class="field-label">Phân quyền</label>
+        <label class="toggle-group">
+          <input type="checkbox" name="is_admin" value="true">
+          <div>
+            <div class="toggle-label">Cấp quyền Admin</div>
+            <div class="toggle-desc">Admin có thể truy cập trang quản trị và quản lý tài khoản khác</div>
+          </div>
+        </label>
+      </div>
+      <div class="btn-row">
+        <a href="/admin" class="btn btn-secondary">Huỷ</a>
+        <button type="submit" class="btn btn-primary">Tạo tài khoản</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

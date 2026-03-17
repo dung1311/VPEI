@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Admin – Quản lý tài khoản{% endblock %}
+
+{% block extra_head %}
+<style>
+  .stats{display:flex;gap:16px;margin-bottom:24px;}
+  .stat-card{background:white;border-radius:12px;padding:16px 22px;box-shadow:0 2px 8px rgba(13,31,60,.06);flex:1;}
+  .stat-label{font-size:.78rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
+  .stat-value{font-family:'Sora',sans-serif;font-size:1.75rem;font-weight:800;color:var(--navy);margin-top:2px;}
+  .avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--navy-light),var(--accent));display:inline-flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:.85rem;margin-right:10px;flex-shrink:0;}
+  .user-cell{display:flex;align-items:center;}
+  .user-info .name{font-weight:600;font-size:.9rem;}
+  .user-info .uname{font-size:.78rem;color:var(--text-muted);}
+  .actions{display:flex;gap:6px;flex-wrap:wrap;}
+  .empty-state{text-align:center;padding:60px 20px;color:var(--text-muted);font-size:.95rem;}
+  .empty-state .icon{font-size:2.5rem;margin-bottom:12px;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Quản lý tài khoản</div>
+      <div class="page-subtitle">Tạo, xóa và cấp lại mật khẩu cho người dùng</div>
+    </div>
+    <a href="/admin/create" class="btn btn-primary">＋ Tạo tài khoản mới</a>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-card"><div class="stat-label">Tổng tài khoản</div><div class="stat-value">{{ users | length }}</div></div>
+    <div class="stat-card"><div class="stat-label">Admin</div><div class="stat-value">{{ users | selectattr('is_admin') | list | length }}</div></div>
+    <div class="stat-card"><div class="stat-label">Hoạt động</div><div class="stat-value">{{ users | selectattr('is_active') | list | length }}</div></div>
+    <div class="stat-card"><div class="stat-label">Bị khoá</div><div class="stat-value">{{ users | rejectattr('is_active') | list | length }}</div></div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Người dùng</th><th>Email</th><th>Vai trò</th>
+          <th>Trạng thái</th><th>Đăng nhập lần cuối</th><th>Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if users %}
+          {% for u in users %}
+          <tr>
+            <td style="color:var(--text-muted);font-size:.8rem">{{ u.id }}</td>
+            <td>
+              <div class="user-cell">
+                <div class="avatar">{{ u.username[0] | upper }}</div>
+                <div class="user-info">
+                  <div class="name">{{ u.full_name or u.username }}</div>
+                  <div class="uname">@{{ u.username }}</div>
+                </div>
+              </div>
+            </td>
+            <td style="color:var(--text-muted)">{{ u.email }}</td>
+            <td>
+              {% if u.is_admin %}<span class="badge badge-admin">Admin</span>
+              {% else %}<span class="badge badge-user">User</span>{% endif %}
+            </td>
+            <td>
+              {% if u.is_active %}<span class="badge badge-active">Hoạt động</span>
+              {% else %}<span class="badge badge-inactive">Bị khoá</span>{% endif %}
+            </td>
+            <td style="font-size:.82rem;color:var(--text-muted)">
+              {% if u.last_login %}{{ u.last_login.strftime('%d/%m/%Y %H:%M') }}
+              {% else %}Chưa đăng nhập{% endif %}
+            </td>
+            <td>
+              <div class="actions">
+                {% if u.username != super_admin_username or is_super_admin %}
+                <a href="/admin/reset/{{ u.id }}" class="btn btn-sm btn-warning">🔑 Reset PW</a>
+                {% endif %}
+
+                {% set can_toggle = (u.username != admin.sub and u.username != super_admin_username and (not u.is_admin or is_super_admin)) %}
+                {% if can_toggle %}
+                <form method="POST" action="/admin/toggle/{{ u.id }}" style="display:inline">
+                  {% if u.is_active %}
+                    <button type="submit" class="btn btn-sm btn-secondary" onclick="return confirm('Khoá tài khoản @{{ u.username }}?')">🔒 Khoá</button>
+                  {% else %}
+                    <button type="submit" class="btn btn-sm btn-secondary">🔓 Mở khoá</button>
+                  {% endif %}
+                </form>
+                {% endif %}
+
+                {% set can_delete = (u.username != admin.sub and u.username != super_admin_username and (not u.is_admin or is_super_admin)) %}
+                {% if can_delete %}
+                <form method="POST" action="/admin/delete/{{ u.id }}" style="display:inline">
+                  <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Xóa @{{ u.username }}? Không thể hoàn tác.')">🗑 Xoá</button>
+                </form>
+                {% endif %}
+
+                {% if u.username == super_admin_username %}
+                  <span style="font-size:.75rem;color:var(--text-muted);padding:5px 8px">🛡 Super Admin</span>
+                {% elif u.is_admin and not is_super_admin and u.username != admin.sub %}
+                  <span style="font-size:.75rem;color:var(--text-muted);padding:5px 8px" title="Chỉ Super Admin mới có thể thao tác">🔐 Protected</span>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="7"><div class="empty-state"><div class="icon">👤</div>Chưa có tài khoản nào.</div></td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

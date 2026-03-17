@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VPEI – Scope 1: Direct Emissions</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0d1f3c; --navy-mid: #152850; --navy-light: #1e3a6e;
+    --accent: #2e7df7; --accent-light: #5a9bff;
+    --white: #ffffff; --gray-soft: #f4f6fb; --gray-border: #dde3ef;
+    --text-muted: #7a8aab; --green: #22c55e; --red: #ef4444;
+  }
+  * { margin:0;padding:0;box-sizing:border-box; }
+  body { font-family:'DM Sans',sans-serif; background:var(--gray-soft); color:var(--navy); display:flex; height:100vh; overflow:hidden; }
+
+  /* SIDEBAR */
+  .sidebar { width:220px; background:var(--white); border-right:1px solid var(--gray-border); display:flex; flex-direction:column; flex-shrink:0; overflow-y:auto; }
+  .sidebar-logo { padding:20px 24px; border-bottom:1px solid var(--gray-border); display:flex; align-items:center; gap:10px; }
+  .logo-box { background:linear-gradient(135deg,var(--navy),var(--navy-light)); border-radius:10px; padding:7px 12px; font-family:'Sora',sans-serif; font-weight:800; font-size:1.1rem; color:white; }
+  .nav-items { padding:16px 0; flex:1; }
+  .nav-item { display:flex; align-items:center; gap:12px; padding:10px 20px; cursor:pointer; font-size:0.88rem; font-weight:500; color:#4a5a7b; transition:all 0.2s; text-decoration:none; border-left:3px solid transparent; }
+  .nav-item:hover { background:var(--gray-soft); color:var(--navy); }
+  .nav-item.active { background:rgba(46,125,247,0.08); color:var(--accent); border-left-color:var(--accent); font-weight:600; }
+  .nav-item.sub { padding-left:36px; font-size:0.83rem; }
+  .nav-item.sub.active { background:rgba(46,125,247,0.06); color:var(--accent); }
+  .nav-section { padding:6px 20px 4px; font-size:0.72rem; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; }
+  .nav-expand { font-size:0.7rem; margin-left:auto; }
+  .nav-bottom { padding:16px 0; border-top:1px solid var(--gray-border); }
+
+  /* MAIN */
+  .main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+  .topbar { background:var(--white); border-bottom:1px solid var(--gray-border); padding:0 28px; height:60px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+  .topbar-title { font-family:'Sora',sans-serif; font-weight:800; font-size:1.2rem; color:var(--navy); }
+  .topbar-right { display:flex; align-items:center; gap:10px; }
+  .select-pill { padding:6px 14px; border-radius:8px; border:1.5px solid var(--gray-border); font-size:0.83rem; font-weight:600; color:var(--navy); background:white; cursor:pointer; }
+  .badge-open { padding:5px 14px; border-radius:20px; background:#dcfce7; color:#16a34a; font-size:0.8rem; font-weight:600; }
+
+  .content { flex:1; overflow-y:auto; padding:24px 28px; }
+
+  /* KPI */
+  .kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:20px; }
+  .kpi-card { background:white; border-radius:14px; padding:18px 22px; border:1px solid var(--gray-border); }
+  .kpi-label { font-size:0.78rem; color:var(--text-muted); font-weight:500; margin-bottom:6px; }
+  .kpi-value { font-family:'Sora',sans-serif; font-size:1.6rem; font-weight:800; color:var(--navy); }
+  .kpi-value.red { color:var(--red); font-size:1.3rem; }
+  .kpi-unit { font-size:0.8rem; font-weight:500; color:var(--text-muted); }
+
+  /* CHARTS */
+  .charts-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+  .chart-card { background:white; border-radius:14px; padding:20px; border:1px solid var(--gray-border); }
+  .chart-title { font-size:0.88rem; font-weight:600; color:var(--navy); margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; }
+  .toggle-btn { display:flex; gap:4px; }
+  .tbtn { padding:4px 10px; border-radius:6px; font-size:0.75rem; cursor:pointer; border:1px solid var(--gray-border); background:white; color:#4a5a7b; }
+  .tbtn.active { background:var(--navy); color:white; border-color:var(--navy); }
+
+  /* TABLE */
+  .table-card { background:white; border-radius:14px; border:1px solid var(--gray-border); overflow:hidden; }
+  .table-header { padding:14px 20px; display:flex; justify-content:flex-end; gap:10px; border-bottom:1px solid var(--gray-border); }
+  .export-btn { padding:7px 16px; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer; border:1.5px solid var(--gray-border); background:white; color:var(--navy); transition:all 0.2s; }
+  .export-btn:hover { border-color:var(--accent); color:var(--accent); }
+  table { width:100%; border-collapse:collapse; }
+  th { padding:11px 18px; text-align:left; font-size:0.8rem; font-weight:600; color:var(--text-muted); background:#fafbfd; border-bottom:1px solid var(--gray-border); }
+  td { padding:11px 18px; font-size:0.85rem; color:#2a3a6b; border-bottom:1px solid #f0f2f8; }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:#f8f9fd; }
+  .device-badge { display:inline-block; padding:3px 9px; border-radius:5px; background:rgba(46,125,247,0.1); color:var(--accent); font-weight:600; font-size:0.8rem; }
+
+    /*Nav*/
+    .nav-items { padding:16px 0; flex:1; }
+.nav-item { display:flex; align-items:center; gap:12px; padding:10px 20px; cursor:pointer; font-size:0.82rem; font-weight:500; color:#4a5a7b; transition:all 0.2s; text-decoration:none; border-left:3px solid transparent; }
+.nav-item:hover { background:var(--gray-soft); color:var(--navy); }
+.nav-item.active { background:rgba(46,125,247,0.08); color:var(--accent); border-left-color:var(--accent); font-weight:600; }
+.nav-item.sub { padding-left:36px; font-size:0.78rem; }
+.nav-item.sub.active { background:rgba(46,125,247,0.06); color:var(--accent); }
+.nav-section { padding:6px 20px 4px; font-size:0.68rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.1em; }
+.nav-expand { font-size:0.65rem; margin-left:auto; color:var(--text-muted); }
+.nav-bottom { padding:16px 0; border-top:1px solid var(--gray-border); }
+
+.submenu{
+  max-height:0;
+  overflow:hidden;
+  transition:max-height 0.3s ease;
+}
+
+.submenu.open{
+  max-height:100px;
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-logo"><div class="logo-box">VPEI</div></div>
+  <nav class="nav-items">
+    <div class="nav-section">Menu chính</div>
+    <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-pie" style="width:16px;color:var(--text-muted)"></i> Dashboard</a>
+    <div class="nav-item" onclick="toggleMenu('scope1Menu')">
+      <i class="fa-solid fa-industry" style="width:16px;color:var(--text-muted)"></i>
+      Scope 1
+      <i class="fa-solid fa-chevron-down nav-expand"></i>
+    </div>
+    
+    <div id="scope1Menu" class="submenu">
+      <a href="scope_01_emission_source.html" class="nav-item sub">
+        Quản lý nguồn phát thải
+      </a>
+    </div>
+    
+    
+    <div class="nav-item" onclick="toggleMenu('scope2Menu')">
+      <i class="fa-solid fa-bolt" style="width:16px;color:var(--text-muted)"></i>
+      Scope 2
+      <i class="fa-solid fa-chevron-down nav-expand"></i>
+    </div>
+    
+    <div id="scope2Menu" class="submenu">
+      <a href="scope_02Manager.html" class="nav-item sub">
+        Quản lý phát thải
+      </a>
+    </div>
+    <a href="scope_03.html" class="nav-item"><i class="fa-solid fa-ship" style="width:16px;color:var(--text-muted)"></i> Scope 3</a>
+    <div class="nav-section" style="margin-top:10px">Báo cáo</div>
+    <a href="reports.html" class="nav-item"><i class="fa-solid fa-file-lines" style="width:16px;color:var(--text-muted)"></i> Reports</a>
+  </nav>
+  <div class="nav-bottom">
+    <a href="settings.html" class="nav-item active"><i class="fa-solid fa-gear" style="width:16px;color:var(--accent)"></i> Settings</a>
+  </div>
+</div>
+
+<script>
+  function toggleMenu(id){
+  
+    const menu = document.getElementById(id);
+  
+    if(menu.classList.contains("open")){
+        menu.classList.remove("open");
+    }else{
+        menu.classList.add("open");
+    }
+  
+  }
+  </script>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title">Scope 1 – Direct Emissions</div>
+    <div class="topbar-right">
+      <select class="select-pill"><option>2026 ▾</option><option>2025</option></select>
+      <select class="select-pill"><option>Tháng 01 ▾</option><option>Tháng 02</option><option>Tháng 03</option></select>
+      <span class="badge-open">● Open</span>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- KPI -->
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Tổng nhiên liệu tiêu thụ</div>
+        <div class="kpi-value">145,000 <span class="kpi-unit">L</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Tổng phát thải CO₂e</div>
+        <div class="kpi-value">1,285 <span class="kpi-unit">tCO₂e</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Thiết bị phát thải cao nhất</div>
+        <div class="kpi-value" style="font-size:1.15rem;">RS-01 <span class="kpi-unit">(320 tCO₂e)</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">So với kỳ trước</div>
+        <div class="kpi-value red">▲ +6.5%</div>
+      </div>
+    </div>
+
+    <!-- CHARTS -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">Phát thải theo thiết bị</div>
+        <canvas id="deviceBar" height="180"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">
+          Xu hướng phát thải
+          <div class="toggle-btn">
+            <button class="tbtn">6 tháng</button>
+            <button class="tbtn active">12 tháng</button>
+          </div>
+        </div>
+        <canvas id="trendLine" height="180"></canvas>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-card">
+      <div class="table-header">
+        <button class="export-btn">[ Xuất Excel ]</button>
+        <button class="export-btn">[ Xuất PDF ]</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Thiết bị</th>
+            <th>Nhiên liệu</th>
+            <th>Tiêu thụ</th>
+            <th>CO₂e</th>
+            <th>Tỷ trọng %</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="device-badge">RS-01</span></td><td>Năv thụ</td><td>145,000 L</td><td>1,285 tCO₂e</td><td>12.08%</td></tr>
+          <tr><td><span class="device-badge">RS-02</span></td><td>Năv thụ</td><td>145,000 L</td><td>285 tCO₂e</td><td>10.00%</td></tr>
+          <tr><td><span class="device-badge">RS-03</span></td><td>Niêu thụ</td><td>85,000 L</td><td>285 tCO₂e</td><td>9.83%</td></tr>
+          <tr><td><span class="device-badge">RS-04</span></td><td>Năv thụ</td><td>72,000 L</td><td>242 tCO₂e</td><td>8.45%</td></tr>
+          <tr><td><span class="device-badge">RS-05</span></td><td>Năv thụ</td><td>58,000 L</td><td>196 tCO₂e</td><td>7.20%</td></tr>
+          <tr><td><span class="device-badge">RS-06</span></td><td>Năv thụ</td><td>48,000 L</td><td>162 tCO₂e</td><td>5.90%</td></tr>
+          <tr><td><span class="device-badge">RS-07</span></td><td>Năv thụ</td><td>42,000 L</td><td>141 tCO₂e</td><td>5.10%</td></tr>
+          <tr><td><span class="device-badge">RS-08</span></td><td>Năv thụ</td><td>30,000 L</td><td>98 tCO₂e</td><td>3.62%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// Device bar
+const dbCtx = document.getElementById('deviceBar').getContext('2d');
+new Chart(dbCtx, {
+  type:'bar',
+  data:{
+    labels:['RS-01','RS-02','RS-03','RS-04','RS-05','RS-06','RS-07','RS-08'],
+    datasets:[{ data:[215,152,148,128,105,80,70,42], backgroundColor:'#2e7df7', borderRadius:5, borderSkipped:false }]
+  },
+  options:{plugins:{legend:{display:false}}, scales:{x:{grid:{display:false},ticks:{font:{size:10}}}, y:{grid:{color:'#f0f0f0'},ticks:{font:{size:10}}}}}
+});
+
+// Trend line
+const tlCtx = document.getElementById('trendLine').getContext('2d');
+const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+new Chart(tlCtx,{
+  type:'line',
+  data:{
+    labels:months,
+    datasets:[{
+      data:[72,100,110,75,120,125,128,148,130,132,119,163],
+      borderColor:'#2e7df7', borderWidth:2, pointRadius:3,
+      backgroundColor:'rgba(46,125,247,0.08)', fill:true, tension:0.4,
+      pointBackgroundColor:'#2e7df7'
+    }]
+  },
+  options:{plugins:{legend:{display:false}}, scales:{x:{grid:{display:false},ticks:{font:{size:10}}}, y:{grid:{color:'#f0f0f0'},ticks:{font:{size:10}}}}}
+});
+
+// Toggle buttons
+document.querySelectorAll('.tbtn').forEach(btn=>{
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

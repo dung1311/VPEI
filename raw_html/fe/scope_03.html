@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VPEI – Scope 3: Indirect Emissions</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<style>
+:root {
+  --navy: #0d1f3c; --navy-mid: #152850; --navy-light: #1e3a6e;
+  --accent: #2e7df7; --accent-light: #5a9bff;
+  --white: #ffffff; --gray-soft: #f4f6fb; --gray-border: #dde3ef;
+  --text-muted: #7a8aab; --green: #22c55e; --red: #ef4444;
+  --teal: #0ea5e9; --amber: #f59e0b; --purple: #8b5cf6; --orange: #f97316;
+  --c1:#2e7df7; --c2:#0ea5e9; --c3:#22c55e; --c4:#f59e0b; --c5:#8b5cf6;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Montserrat',sans-serif; background:var(--gray-soft); color:var(--navy); display:flex; height:100vh; overflow:hidden; }
+
+/* ─── SIDEBAR ─── */
+.sidebar { width:220px; background:var(--white); border-right:1px solid var(--gray-border); display:flex; flex-direction:column; flex-shrink:0; overflow-y:auto; }
+.sidebar-logo { padding:20px 24px; border-bottom:1px solid var(--gray-border); display:flex; align-items:center; gap:10px; }
+.logo-box { background:linear-gradient(135deg,var(--navy),var(--navy-light)); border-radius:10px; padding:7px 12px; font-weight:800; font-size:1.1rem; color:white; letter-spacing:1px; }
+.nav-items { padding:16px 0; flex:1; }
+.nav-item { display:flex; align-items:center; gap:12px; padding:10px 20px; cursor:pointer; font-size:0.82rem; font-weight:500; color:#4a5a7b; transition:all 0.2s; text-decoration:none; border-left:3px solid transparent; }
+.nav-item:hover { background:var(--gray-soft); color:var(--navy); }
+.nav-item.active { background:rgba(46,125,247,0.08); color:var(--accent); border-left-color:var(--accent); font-weight:600; }
+.nav-section { padding:6px 20px 4px; font-size:0.68rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.1em; }
+.nav-bottom { padding:16px 0; border-top:1px solid var(--gray-border); }
+
+/* ─── MAIN ─── */
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+
+/* ─── TOPBAR ─── */
+.topbar { background:var(--white); border-bottom:1px solid var(--gray-border); padding:0 28px; height:60px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+.topbar-left { display:flex; flex-direction:column; gap:1px; }
+.topbar-title { font-weight:800; font-size:1.1rem; color:var(--navy); letter-spacing:.4px; }
+.topbar-sub { font-size:0.7rem; color:var(--text-muted); font-weight:500; }
+.topbar-right { display:flex; align-items:center; gap:8px; }
+.select-pill { padding:6px 12px; border-radius:8px; border:1.5px solid var(--gray-border); font-size:0.78rem; font-weight:600; color:var(--navy); background:white; cursor:pointer; font-family:'Montserrat',sans-serif; }
+.badge-status { padding:5px 13px; border-radius:20px; font-size:0.72rem; font-weight:700; cursor:pointer; border:none; font-family:'Montserrat',sans-serif; transition:all .2s; }
+.badge-draft     { background:#fef9c3; color:#a16207; }
+.badge-submitted { background:#dcfce7; color:#16a34a; }
+.badge-locked    { background:#fee2e2; color:#dc2626; }
+
+/* ─── SUB-NAV TABS ─── */
+.subnav { background:var(--white); border-bottom:1px solid var(--gray-border); padding:0 28px; display:flex; gap:0; flex-shrink:0; }
+.subnav-tab { padding:12px 18px; font-size:0.8rem; font-weight:600; color:var(--text-muted); cursor:pointer; border-bottom:2.5px solid transparent; display:flex; align-items:center; gap:7px; transition:all .2s; white-space:nowrap; }
+.subnav-tab:hover { color:var(--navy); }
+.subnav-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+
+/* ─── VEHICLE TABS ─── */
+.vehicle-tabs { display:flex; gap:6px; flex-wrap:wrap; }
+.vtab { padding:7px 16px; border-radius:25px; font-size:0.75rem; font-weight:700; cursor:pointer; border:2px solid var(--gray-border); background:white; color:#4a5a7b; transition:all .2s; font-family:'Montserrat',sans-serif; display:flex; align-items:center; gap:7px; }
+.vtab:hover { border-color:var(--accent); color:var(--accent); }
+.vtab.active { background:var(--navy); color:white; border-color:var(--navy); }
+.vtab-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+/* ─── CONTENT ─── */
+.content { flex:1; overflow-y:auto; padding:20px 28px; display:flex; flex-direction:column; gap:16px; }
+
+/* ─── KPI ─── */
+.kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+.kpi-card { background:white; border-radius:13px; padding:16px 18px; border:1px solid var(--gray-border); cursor:pointer; transition:all .2s; position:relative; overflow:hidden; }
+.kpi-card:hover { border-color:var(--accent); box-shadow:0 4px 16px rgba(46,125,247,.1); transform:translateY(-1px); }
+.kpi-card.active-kpi { border-color:var(--accent); box-shadow:0 4px 20px rgba(46,125,247,.15); }
+.kpi-card.active-kpi::after { content:''; position:absolute; bottom:0; left:0; right:0; height:3px; background:var(--accent); }
+.kpi-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:.85rem; margin-bottom:8px; }
+.kpi-label { font-size:0.68rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; }
+.kpi-value { font-size:1.4rem; font-weight:800; color:var(--navy); line-height:1.1; }
+.kpi-unit { font-size:0.72rem; font-weight:500; color:var(--text-muted); }
+.kpi-change { font-size:0.73rem; font-weight:700; margin-top:4px; }
+.kpi-change.up   { color:var(--red); }
+.kpi-change.down { color:var(--green); }
+.kpi-change.info { color:var(--text-muted); font-size:.65rem; }
+
+/* ─── KPI DETAIL ─── */
+.kpi-detail { background:white; border-radius:12px; border:1px solid var(--gray-border); padding:18px; display:none; }
+.kpi-detail.show { display:block; animation:fadeIn .3s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
+.kpi-detail-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.kpi-detail-title { font-size:.82rem; font-weight:700; color:var(--navy); display:flex; align-items:center; gap:7px; }
+.close-btn { cursor:pointer; color:var(--text-muted); font-size:.75rem; background:var(--gray-soft); border:none; padding:4px 10px; border-radius:6px; font-family:'Montserrat',sans-serif; font-weight:600; transition:all .18s; }
+.close-btn:hover { background:var(--gray-border); }
+
+/* ─── CHARTS ─── */
+.charts-row { display:grid; grid-template-columns:1.3fr 1fr; gap:14px; }
+.chart-card { background:white; border-radius:13px; padding:18px; border:1px solid var(--gray-border); }
+.chart-title { font-size:.82rem; font-weight:700; color:var(--navy); margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.chart-title-left { display:flex; align-items:center; gap:8px; }
+.chart-toggle { display:flex; gap:3px; }
+.ctbtn { padding:4px 9px; border-radius:5px; font-size:.68rem; font-weight:600; cursor:pointer; border:1px solid var(--gray-border); background:white; color:#4a5a7b; font-family:'Montserrat',sans-serif; transition:all .18s; }
+.ctbtn.active { background:var(--navy); color:white; border-color:var(--navy); }
+.ctbtn:hover:not(.active) { border-color:var(--accent); color:var(--accent); }
+
+/* ─── VEHICLE BREAKDOWN ─── */
+.breakdown-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
+.breakdown-card { background:white; border-radius:12px; padding:14px 12px; border:1px solid var(--gray-border); text-align:center; cursor:pointer; transition:all .2s; position:relative; overflow:hidden; }
+.breakdown-card:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,.08); }
+.bc-icon { font-size:1.5rem; margin-bottom:6px; }
+.bc-name { font-size:0.7rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
+.bc-value { font-size:1rem; font-weight:800; color:var(--navy); }
+.bc-unit { font-size:.65rem; color:var(--text-muted); font-weight:500; }
+.bc-pct { font-size:.72rem; font-weight:700; margin-top:3px; }
+.bc-bar { height:3px; border-radius:2px; margin-top:8px; }
+
+/* ─── TABLE ─── */
+.table-card { background:white; border-radius:13px; border:1px solid var(--gray-border); overflow:hidden; }
+.table-header { padding:12px 18px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--gray-border); }
+.table-header-title { font-size:.75rem; font-weight:800; color:var(--navy); text-transform:uppercase; letter-spacing:.06em; display:flex; align-items:center; gap:7px; }
+.tbl-actions { display:flex; gap:7px; align-items:center; }
+.tbl-btn { padding:5px 12px; border-radius:7px; font-size:.72rem; font-weight:600; border:1.5px solid var(--gray-border); cursor:pointer; background:white; color:var(--navy); font-family:'Montserrat',sans-serif; display:flex; align-items:center; gap:5px; transition:all .18s; }
+.tbl-btn:hover { border-color:var(--accent); color:var(--accent); }
+table { width:100%; border-collapse:collapse; }
+th { padding:9px 16px; text-align:left; font-size:.68rem; font-weight:700; color:var(--text-muted); background:#fafbfd; border-bottom:1px solid var(--gray-border); text-transform:uppercase; letter-spacing:.04em; }
+td { padding:10px 16px; font-size:.8rem; color:#2a3a6b; border-bottom:1px solid #f0f2f8; font-weight:500; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:#f8f9fd; }
+.type-badge { display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:6px; font-weight:700; font-size:.73rem; }
+.rank-badge { width:22px; height:22px; border-radius:50%; background:var(--navy); color:white; font-size:.68rem; font-weight:800; display:inline-flex; align-items:center; justify-content:center; }
+
+/* ─── SHAP / ANALYSIS PANEL ─── */
+.shap-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.shap-card { background:white; border-radius:13px; padding:18px; border:1px solid var(--gray-border); }
+.shap-bar-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.shap-label { font-size:.75rem; font-weight:600; color:var(--navy); width:140px; flex-shrink:0; }
+.shap-bar-wrap { flex:1; height:10px; background:var(--gray-soft); border-radius:5px; overflow:hidden; }
+.shap-bar { height:100%; border-radius:5px; transition:width .6s ease; }
+.shap-val { font-size:.72rem; font-weight:700; color:var(--navy); width:48px; text-align:right; flex-shrink:0; }
+.insight-item { display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px solid #f0f2f8; }
+.insight-item:last-child { border-bottom:none; }
+.insight-dot { width:10px; height:10px; border-radius:50%; margin-top:3px; flex-shrink:0; }
+.insight-text { font-size:.78rem; color:#3a4a6b; font-weight:500; line-height:1.5; }
+.insight-val { font-size:.72rem; font-weight:700; color:var(--accent); margin-top:2px; }
+
+/* ─── DATA MGMT ─── */
+.data-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.form-group { margin-bottom:12px; }
+.form-label { font-size:.72rem; font-weight:700; color:var(--navy); margin-bottom:4px; display:block; text-transform:uppercase; letter-spacing:.04em; }
+.form-input { width:100%; padding:8px 12px; border:1.5px solid var(--gray-border); border-radius:8px; font-size:.8rem; font-family:'Montserrat',sans-serif; color:var(--navy); outline:none; transition:border-color .2s; }
+.form-input:focus { border-color:var(--accent); }
+.form-select { width:100%; padding:8px 12px; border:1.5px solid var(--gray-border); border-radius:8px; font-size:.8rem; font-family:'Montserrat',sans-serif; color:var(--navy); outline:none; appearance:none; background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%237a8aab' d='M5 6L0 0h10z'/%3E%3C/svg%3E") no-repeat right 10px center; }
+.btn-primary { padding:9px 22px; border-radius:9px; font-size:.8rem; font-weight:700; cursor:pointer; border:none; background:var(--navy); color:white; font-family:'Montserrat',sans-serif; transition:all .2s; display:flex; align-items:center; gap:7px; }
+.btn-primary:hover { background:var(--navy-light); box-shadow:0 4px 14px rgba(13,31,60,.2); }
+.section-card { background:white; border-radius:13px; border:1px solid var(--gray-border); overflow:hidden; }
+.section-header { padding:14px 18px; border-bottom:1px solid var(--gray-border); display:flex; align-items:center; justify-content:space-between; }
+.section-title { font-size:.75rem; font-weight:800; color:var(--navy); text-transform:uppercase; letter-spacing:.07em; display:flex; align-items:center; gap:8px; }
+.section-body { padding:18px; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.form-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+.tbl-action-btn { width:27px; height:27px; border-radius:6px; border:1.5px solid var(--gray-border); background:white; cursor:pointer; font-size:.7rem; transition:all .18s; display:inline-flex; align-items:center; justify-content:center; }
+.tbl-action-btn.del:hover { border-color:var(--red); color:var(--red); }
+
+/* ─── EQUIPMENT ─── */
+.eq-info-box { background:linear-gradient(135deg,rgba(46,125,247,.05),rgba(139,92,246,.05)); border:1.5px solid rgba(46,125,247,.15); border-radius:10px; padding:14px 16px; margin-bottom:16px; }
+.eq-fleet-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px; }
+.eq-fleet-card { background:var(--gray-soft); border-radius:10px; padding:12px; text-align:center; border:1.5px solid var(--gray-border); transition:all .2s; }
+.eq-fleet-card:hover { border-color:var(--accent); background:rgba(46,125,247,.04); }
+.eq-fleet-icon { font-size:1.6rem; margin-bottom:4px; }
+.eq-fleet-label { font-size:.68rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; }
+.eq-fleet-count { font-size:1.1rem; font-weight:800; color:var(--navy); }
+
+/* ─── MODAL ─── */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(13,31,60,.45); z-index:999; align-items:center; justify-content:center; backdrop-filter:blur(3px); }
+.modal-overlay.show { display:flex; }
+.modal { background:white; border-radius:16px; padding:26px; width:420px; max-width:95vw; box-shadow:0 24px 80px rgba(0,0,0,.2); animation:mIn .25s ease; }
+@keyframes mIn { from{opacity:0;transform:scale(.94) translateY(10px)} to{opacity:1;transform:none} }
+.modal-title { font-size:.95rem; font-weight:800; color:var(--navy); margin-bottom:16px; }
+.modal-footer { display:flex; gap:10px; margin-top:18px; }
+.btn-secondary { padding:9px 18px; border-radius:8px; font-size:.8rem; font-weight:600; cursor:pointer; border:1.5px solid var(--gray-border); background:white; color:var(--navy); font-family:'Montserrat',sans-serif; }
+.btn-danger { flex:1; padding:9px; border-radius:8px; font-size:.8rem; font-weight:700; cursor:pointer; border:none; background:var(--red); color:white; font-family:'Montserrat',sans-serif; }
+
+/* ─── TOAST ─── */
+.toast { position:fixed; bottom:24px; right:24px; background:var(--navy); color:white; padding:11px 18px; border-radius:12px; font-size:.8rem; font-weight:600; display:flex; align-items:center; gap:9px; box-shadow:0 8px 30px rgba(0,0,0,.18); z-index:9999; transform:translateY(70px); opacity:0; transition:all .32s cubic-bezier(.34,1.56,.64,1); pointer-events:none; }
+.toast.show { transform:translateY(0); opacity:1; }
+.toast.success { background:#16a34a; }
+.toast.warn { background:#d97706; }
+.toast.error { background:#dc2626; }
+
+::-webkit-scrollbar { width:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--gray-border); border-radius:10px; }
+.hidden { display:none!important; }
+</style>
+</head>
+<body>
+
+<!-- ─── SIDEBAR ─── -->
+<div class="sidebar">
+  <div class="sidebar-logo"><div class="logo-box">VPEI</div></div>
+  <nav class="nav-items">
+    <div class="nav-section">Menu chính</div>
+    <a href="#" class="nav-item"><i class="fa-solid fa-chart-pie" style="width:16px;color:var(--text-muted)"></i> Dashboard</a>
+    <a href="#" class="nav-item"><i class="fa-solid fa-industry" style="width:16px;color:var(--text-muted)"></i> Scope 1</a>
+    <a href="#" class="nav-item"><i class="fa-solid fa-bolt" style="width:16px;color:var(--text-muted)"></i> Scope 2</a>
+    <a href="#" class="nav-item active"><i class="fa-solid fa-ship" style="width:16px;color:var(--accent)"></i> Scope 3</a>
+    <div class="nav-section" style="margin-top:10px">Báo cáo</div>
+    <a href="#" class="nav-item"><i class="fa-solid fa-file-lines" style="width:16px;color:var(--text-muted)"></i> Reports</a>
+  </nav>
+  <div class="nav-bottom">
+    <a href="#" class="nav-item"><i class="fa-solid fa-gear" style="width:16px;color:var(--text-muted)"></i> Settings</a>
+  </div>
+</div>
+
+<!-- ─── MAIN ─── -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title"><i class="fa-solid fa-ship" style="color:var(--accent);margin-right:7px;font-size:.9rem"></i>Scope 3 – Phát thải gián tiếp</div>
+      <div class="topbar-sub">Vận tải biển, xe container, xà lan &amp; phương tiện nội bộ cảng</div>
+    </div>
+    <div class="topbar-right">
+      <select class="select-pill" id="sel-year" onchange="updateAll()">
+        <option>2026</option><option>2025</option><option>2024</option>
+      </select>
+      <select class="select-pill" id="sel-period" onchange="updateAll()">
+        <option>Tháng 06</option><option>Tháng 05</option><option>Tháng 04</option>
+        <option>Quý 2</option><option>Quý 1</option>
+      </select>
+      <button class="badge-status badge-submitted" id="statusBadge" onclick="cycleStatus()">
+        <i class="fa-solid fa-circle" style="font-size:.5rem;margin-right:4px"></i><span id="statusText">Submitted</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- SUB-NAV -->
+  <div class="subnav">
+    <div class="subnav-tab active" id="tab-btn-overview" onclick="setMainTab('overview')">
+      <i class="fa-solid fa-chart-pie"></i> Tổng quan
+    </div>
+    <div class="subnav-tab" id="tab-btn-manage" onclick="setMainTab('manage')">
+      <i class="fa-solid fa-table"></i> Quản lý dữ liệu hoạt động
+    </div>
+    <div class="subnav-tab" id="tab-btn-shap" onclick="setMainTab('shap')">
+      <i class="fa-solid fa-flask"></i> Phân tích &amp; SHAP
+    </div>
+    <div class="subnav-tab" id="tab-btn-equipment" onclick="setMainTab('equipment')">
+      <i class="fa-solid fa-truck-moving"></i> Thêm thiết bị
+    </div>
+  </div>
+
+  <!-- ─── CONTENT ─── -->
+  <div class="content">
+
+    <!-- ══════════ OVERVIEW TAB ══════════ -->
+    <div id="page-overview">
+      <div class="vehicle-tabs" id="vehicleTabs">
+        <button class="vtab active" onclick="setVehicle('all',this)" data-v="all">
+          <span class="vtab-dot" style="background:var(--navy)"></span> Tất cả
+        </button>
+        <button class="vtab" onclick="setVehicle('container-ship',this)" data-v="container-ship">
+          <span class="vtab-dot" style="background:var(--c1)"></span> Tàu container
+        </button>
+        <button class="vtab" onclick="setVehicle('truck',this)" data-v="truck">
+          <span class="vtab-dot" style="background:var(--c2)"></span> Xe container
+        </button>
+        <button class="vtab" onclick="setVehicle('barge',this)" data-v="barge">
+          <span class="vtab-dot" style="background:var(--c3)"></span> Xà lan
+        </button>
+        <button class="vtab" onclick="setVehicle('tugboat',this)" data-v="tugboat">
+          <span class="vtab-dot" style="background:var(--c4)"></span> Tàu lai dắt
+        </button>
+        <button class="vtab" onclick="setVehicle('port',this)" data-v="port">
+          <span class="vtab-dot" style="background:var(--c5)"></span> Phương tiện nội bộ
+        </button>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi-card" onclick="toggleKpiDetail('total')">
+          <div class="kpi-icon" style="background:rgba(46,125,247,.1)"><i class="fa-solid fa-cloud" style="color:var(--accent)"></i></div>
+          <div class="kpi-label">Tổng CO₂e Scope 3</div>
+          <div class="kpi-value" id="kpi-total">–<span class="kpi-unit"> tCO₂e</span></div>
+          <div class="kpi-change up" id="kpi-total-chg">↑ +5.2%</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background:rgba(239,68,68,.1)"><i class="fa-solid fa-ranking-star" style="color:var(--red)"></i></div>
+          <div class="kpi-label">Phát thải cao nhất</div>
+          <div class="kpi-value" id="kpi-top" style="font-size:1rem;margin-top:4px">–</div>
+          <div class="kpi-change info" id="kpi-top-val">– tCO₂e</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background:rgba(14,165,233,.1)"><i class="fa-solid fa-route" style="color:var(--teal)"></i></div>
+          <div class="kpi-label">Tổng lượt phương tiện</div>
+          <div class="kpi-value" id="kpi-trips">–<span class="kpi-unit"> lượt</span></div>
+          <div class="kpi-change info" id="kpi-trips-type">–</div>
+        </div>
+        <div class="kpi-card" onclick="toggleKpiDetail('change')">
+          <div class="kpi-icon" style="background:rgba(245,158,11,.1)"><i class="fa-solid fa-arrow-trend-up" style="color:var(--amber)"></i></div>
+          <div class="kpi-label">So với kỳ trước</div>
+          <div class="kpi-value up" id="kpi-change" style="font-size:1.4rem">–</div>
+          <div class="kpi-change info"><i class="fa-solid fa-hand-pointer" style="font-size:.55rem"></i> Nhấn để phân tích</div>
+        </div>
+      </div>
+
+      <div class="kpi-detail" id="kpiDetail">
+        <div class="kpi-detail-header">
+          <div class="kpi-detail-title" id="kpiDetailTitle">
+            <i class="fa-solid fa-chart-line" style="color:var(--accent)"></i> Chi tiết phân tích
+          </div>
+          <button class="close-btn" onclick="closeKpiDetail()"><i class="fa-solid fa-xmark"></i> Đóng</button>
+        </div>
+        <canvas id="kpiDetailChart" height="70"></canvas>
+      </div>
+
+      <div class="breakdown-grid" id="breakdownGrid"></div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-title">
+            <div class="chart-title-left"><i class="fa-solid fa-chart-bar" style="color:var(--accent);font-size:.75rem"></i> Phát thải theo loại phương tiện</div>
+            <div class="chart-toggle">
+              <button class="ctbtn active" id="bar-co2" onclick="setBarMode('co2',this)">CO₂e</button>
+              <button class="ctbtn" id="bar-trips" onclick="setBarMode('trips',this)">Lượt</button>
+              <button class="ctbtn" id="bar-fuel" onclick="setBarMode('fuel',this)">Nhiên liệu</button>
+            </div>
+          </div>
+          <canvas id="vehicleBar" height="175"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">
+            <div class="chart-title-left"><i class="fa-solid fa-chart-line" style="color:var(--teal);font-size:.75rem"></i> Xu hướng phát thải theo tháng</div>
+            <div class="chart-toggle">
+              <button class="ctbtn active" id="trend-all" onclick="setTrendMode('all',this)">Tất cả</button>
+              <button class="ctbtn" id="trend-top2" onclick="setTrendMode('top2',this)">Top 2</button>
+            </div>
+          </div>
+          <canvas id="trendLine" height="175"></canvas>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-header-title"><i class="fa-solid fa-table" style="color:var(--text-muted)"></i> Bảng tổng hợp phát thải</span>
+          <div class="tbl-actions">
+            <button class="tbl-btn" onclick="showToast('Xuất Excel...','success')"><i class="fa-solid fa-file-excel" style="color:#16a34a"></i> Excel</button>
+            <button class="tbl-btn" onclick="showToast('Xuất PDF...','success')"><i class="fa-solid fa-file-pdf" style="color:#dc2626"></i> PDF</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th><th>Loại phương tiện</th><th>Số lượt</th><th>Nhiên liệu</th>
+                <th>Tiêu thụ</th><th>CO₂e (tCO₂e)</th><th>Tỷ trọng</th>
+              </tr>
+            </thead>
+            <tbody id="mainTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div><!-- /page-overview -->
+
+    <!-- ══════════ MANAGE TAB ══════════ -->
+    <div id="page-manage" class="hidden">
+      <div class="data-grid">
+        <div class="section-card">
+          <div class="section-header">
+            <div class="section-title"><i class="fa-solid fa-keyboard" style="color:var(--accent)"></i> Nhập dữ liệu hoạt động</div>
+          </div>
+          <div class="section-body">
+            <div class="form-group">
+              <label class="form-label">Loại phương tiện <span style="color:var(--red)">*</span></label>
+              <select class="form-select" id="m-type">
+                <option value="">-- Chọn loại --</option>
+                <option value="container-ship">Tàu container</option>
+                <option value="truck">Xe container</option>
+                <option value="barge">Xà lan</option>
+                <option value="tugboat">Tàu lai dắt</option>
+                <option value="port">Phương tiện nội bộ cảng</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Kỳ báo cáo</label>
+                <select class="form-select" id="m-period">
+                  <option>Tháng 06/2026</option><option>Tháng 05/2026</option><option>Tháng 04/2026</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Số lượt</label>
+                <input class="form-input" type="number" id="m-trips" placeholder="VD: 45" min="1">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Loại nhiên liệu</label>
+                <select class="form-select" id="m-fuel">
+                  <option>HFO (Dầu nặng)</option><option>MGO (Dầu nhẹ)</option>
+                  <option>Diesel</option><option>LNG</option><option>MDO</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Tiêu thụ (tấn / L)</label>
+                <input class="form-input" type="number" id="m-consumption" placeholder="VD: 1200" min="0">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Ghi chú</label>
+              <input class="form-input" type="text" id="m-note" placeholder="Không bắt buộc">
+            </div>
+            <button class="btn-primary" onclick="saveRecord()">
+              <i class="fa-solid fa-floppy-disk"></i> Lưu dữ liệu
+            </button>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-header">
+            <div class="section-title"><i class="fa-solid fa-calculator" style="color:var(--green)"></i> Kết quả tính toán tự động</div>
+          </div>
+          <div class="section-body">
+            <div style="background:linear-gradient(135deg,rgba(46,125,247,.06),rgba(14,165,233,.06));border:1.5px solid rgba(46,125,247,.18);border-radius:10px;padding:16px;margin-bottom:14px">
+              <div style="font-size:.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">
+                <i class="fa-solid fa-lock" style="margin-right:5px;color:var(--accent)"></i>Công thức tính (Chỉ đọc)
+              </div>
+              <div style="font-size:.8rem;color:#2a3a6b;font-weight:500;line-height:1.8">
+                <div><i class="fa-solid fa-bolt" style="color:var(--accent);width:16px"></i> Phát thải = Tiêu thụ nhiên liệu × EF</div>
+                <div><i class="fa-solid fa-leaf" style="color:var(--green);width:16px"></i> HFO EF: 3.114 tCO₂/tấn</div>
+                <div><i class="fa-solid fa-leaf" style="color:var(--green);width:16px"></i> MGO EF: 3.206 tCO₂/tấn</div>
+                <div><i class="fa-solid fa-leaf" style="color:var(--green);width:16px"></i> Diesel EF: 2.640 tCO₂/tấn</div>
+              </div>
+              <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(46,125,247,.15)">
+                <div style="font-size:.72rem;color:var(--text-muted);font-weight:600">Tổng phát thải kỳ hiện tại</div>
+                <div style="font-size:1.3rem;font-weight:800;color:var(--navy)" id="mgmt-total-co2">–<span style="font-size:.75rem;font-weight:500;color:var(--text-muted)"> tCO₂e</span></div>
+              </div>
+            </div>
+            <canvas id="mgmtDonut" height="160"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-header-title"><i class="fa-solid fa-database" style="color:var(--text-muted)"></i> Dữ liệu đã nhập</span>
+          <div class="tbl-actions">
+            <button class="tbl-btn" onclick="showToast('Xuất Excel...','success')"><i class="fa-solid fa-file-excel" style="color:#16a34a"></i> Excel</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;max-height:260px;overflow-y:auto">
+          <table>
+            <thead><tr><th>Loại</th><th>Lượt</th><th>Nhiên liệu</th><th>Tiêu thụ</th><th>CO₂e</th><th>Kỳ</th><th style="text-align:center">Thao tác</th></tr></thead>
+            <tbody id="mgmtTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div><!-- /page-manage -->
+
+    <!-- ══════════ SHAP TAB ══════════ -->
+    <div id="page-shap" class="hidden">
+      <div class="shap-grid">
+        <div class="shap-card">
+          <div class="chart-title">
+            <div class="chart-title-left"><i class="fa-solid fa-ranking-star" style="color:var(--amber);font-size:.75rem"></i> Mức độ ảnh hưởng (SHAP Feature Importance)</div>
+          </div>
+          <div id="shapBars" style="margin-top:8px"></div>
+        </div>
+        <div class="shap-card">
+          <div class="chart-title">
+            <div class="chart-title-left"><i class="fa-solid fa-chart-area" style="color:var(--purple);font-size:.75rem"></i> Hồ sơ phát thải theo phương tiện</div>
+          </div>
+          <canvas id="radarChart" height="220"></canvas>
+        </div>
+        <div class="shap-card">
+          <div class="chart-title">
+            <div class="chart-title-left"><i class="fa-solid fa-circle-dot" style="color:var(--teal);font-size:.75rem"></i> Tiêu thụ nhiên liệu vs Phát thải</div>
+          </div>
+          <canvas id="scatterChart" height="200"></canvas>
+        </div>
+        <div class="shap-card">
+          <div class="chart-title">
+            <div class="chart-title-left"><i class="fa-solid fa-lightbulb" style="color:var(--amber);font-size:.75rem"></i> Phân tích &amp; Đề xuất tối ưu</div>
+          </div>
+          <div id="insightList"></div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">
+          <div class="chart-title-left"><i class="fa-solid fa-layer-group" style="color:var(--accent);font-size:.75rem"></i> Phân rã phát thải theo nhân tố (Stacked Analysis)</div>
+        </div>
+        <canvas id="stackedBar" height="120"></canvas>
+      </div>
+    </div><!-- /page-shap -->
+
+    <!-- ══════════ EQUIPMENT TAB ══════════ -->
+    <div id="page-equipment" class="hidden">
+      <div class="data-grid">
+
+        <!-- FORM THÊM THIẾT BỊ -->
+        <div class="section-card">
+          <div class="section-header">
+            <div class="section-title">
+              <i class="fa-solid fa-truck-moving" style="color:var(--accent)"></i> Khai báo thiết bị / phương tiện mới
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="eq-info-box">
+              <div style="font-size:.7rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">
+                <i class="fa-solid fa-circle-info" style="margin-right:5px"></i>Hướng dẫn
+              </div>
+              <div style="font-size:.78rem;color:#3a4a6b;font-weight:500;line-height:1.6">
+                Khai báo phương tiện / thiết bị mới để hệ thống tự động tính phát thải Scope 3. Mỗi thiết bị cần có mã định danh duy nhất và hệ số phát thải (EF) tham chiếu.
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Tên thiết bị / Phương tiện <span style="color:var(--red)">*</span></label>
+                <input class="form-input" type="text" id="eq-name" placeholder="VD: Tàu Hapag-Lloyd 01">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Mã định danh <span style="color:var(--red)">*</span></label>
+                <input class="form-input" type="text" id="eq-id" placeholder="VD: VPEI-CS-001">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Loại phương tiện <span style="color:var(--red)">*</span></label>
+                <select class="form-select" id="eq-type">
+                  <option value="">-- Chọn phân loại --</option>
+                  <option value="container-ship">🚢 Tàu container</option>
+                  <option value="truck">🚛 Xe container</option>
+                  <option value="barge">⛵ Xà lan</option>
+                  <option value="tugboat">🛥️ Tàu lai dắt</option>
+                  <option value="port">🏗️ Phương tiện nội bộ cảng</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Năm sản xuất</label>
+                <input class="form-input" type="number" id="eq-year" placeholder="VD: 2018" min="1990" max="2026">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Loại nhiên liệu sử dụng</label>
+                <select class="form-select" id="eq-fuel">
+                  <option>HFO (Dầu nặng)</option>
+                  <option>MGO (Dầu nhẹ)</option>
+                  <option>Diesel</option>
+                  <option>LNG</option>
+                  <option>Điện</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Hệ số phát thải EF (tCO₂/tấn)</label>
+                <input class="form-input" type="number" id="eq-ef" placeholder="VD: 3.114" step="0.001">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Công suất (kW / DWT)</label>
+                <input class="form-input" type="number" id="eq-power" placeholder="VD: 12000">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Giờ hoạt động / tháng</label>
+                <input class="form-input" type="number" id="eq-hours" placeholder="VD: 720">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Ghi chú bổ sung</label>
+              <input class="form-input" type="text" id="eq-note" placeholder="Thông số kỹ thuật, tình trạng, tuyến đường vận hành...">
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:4px">
+              <button class="btn-primary" onclick="addEquipment()" style="flex:1;justify-content:center">
+                <i class="fa-solid fa-plus"></i> Thêm thiết bị
+              </button>
+              <button class="btn-secondary" onclick="clearEquipmentForm()">
+                <i class="fa-solid fa-rotate-left"></i> Làm mới
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- THỐNG KÊ ĐỘI PHƯƠNG TIỆN -->
+        <div class="section-card">
+          <div class="section-header">
+            <div class="section-title">
+              <i class="fa-solid fa-warehouse" style="color:var(--green)"></i> Tổng quan đội phương tiện
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="eq-fleet-grid" id="eqFleetGrid">
+              <div class="eq-fleet-card">
+                <div class="eq-fleet-icon">🚢</div>
+                <div class="eq-fleet-label">Tàu container</div>
+                <div class="eq-fleet-count" id="eq-count-container-ship">0</div>
+              </div>
+              <div class="eq-fleet-card">
+                <div class="eq-fleet-icon">🚛</div>
+                <div class="eq-fleet-label">Xe container</div>
+                <div class="eq-fleet-count" id="eq-count-truck">0</div>
+              </div>
+              <div class="eq-fleet-card">
+                <div class="eq-fleet-icon">⛵</div>
+                <div class="eq-fleet-label">Xà lan</div>
+                <div class="eq-fleet-count" id="eq-count-barge">0</div>
+              </div>
+              <div class="eq-fleet-card">
+                <div class="eq-fleet-icon">🛥️</div>
+                <div class="eq-fleet-label">Tàu lai dắt</div>
+                <div class="eq-fleet-count" id="eq-count-tugboat">0</div>
+              </div>
+              <div class="eq-fleet-card">
+                <div class="eq-fleet-icon">🏗️</div>
+                <div class="eq-fleet-label">Nội bộ cảng</div>
+                <div class="eq-fleet-count" id="eq-count-port">0</div>
+              </div>
+              <div class="eq-fleet-card" style="border-color:var(--accent);background:rgba(46,125,247,.06)">
+                <div class="eq-fleet-icon">📊</div>
+                <div class="eq-fleet-label" style="color:var(--accent)">Tổng cộng</div>
+                <div class="eq-fleet-count" id="eq-count-total" style="color:var(--accent)">0</div>
+              </div>
+            </div>
+
+            <div style="background:var(--gray-soft);border-radius:10px;padding:14px;font-size:.78rem;color:#3a4a6b;line-height:1.7">
+              <div style="font-weight:700;color:var(--navy);margin-bottom:8px;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em">
+                <i class="fa-solid fa-info-circle" style="color:var(--accent);margin-right:5px"></i>Hệ số phát thải mặc định
+              </div>
+              <div><span style="font-weight:700">HFO:</span> 3.114 tCO₂/tấn nhiên liệu</div>
+              <div><span style="font-weight:700">MGO:</span> 3.206 tCO₂/tấn nhiên liệu</div>
+              <div><span style="font-weight:700">Diesel:</span> 2.640 tCO₂/tấn nhiên liệu</div>
+              <div><span style="font-weight:700">LNG:</span> 2.750 tCO₂/tấn nhiên liệu</div>
+              <div style="margin-top:8px;font-size:.72rem;color:var(--text-muted)">Nguồn: IMO MEPC, IPCC AR6 2023</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BẢNG DANH SÁCH THIẾT BỊ -->
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-header-title"><i class="fa-solid fa-list" style="color:var(--text-muted)"></i> Danh sách thiết bị đã khai báo</span>
+          <div class="tbl-actions">
+            <button class="tbl-btn" onclick="showToast('Xuất Excel...','success')">
+              <i class="fa-solid fa-file-excel" style="color:#16a34a"></i> Xuất Excel
+            </button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;max-height:300px;overflow-y:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Mã</th>
+                <th>Tên phương tiện</th>
+                <th>Loại</th>
+                <th>Năm SX</th>
+                <th>Nhiên liệu</th>
+                <th>EF (tCO₂/tấn)</th>
+                <th>Công suất</th>
+                <th>Giờ HĐ/tháng</th>
+                <th style="text-align:center">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="equipmentTableBody">
+              <tr>
+                <td colspan="9" style="text-align:center;color:var(--text-muted);padding:24px;font-size:.8rem">
+                  <i class="fa-solid fa-inbox" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:.3"></i>
+                  Chưa có thiết bị nào. Hãy khai báo thiết bị đầu tiên ở form bên trên.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div><!-- /page-equipment -->
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- DELETE MODAL -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <div class="modal-title"><i class="fa-solid fa-trash" style="color:var(--red);margin-right:8px"></i>Xác nhận xóa</div>
+    <div style="font-size:.82rem;color:#4a5a7b;margin-bottom:4px">Bạn có chắc muốn xóa bản ghi này?</div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="document.getElementById('deleteModal').classList.remove('show')">Hủy</button>
+      <button class="btn-danger" onclick="doDelete()">Xóa</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast">
+  <i id="toast-icon" class="fa-solid fa-check-circle"></i>
+  <span id="toast-text">Thành công!</span>
+</div>
+
+<script>
+// ─── DATA ─────────────────────────────────────────────────
+const VHCL = [
+  { key:'container-ship', label:'Tàu container',      icon:'🚢', color:'#2e7df7', ef:3.114, unit:'tấn HFO', trips:42,   consumption:1850,  fuel:'HFO' },
+  { key:'truck',          label:'Xe container',       icon:'🚛', color:'#0ea5e9', ef:2.640, unit:'L Diesel', trips:1240, consumption:48000, fuel:'Diesel' },
+  { key:'barge',          label:'Xà lan',             icon:'⛵', color:'#22c55e', ef:3.206, unit:'tấn MGO',  trips:88,   consumption:620,   fuel:'MGO' },
+  { key:'tugboat',        label:'Tàu lai dắt',        icon:'🛥️', color:'#f59e0b', ef:3.114, unit:'tấn HFO', trips:310,  consumption:280,   fuel:'HFO' },
+  { key:'port',           label:'Phương tiện nội bộ', icon:'🏗️', color:'#8b5cf6', ef:2.640, unit:'L Diesel', trips:2800, consumption:32000, fuel:'Diesel' },
+];
+
+const MONTHS = ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'];
+const TREND_DATA = {
+  'container-ship':[180,210,195,220,240,260,230,270,250,280,240,310],
+  'truck':          [85, 90, 88, 95, 100,110, 98,115,105,120,100,130],
+  'barge':          [55, 60, 58, 62,  68, 72, 65, 78, 70, 80, 68, 88],
+  'tugboat':        [24, 26, 25, 27,  29, 31, 28, 33, 30, 34, 29, 37],
+  'port':           [42, 44, 43, 46,  48, 52, 47, 55, 50, 57, 48, 62],
+};
+
+let records = [
+  { id:1, type:'container-ship', label:'Tàu container', trips:42,   fuel:'HFO',    consumption:1850,  co2:5760.9, period:'Tháng 06/2026', note:'' },
+  { id:2, type:'truck',          label:'Xe container',  trips:1240, fuel:'Diesel', consumption:48000, co2:126.72, period:'Tháng 06/2026', note:'' },
+  { id:3, type:'barge',          label:'Xà lan',        trips:88,   fuel:'MGO',    consumption:620,   co2:1987.7, period:'Tháng 06/2026', note:'' },
+];
+
+let equipmentList = [];
+let deleteTarget = null;
+let activeVehicle = 'all';
+let barMode = 'co2';
+let trendMode = 'all';
+let kpiDetailMode = null;
+let kpiDetailRef = null;
+let barChartRef = null;
+let trendChartRef = null;
+let mgmtDonutRef = null;
+let radarChartRef = null;
+let scatterChartRef = null;
+let stackedBarRef = null;
+let statusList = ['draft','submitted','locked'];
+let statusIdx = 1;
+
+// ─── TAB SWITCHING ────────────────────────────────────────
+function setMainTab(tabName) {
+  const tabs = ['overview','manage','shap','equipment'];
+  tabs.forEach(t => {
+    document.getElementById('page-' + t).classList.add('hidden');
+    document.getElementById('tab-btn-' + t).classList.remove('active');
+  });
+  document.getElementById('page-' + tabName).classList.remove('hidden');
+  document.getElementById('tab-btn-' + tabName).classList.add('active');
+
+  if (tabName === 'shap' && !radarChartRef) {
+    buildShap();
+  }
+}
+
+// ─── COMPUTED ─────────────────────────────────────────────
+function getCO2(v) { return +(v.consumption * v.ef / 1000).toFixed(2); }
+function getFiltered() {
+  if (activeVehicle === 'all') return VHCL;
+  return VHCL.filter(v => v.key === activeVehicle);
+}
+
+// ─── INIT ─────────────────────────────────────────────────
+function init() {
+  updateAll();
+  renderMgmtTable();
+  updateMgmtSummary();
+}
+
+function updateAll() {
+  const vhcls = getFiltered();
+  const totalCO2 = vhcls.reduce((s,v) => s + getCO2(v), 0);
+  const totalTrips = vhcls.reduce((s,v) => s + v.trips, 0);
+  const top = [...VHCL].sort((a,b) => getCO2(b) - getCO2(a))[0];
+  const prev = totalCO2 * 0.951;
+  const chgPct = ((totalCO2 - prev) / prev * 100).toFixed(1);
+
+  document.getElementById('kpi-total').innerHTML = fmtNum(totalCO2) + '<span class="kpi-unit"> tCO₂e</span>';
+  document.getElementById('kpi-total-chg').textContent = '↑ +' + chgPct + '%';
+  document.getElementById('kpi-top').textContent = top.icon + ' ' + top.label;
+  document.getElementById('kpi-top-val').textContent = fmtNum(getCO2(top)) + ' tCO₂e';
+  document.getElementById('kpi-trips').innerHTML = totalTrips.toLocaleString('vi-VN') + '<span class="kpi-unit"> lượt</span>';
+  document.getElementById('kpi-trips-type').textContent = vhcls.length + ' loại phương tiện';
+  document.getElementById('kpi-change').innerHTML = '<span style="color:var(--red)">▲ +' + chgPct + '%</span>';
+
+  buildBreakdown(vhcls, totalCO2);
+  updateBarChart(vhcls);
+  updateTrendChart();
+  renderMainTable(vhcls, totalCO2);
+}
+
+// ─── BREAKDOWN CARDS ──────────────────────────────────────
+function buildBreakdown(vhcls, total) {
+  const grid = document.getElementById('breakdownGrid');
+  grid.innerHTML = VHCL.map(v => {
+    const co2 = getCO2(v);
+    const pct = total > 0 ? (co2 / total * 100).toFixed(1) : 0;
+    const isFiltered = activeVehicle !== 'all' && v.key !== activeVehicle;
+    return `<div class="breakdown-card" onclick="setVehicle('${v.key}',null)" style="opacity:${isFiltered ? .4 : 1}">
+      <div class="bc-icon">${v.icon}</div>
+      <div class="bc-name" style="color:${v.color}">${v.label}</div>
+      <div class="bc-value">${fmtNum(co2)}<span class="bc-unit"> tCO₂e</span></div>
+      <div class="bc-pct" style="color:${v.color}">${pct}%</div>
+      <div class="bc-bar" style="background:${v.color}33">
+        <div style="width:${pct}%;height:100%;background:${v.color};border-radius:2px"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── BAR CHART ─────────────────────────────────────────────
+function updateBarChart(vhcls) {
+  if (barChartRef) barChartRef.destroy();
+  const labels = vhcls.map(v => v.label);
+  const colors = vhcls.map(v => v.color);
+  let data, yLabel;
+  if (barMode === 'co2')     { data = vhcls.map(v => getCO2(v)); yLabel = 'tCO₂e'; }
+  else if (barMode === 'trips') { data = vhcls.map(v => v.trips); yLabel = 'Lượt'; }
+  else                       { data = vhcls.map(v => v.consumption); yLabel = 'đơn vị'; }
+  barChartRef = new Chart(document.getElementById('vehicleBar').getContext('2d'), {
+    type: 'bar',
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 7, borderSkipped: false }] },
+    options: {
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.raw.toLocaleString() + ' ' + yLabel } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 9, family: 'Montserrat' } } },
+        y: { grid: { color: '#f0f0f0' }, ticks: { font: { size: 9, family: 'Montserrat' } } }
+      }
+    }
+  });
+}
+
+// ─── TREND CHART ───────────────────────────────────────────
+function updateTrendChart() {
+  if (trendChartRef) trendChartRef.destroy();
+  const keys = trendMode === 'top2'
+    ? [...VHCL].sort((a,b) => getCO2(b) - getCO2(a)).slice(0,2).map(v => v.key)
+    : VHCL.map(v => v.key);
+  const datasets = keys.map(k => {
+    const v = VHCL.find(x => x.key === k);
+    return { label: v.label, data: TREND_DATA[k], borderColor: v.color, borderWidth: 2, pointRadius: 3,
+      backgroundColor: v.color + '18', fill: false, tension: .4, pointBackgroundColor: v.color };
+  });
+  trendChartRef = new Chart(document.getElementById('trendLine').getContext('2d'), {
+    type: 'line',
+    data: { labels: MONTHS, datasets },
+    options: {
+      plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 9, family: 'Montserrat' }, boxWidth: 10, padding: 8 } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 9, family: 'Montserrat' } } },
+        y: { grid: { color: '#f0f0f0' }, ticks: { font: { size: 9, family: 'Montserrat' } } }
+      }
+    }
+  });
+}
+
+// ─── MAIN TABLE ───────────────────────────────────────────
+function renderMainTable(vhcls, total) {
+  const sorted = [...vhcls].sort((a,b) => getCO2(b) - getCO2(a));
+  document.getElementById('mainTableBody').innerHTML = sorted.map((v,i) => {
+    const co2 = getCO2(v), pct = (co2 / total * 100).toFixed(1);
+    return `<tr>
+      <td><span class="rank-badge">${i+1}</span></td>
+      <td><span class="type-badge" style="background:${v.color}18;color:${v.color}">${v.icon} ${v.label}</span></td>
+      <td><strong>${v.trips.toLocaleString()}</strong></td>
+      <td style="color:var(--text-muted);font-size:.75rem">${v.fuel}</td>
+      <td>${v.consumption.toLocaleString()}</td>
+      <td><strong style="color:${v.color}">${fmtNum(co2)}</strong></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="flex:1;height:6px;background:var(--gray-soft);border-radius:3px">
+            <div style="width:${pct}%;height:100%;background:${v.color};border-radius:3px"></div>
+          </div>
+          <span style="font-size:.72rem;font-weight:700;color:${v.color};width:38px">${pct}%</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── VEHICLE FILTER ────────────────────────────────────────
+function setVehicle(key, btn) {
+  activeVehicle = key;
+  document.querySelectorAll('.vtab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  else {
+    const found = document.querySelector(`.vtab[data-v="${key}"]`);
+    if (found) found.classList.add('active');
+  }
+  updateAll();
+}
+
+// ─── KPI DETAIL ───────────────────────────────────────────
+function toggleKpiDetail(mode) {
+  const panel = document.getElementById('kpiDetail');
+  if (kpiDetailMode === mode && panel.classList.contains('show')) { closeKpiDetail(); return; }
+  kpiDetailMode = mode;
+  panel.classList.add('show');
+  if (kpiDetailRef) kpiDetailRef.destroy();
+  const labels = MONTHS;
+  let datasets;
+  if (mode === 'total') {
+    document.getElementById('kpiDetailTitle').innerHTML = '<i class="fa-solid fa-cloud" style="color:var(--accent)"></i> Xu hướng tổng CO₂e 12 tháng';
+    const totalByMonth = labels.map((_,i) => VHCL.reduce((s,v) => s + TREND_DATA[v.key][i], 0));
+    datasets = [{ label:'Tổng CO₂e', data:totalByMonth, borderColor:'#2e7df7', borderWidth:2, pointRadius:3, backgroundColor:'rgba(46,125,247,.08)', fill:true, tension:.4 }];
+  } else {
+    document.getElementById('kpiDetailTitle').innerHTML = '<i class="fa-solid fa-arrow-trend-up" style="color:var(--red)"></i> Biến động tháng so với kỳ trước';
+    const base = MONTHS.map((_,i) => VHCL.reduce((s,v) => s + TREND_DATA[v.key][i], 0));
+    const changes = base.map((v,i) => i === 0 ? 0 : +((v - base[i-1]) / base[i-1] * 100).toFixed(1));
+    datasets = [{ label:'% thay đổi', data:changes, borderColor:'#ef4444', borderWidth:2, pointRadius:3, backgroundColor:'rgba(239,68,68,.08)', fill:true, tension:.4 }];
+  }
+  kpiDetailRef = new Chart(document.getElementById('kpiDetailChart').getContext('2d'), {
+    type: 'line', data: { labels, datasets },
+    options: { plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 8, family: 'Montserrat' } } }, y: { grid: { color: '#f0f0f0' }, ticks: { font: { size: 8, family: 'Montserrat' } } } } }
+  });
+}
+function closeKpiDetail() { document.getElementById('kpiDetail').classList.remove('show'); kpiDetailMode = null; }
+
+// ─── CHART TOGGLES ────────────────────────────────────────
+function setBarMode(m, btn) {
+  barMode = m;
+  document.querySelectorAll('#bar-co2,#bar-trips,#bar-fuel').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  updateBarChart(getFiltered());
+}
+function setTrendMode(m, btn) {
+  trendMode = m;
+  document.querySelectorAll('#trend-all,#trend-top2').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  updateTrendChart();
+}
+
+// ─── STATUS BADGE ─────────────────────────────────────────
+function cycleStatus() {
+  statusIdx = (statusIdx + 1) % 3;
+  const s = statusList[statusIdx];
+  const labels = { draft: 'Draft', submitted: 'Submitted', locked: 'Locked' };
+  document.getElementById('statusBadge').className = 'badge-status badge-' + s;
+  document.getElementById('statusText').textContent = labels[s];
+}
+
+// ─── MANAGE TAB ───────────────────────────────────────────
+function saveRecord() {
+  const type = document.getElementById('m-type').value;
+  if (!type) { showToast('Vui lòng chọn loại phương tiện', 'warn'); return; }
+  const v = VHCL.find(x => x.key === type);
+  const trips = parseInt(document.getElementById('m-trips').value) || 0;
+  const fuel = document.getElementById('m-fuel').value;
+  const cons = parseFloat(document.getElementById('m-consumption').value) || 0;
+  const note = document.getElementById('m-note').value;
+  const EF_MAP = { 'HFO (Dầu nặng)':3.114, 'MGO (Dầu nhẹ)':3.206, 'Diesel':2.640, 'LNG':2.750, 'MDO':3.100 };
+  const ef = EF_MAP[fuel] || 3.114;
+  const co2 = +(cons * ef / 1000).toFixed(2);
+  const period = document.getElementById('m-period').value;
+  records.push({ id: Date.now(), type, label: v.label, trips, fuel, consumption: cons, co2, period, note });
+  const mainV = VHCL.find(x => x.key === type);
+  if (mainV) { mainV.trips += trips; mainV.consumption += cons; }
+  document.getElementById('m-trips').value = '';
+  document.getElementById('m-consumption').value = '';
+  document.getElementById('m-note').value = '';
+  renderMgmtTable(); updateMgmtSummary(); updateAll();
+  showToast('Đã lưu & cập nhật dashboard Scope 3', 'success');
+}
+
+function renderMgmtTable() {
+  const tbody = document.getElementById('mgmtTableBody');
+  if (!records.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;font-size:.8rem">Chưa có dữ liệu</td></tr>';
+    return;
+  }
+  tbody.innerHTML = records.map(r => {
+    const v = VHCL.find(x => x.key === r.type) || { color:'#ccc', icon:'📦' };
+    return `<tr>
+      <td><span class="type-badge" style="background:${v.color}18;color:${v.color}">${v.icon} ${r.label}</span></td>
+      <td>${r.trips.toLocaleString()}</td>
+      <td style="font-size:.73rem;color:var(--text-muted)">${r.fuel}</td>
+      <td>${r.consumption.toLocaleString()}</td>
+      <td style="color:${v.color};font-weight:700">${r.co2}</td>
+      <td style="font-size:.72rem;color:var(--text-muted)">${r.period}</td>
+      <td style="text-align:center">
+        <button class="tbl-action-btn del" onclick="confirmDelete(${r.id})"><i class="fa-solid fa-trash"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function updateMgmtSummary() {
+  const total = records.reduce((s,r) => s + r.co2, 0);
+  document.getElementById('mgmt-total-co2').innerHTML = fmtNum(total) + '<span style="font-size:.75rem;font-weight:500;color:var(--text-muted)"> tCO₂e</span>';
+  if (mgmtDonutRef) mgmtDonutRef.destroy();
+  const grouped = {};
+  records.forEach(r => {
+    if (!grouped[r.label]) grouped[r.label] = { co2:0, color: VHCL.find(v => v.key === r.type)?.color || '#ccc' };
+    grouped[r.label].co2 += r.co2;
+  });
+  const labels = Object.keys(grouped);
+  if (!labels.length) return;
+  mgmtDonutRef = new Chart(document.getElementById('mgmtDonut').getContext('2d'), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data: labels.map(l => grouped[l].co2), backgroundColor: labels.map(l => grouped[l].color), borderWidth: 2, borderColor: '#fff' }] },
+    options: { cutout: '65%', plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 9, family: 'Montserrat' }, boxWidth: 10, padding: 6 } } } }
+  });
+}
+
+function confirmDelete(id) { deleteTarget = id; document.getElementById('deleteModal').classList.add('show'); }
+function doDelete() {
+  records = records.filter(r => r.id !== deleteTarget);
+  document.getElementById('deleteModal').classList.remove('show');
+  renderMgmtTable(); updateMgmtSummary();
+  showToast('Đã xóa bản ghi', 'success');
+}
+
+// ─── EQUIPMENT TAB ────────────────────────────────────────
+const EQ_ICONS = { 'container-ship':'🚢', 'truck':'🚛', 'barge':'⛵', 'tugboat':'🛥️', 'port':'🏗️' };
+const EQ_LABELS = { 'container-ship':'Tàu container', 'truck':'Xe container', 'barge':'Xà lan', 'tugboat':'Tàu lai dắt', 'port':'PT nội bộ' };
+const EQ_COLORS = { 'container-ship':'#2e7df7', 'truck':'#0ea5e9', 'barge':'#22c55e', 'tugboat':'#f59e0b', 'port':'#8b5cf6' };
+
+function addEquipment() {
+  const name = document.getElementById('eq-name').value.trim();
+  const id   = document.getElementById('eq-id').value.trim();
+  const type = document.getElementById('eq-type').value;
+  if (!name || !id || !type) {
+    showToast('Vui lòng điền đầy đủ: Tên, Mã định danh và Loại phương tiện!', 'warn');
+    return;
+  }
+  // Check duplicate ID
+  if (equipmentList.find(e => e.id === id)) {
+    showToast('Mã định danh "' + id + '" đã tồn tại!', 'warn');
+    return;
+  }
+  const eq = {
+    name,
+    id,
+    type,
+    year:  document.getElementById('eq-year').value || '–',
+    fuel:  document.getElementById('eq-fuel').value,
+    ef:    document.getElementById('eq-ef').value || '–',
+    power: document.getElementById('eq-power').value || '–',
+    hours: document.getElementById('eq-hours').value || '–',
+    note:  document.getElementById('eq-note').value || '',
+  };
+  equipmentList.push(eq);
+  renderEquipmentTable();
+  updateFleetCounts();
+  clearEquipmentForm();
+  showToast('Đã thêm thiết bị "' + name + '" thành công!', 'success');
+}
+
+function clearEquipmentForm() {
+  ['eq-name','eq-id','eq-year','eq-ef','eq-power','eq-hours','eq-note'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('eq-type').value = '';
+  document.getElementById('eq-fuel').value = 'HFO (Dầu nặng)';
+}
+
+function renderEquipmentTable() {
+  const tbody = document.getElementById('equipmentTableBody');
+  if (!equipmentList.length) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:24px;font-size:.8rem">
+      <i class="fa-solid fa-inbox" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:.3"></i>
+      Chưa có thiết bị nào. Hãy khai báo thiết bị đầu tiên ở form bên trên.
+    </td></tr>`;
+    return;
+  }
+  tbody.innerHTML = equipmentList.map((eq, idx) => {
+    const color = EQ_COLORS[eq.type] || '#ccc';
+    const icon  = EQ_ICONS[eq.type]  || '📦';
+    const lbl   = EQ_LABELS[eq.type] || eq.type;
+    return `<tr>
+      <td><span class="type-badge" style="background:${color}18;color:${color};font-size:.7rem">${eq.id}</span></td>
+      <td style="font-weight:600">${eq.name}</td>
+      <td><span class="type-badge" style="background:${color}18;color:${color}">${icon} ${lbl}</span></td>
+      <td style="color:var(--text-muted)">${eq.year}</td>
+      <td style="color:var(--text-muted);font-size:.73rem">${eq.fuel}</td>
+      <td style="font-weight:700;color:${color}">${eq.ef}</td>
+      <td style="color:var(--text-muted)">${eq.power !== '–' ? eq.power + ' kW' : '–'}</td>
+      <td style="color:var(--text-muted)">${eq.hours !== '–' ? eq.hours + ' h' : '–'}</td>
+      <td style="text-align:center">
+        <button class="tbl-action-btn del" onclick="deleteEquipment(${idx})" title="Xóa thiết bị">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function deleteEquipment(idx) {
+  const name = equipmentList[idx].name;
+  equipmentList.splice(idx, 1);
+  renderEquipmentTable();
+  updateFleetCounts();
+  showToast('Đã xóa thiết bị "' + name + '"', 'warn');
+}
+
+function updateFleetCounts() {
+  const counts = { 'container-ship':0, 'truck':0, 'barge':0, 'tugboat':0, 'port':0 };
+  equipmentList.forEach(e => { if (counts[e.type] !== undefined) counts[e.type]++; });
+  Object.keys(counts).forEach(k => {
+    const el = document.getElementById('eq-count-' + k);
+    if (el) el.textContent = counts[k];
+  });
+  document.getElementById('eq-count-total').textContent = equipmentList.length;
+}
+
+// ─── SHAP TAB ─────────────────────────────────────────────
+function buildShap() {
+  // SHAP bars
+  const shapData = [
+    { label:'Tàu container',  value:38.4, color:'#2e7df7' },
+    { label:'Xe container',   value:24.1, color:'#0ea5e9' },
+    { label:'Xà lan',         value:18.7, color:'#22c55e' },
+    { label:'Tàu lai dắt',    value:11.2, color:'#f59e0b' },
+    { label:'PT nội bộ cảng', value:7.6,  color:'#8b5cf6' },
+  ];
+  document.getElementById('shapBars').innerHTML = shapData.map(s => `
+    <div class="shap-bar-row">
+      <div class="shap-label">${s.label}</div>
+      <div class="shap-bar-wrap"><div class="shap-bar" style="width:${s.value * 2}%;background:${s.color}"></div></div>
+      <div class="shap-val" style="color:${s.color}">${s.value}%</div>
+    </div>`).join('');
+
+  // RADAR
+  radarChartRef = new Chart(document.getElementById('radarChart').getContext('2d'), {
+    type: 'radar',
+    data: {
+      labels: ['CO₂e','Lượt vận hành','Tiêu thụ NL','Tần suất','Quãng đường'],
+      datasets: VHCL.map(v => ({
+        label: v.label,
+        data: [getCO2(v)/100, v.trips/100, v.consumption/1000, Math.random()*8+2, Math.random()*10+3].map(x => +x.toFixed(1)),
+        borderColor: v.color, backgroundColor: v.color + '22', borderWidth: 2, pointBackgroundColor: v.color, pointRadius: 4
+      }))
+    },
+    options: {
+      plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 8, family: 'Montserrat' }, boxWidth: 8, padding: 6 } } },
+      scales: { r: { ticks: { font: { size: 8 } }, grid: { color: '#f0f0f0' } } }
+    }
+  });
+
+  // SCATTER
+  scatterChartRef = new Chart(document.getElementById('scatterChart').getContext('2d'), {
+    type: 'scatter',
+    data: { datasets: VHCL.map(v => ({ label: v.label, data: [{ x: v.consumption/1000, y: getCO2(v) }], backgroundColor: v.color, pointRadius: 8, pointHoverRadius: 10 })) },
+    options: {
+      plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 8, family: 'Montserrat' }, boxWidth: 8, padding: 6 } } },
+      scales: {
+        x: { title: { display: true, text: 'Tiêu thụ nhiên liệu (nghìn đơn vị)', font: { size: 9, family: 'Montserrat' } }, grid: { color: '#f0f0f0' }, ticks: { font: { size: 8 } } },
+        y: { title: { display: true, text: 'Phát thải (tCO₂e)', font: { size: 9, family: 'Montserrat' } }, grid: { color: '#f0f0f0' }, ticks: { font: { size: 8 } } }
+      }
+    }
+  });
+
+  // STACKED BAR
+  stackedBarRef = new Chart(document.getElementById('stackedBar').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: MONTHS,
+      datasets: VHCL.map(v => ({ label: v.label, data: TREND_DATA[v.key], backgroundColor: v.color + 'cc', stack: 's' }))
+    },
+    options: {
+      plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 8, family: 'Montserrat' }, boxWidth: 10, padding: 6 } } },
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 8, family: 'Montserrat' } } },
+        y: { stacked: true, grid: { color: '#f0f0f0' }, ticks: { font: { size: 8, family: 'Montserrat' } } }
+      }
+    }
+  });
+
+  // INSIGHTS
+  const insights = [
+    { color:'#ef4444', text:'Tàu container chiếm 38.4% tổng phát thải Scope 3 – ưu tiên chuyển đổi LNG/LPG', val:'→ Tiềm năng giảm 15-22% nếu chuyển sang LNG' },
+    { color:'#f59e0b', text:'Xe container: mật độ lượt cao (1,240 lượt/tháng) nhưng EF thấp', val:'→ Tối ưu lộ trình có thể giảm 8-12% tiêu thụ' },
+    { color:'#22c55e', text:'Xà lan có EF cao nhất (3.206 tCO₂/tấn MGO) – cân nhắc thay MGO bằng Biodiesel', val:'→ Giảm 5-8% phát thải tổng thể' },
+    { color:'#8b5cf6', text:'PT nội bộ cảng: cơ hội điện hóa cao – tỷ trọng thấp, ảnh hưởng dài hạn tốt', val:'→ Điện hóa 50% đội PT nội bộ giảm 3.8%' },
+  ];
+  document.getElementById('insightList').innerHTML = insights.map(ins => `
+    <div class="insight-item">
+      <div class="insight-dot" style="background:${ins.color}"></div>
+      <div>
+        <div class="insight-text">${ins.text}</div>
+        <div class="insight-val">${ins.val}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ─── HELPERS ──────────────────────────────────────────────
+function fmtNum(n) { return n >= 1000 ? n.toLocaleString('vi-VN', { maximumFractionDigits: 1 }) : n.toFixed(1); }
+
+let toastTimer;
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  const icons = { success:'fa-circle-check', warn:'fa-triangle-exclamation', error:'fa-circle-xmark' };
+  t.className = 'toast ' + type + ' show';
+  document.getElementById('toast-icon').className = 'fa-solid ' + (icons[type] || icons.success);
+  document.getElementById('toast-text').textContent = msg;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+init();
+</script>
+</body>
+</html>

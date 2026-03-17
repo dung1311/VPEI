@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Dashboard</div>
+      <div class="page-subtitle">Tổng quan hệ thống VPEI</div>
+    </div>
+  </div>
+  <div class="card" style="padding:60px;text-align:center;">
+    <div style="font-size:2.5rem;margin-bottom:16px;">📊</div>
+    <div style="font-family:'Sora',sans-serif;font-size:1.2rem;font-weight:700;color:var(--navy);margin-bottom:8px;">
+      Vietnam Port Emission Inventory
+    </div>
+    <div style="color:var(--text-muted);font-size:.9rem;max-width:400px;margin:0 auto 28px;">
+      Dữ liệu phát thải cảng biển sẽ được hiển thị tại đây.
+    </div>
+    {% if user.is_admin %}
+    <a href="/admin" class="btn btn-primary">Quản lý tài khoản →</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

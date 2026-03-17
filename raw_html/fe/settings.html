@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VPEI – Settings: Cấu hình hệ thống</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+:root {
+  --navy:#0d1f3c; --navy-mid:#152850; --navy-light:#1e3a6e;
+  --accent:#2e7df7; --accent-light:#5a9bff;
+  --white:#ffffff; --gray-soft:#f4f6fb; --gray-border:#dde3ef;
+  --text-muted:#7a8aab; --green:#22c55e; --red:#ef4444;
+  --teal:#0ea5e9; --amber:#f59e0b; --purple:#8b5cf6;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Montserrat',sans-serif;background:var(--gray-soft);color:var(--navy);display:flex;height:100vh;overflow:hidden;}
+
+/* ─── SIDEBAR ─── */
+.sidebar{width:220px;background:var(--white);border-right:1px solid var(--gray-border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
+.sidebar-logo{padding:20px 24px;border-bottom:1px solid var(--gray-border);display:flex;align-items:center;gap:10px;}
+.logo-box{background:linear-gradient(135deg,var(--navy),var(--navy-light));border-radius:10px;padding:7px 12px;font-weight:800;font-size:1.1rem;color:white;letter-spacing:1px;}
+.nav-items{padding:16px 0;flex:1;}
+.nav-item{display:flex;align-items:center;gap:12px;padding:10px 20px;cursor:pointer;font-size:.82rem;font-weight:500;color:#4a5a7b;transition:all .2s;text-decoration:none;border-left:3px solid transparent;}
+.nav-item:hover{background:var(--gray-soft);color:var(--navy);}
+.nav-item.active{background:rgba(46,125,247,.08);color:var(--accent);border-left-color:var(--accent);font-weight:600;}
+.nav-section{padding:6px 20px 4px;font-size:.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;}
+.nav-expand{font-size:.65rem;margin-left:auto;color:var(--text-muted);}
+.nav-bottom{padding:16px 0;border-top:1px solid var(--gray-border);}
+
+/* ─── MAIN ─── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{background:var(--white);border-bottom:1px solid var(--gray-border);padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.topbar-left{display:flex;flex-direction:column;gap:1px;}
+.topbar-title{font-weight:800;font-size:1.05rem;color:var(--navy);letter-spacing:.3px;}
+.topbar-sub{font-size:.7rem;color:var(--text-muted);font-weight:500;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.admin-badge{padding:5px 12px;border-radius:20px;background:rgba(46,125,247,.1);color:var(--accent);font-size:.72rem;font-weight:700;display:flex;align-items:center;gap:5px;}
+
+/* ─── BODY LAYOUT ─── */
+.body-layout{flex:1;display:flex;overflow:hidden;}
+
+/* ─── SETTINGS MENU ─── */
+.settings-menu{width:220px;background:var(--white);border-right:1px solid var(--gray-border);flex-shrink:0;overflow-y:auto;padding:16px 0;}
+.smenu-section{padding:5px 18px 3px;font-size:.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;}
+.smenu-item{display:flex;align-items:center;gap:10px;padding:9px 18px;cursor:pointer;font-size:.8rem;font-weight:500;color:#4a5a7b;transition:all .18s;border-left:3px solid transparent;}
+.smenu-item:hover{background:var(--gray-soft);color:var(--navy);}
+.smenu-item.active{background:rgba(46,125,247,.07);color:var(--accent);border-left-color:var(--accent);font-weight:700;}
+.smenu-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.78rem;flex-shrink:0;}
+
+/* ─── SETTINGS CONTENT ─── */
+.settings-content{flex:1;overflow-y:auto;padding:24px 28px;display:flex;flex-direction:column;gap:16px;}
+
+/* ─── CARDS ─── */
+.s-card{background:white;border-radius:13px;border:1px solid var(--gray-border);overflow:hidden;}
+.s-card-header{padding:14px 20px;border-bottom:1px solid var(--gray-border);display:flex;align-items:center;justify-content:space-between;}
+.s-card-title{font-size:.78rem;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.07em;display:flex;align-items:center;gap:9px;}
+.s-card-body{padding:20px;}
+
+/* ─── FORM ─── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-label{font-size:.7rem;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.05em;}
+.form-input{padding:9px 12px;border:1.5px solid var(--gray-border);border-radius:8px;font-size:.8rem;font-family:'Montserrat',sans-serif;color:var(--navy);outline:none;transition:border-color .2s;}
+.form-input:focus{border-color:var(--accent);}
+.form-select{padding:9px 12px;border:1.5px solid var(--gray-border);border-radius:8px;font-size:.8rem;font-family:'Montserrat',sans-serif;color:var(--navy);outline:none;appearance:none;background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%237a8aab' d='M5 6L0 0h10z'/%3E%3C/svg%3E") no-repeat right 10px center;}
+.form-input:disabled,.form-select:disabled{background:var(--gray-soft);color:var(--text-muted);cursor:not-allowed;}
+.form-hint{font-size:.65rem;color:var(--text-muted);font-style:italic;}
+.required{color:var(--red);margin-left:2px;}
+
+/* ─── UPLOAD LOGO ─── */
+.logo-upload{border:2.5px dashed var(--gray-border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:white;}
+.logo-upload:hover{border-color:var(--accent);background:rgba(46,125,247,.03);}
+.logo-preview{width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,var(--navy),var(--navy-light));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1rem;color:white;margin:0 auto 8px;}
+
+/* ─── BUTTONS ─── */
+.btn-save{padding:9px 22px;border-radius:9px;font-size:.8rem;font-weight:700;cursor:pointer;border:none;background:var(--navy);color:white;font-family:'Montserrat',sans-serif;transition:all .2s;display:inline-flex;align-items:center;gap:7px;}
+.btn-save:hover{background:var(--navy-light);box-shadow:0 4px 14px rgba(13,31,60,.2);}
+.btn-outline{padding:8px 16px;border-radius:9px;font-size:.78rem;font-weight:700;cursor:pointer;border:1.5px solid var(--gray-border);background:white;color:var(--navy);font-family:'Montserrat',sans-serif;transition:all .2s;display:inline-flex;align-items:center;gap:7px;}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+.btn-danger{padding:8px 16px;border-radius:9px;font-size:.78rem;font-weight:700;cursor:pointer;border:none;background:rgba(239,68,68,.1);color:var(--red);font-family:'Montserrat',sans-serif;transition:all .2s;display:inline-flex;align-items:center;gap:7px;}
+.btn-danger:hover{background:var(--red);color:white;}
+.btn-green{padding:7px 14px;border-radius:8px;font-size:.75rem;font-weight:700;cursor:pointer;border:none;background:rgba(34,197,94,.1);color:var(--green);font-family:'Montserrat',sans-serif;display:inline-flex;align-items:center;gap:6px;transition:all .2s;}
+.btn-green:hover{background:var(--green);color:white;}
+
+/* ─── TABLE ─── */
+.s-table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th{padding:9px 14px;text-align:left;font-size:.67rem;font-weight:700;color:var(--text-muted);background:#fafbfd;border-bottom:1.5px solid var(--gray-border);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;}
+td{padding:10px 14px;font-size:.78rem;color:#2a3a6b;border-bottom:1px solid #f0f2f8;font-weight:500;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#f8f9fd;}
+.tbl-action-btn{width:28px;height:28px;border-radius:6px;border:1.5px solid var(--gray-border);background:white;cursor:pointer;font-size:.72rem;transition:all .18s;display:inline-flex;align-items:center;justify-content:center;}
+.tbl-action-btn.edit:hover{border-color:var(--accent);color:var(--accent);}
+.tbl-action-btn.del:hover{border-color:var(--red);color:var(--red);}
+.tbl-action-btn.lock:hover{border-color:var(--amber);color:var(--amber);}
+
+/* ─── BADGES ─── */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:5px;font-size:.68rem;font-weight:700;white-space:nowrap;}
+.badge-active{background:#dcfce7;color:#16a34a;}
+.badge-inactive{background:#fee2e2;color:#dc2626;}
+.badge-locked{background:#fef9c3;color:#a16207;}
+.badge-pending{background:#dbeafe;color:#1d4ed8;}
+.role-super{background:rgba(139,92,246,.1);color:var(--purple);}
+.role-admin{background:rgba(46,125,247,.1);color:var(--accent);}
+.role-entry{background:rgba(14,165,233,.1);color:var(--teal);}
+.role-viewer{background:rgba(122,138,171,.1);color:var(--text-muted);}
+.role-reviewer{background:rgba(245,158,11,.1);color:var(--amber);}
+
+/* ─── SCOPE CONFIG ─── */
+.scope-config-tabs{display:flex;gap:6px;margin-bottom:16px;}
+.sctab{padding:7px 18px;border-radius:25px;font-size:.75rem;font-weight:700;cursor:pointer;border:2px solid var(--gray-border);background:white;color:#4a5a7b;font-family:'Montserrat',sans-serif;transition:all .2s;}
+.sctab.active{background:var(--navy);color:white;border-color:var(--navy);}
+.sctab:hover:not(.active){border-color:var(--accent);color:var(--accent);}
+
+/* ─── EF TABLE ─── */
+.ef-scope-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:5px;font-size:.68rem;font-weight:700;}
+
+/* ─── TOGGLE SWITCH ─── */
+.toggle-wrap{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f2f8;}
+.toggle-wrap:last-child{border-bottom:none;}
+.toggle-info{flex:1;}
+.toggle-label{font-size:.8rem;font-weight:600;color:var(--navy);}
+.toggle-desc{font-size:.68rem;color:var(--text-muted);margin-top:2px;}
+.toggle-sw{position:relative;width:40px;height:22px;flex-shrink:0;}
+.toggle-sw input{opacity:0;width:0;height:0;}
+.toggle-sw .slider{position:absolute;inset:0;background:var(--gray-border);border-radius:22px;cursor:pointer;transition:.3s;}
+.toggle-sw .slider:before{content:'';position:absolute;width:16px;height:16px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s;box-shadow:0 1px 4px rgba(0,0,0,.15);}
+.toggle-sw input:checked + .slider{background:var(--accent);}
+.toggle-sw input:checked + .slider:before{transform:translateX(18px);}
+
+/* ─── LOG ITEMS ─── */
+.log-item{display:flex;align-items:flex-start;gap:11px;padding:10px 0;border-bottom:1px solid #f0f2f8;}
+.log-item:last-child{border-bottom:none;}
+.log-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.78rem;flex-shrink:0;}
+.log-body{flex:1;}
+.log-action{font-size:.78rem;font-weight:700;color:var(--navy);}
+.log-detail{font-size:.68rem;color:var(--text-muted);margin-top:2px;}
+.log-time{font-size:.65rem;color:var(--text-muted);white-space:nowrap;}
+
+/* ─── MODAL ─── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(13,31,60,.45);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
+.modal-overlay.show{display:flex;}
+.modal{background:white;border-radius:16px;padding:26px;width:480px;max-width:96vw;box-shadow:0 24px 80px rgba(0,0,0,.2);animation:mIn .25s ease;}
+@keyframes mIn{from{opacity:0;transform:scale(.94) translateY(10px)}to{opacity:1;transform:none}}
+.modal-title{font-size:.95rem;font-weight:800;color:var(--navy);margin-bottom:16px;display:flex;align-items:center;gap:9px;}
+.modal-footer{display:flex;gap:10px;margin-top:18px;}
+.btn-secondary{padding:9px 18px;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;border:1.5px solid var(--gray-border);background:white;color:var(--navy);font-family:'Montserrat',sans-serif;}
+
+/* ─── TOAST ─── */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:white;padding:11px 18px;border-radius:12px;font-size:.8rem;font-weight:600;display:flex;align-items:center;gap:9px;box-shadow:0 8px 30px rgba(0,0,0,.18);z-index:10000;transform:translateY(70px);opacity:0;transition:all .32s cubic-bezier(.34,1.56,.64,1);max-width:320px;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.success{background:#16a34a;}
+.toast.warn{background:#d97706;}
+.toast.error{background:var(--red);}
+
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--gray-border);border-radius:10px;}
+.hidden{display:none!important;}
+</style>
+</head>
+<body>
+
+<!-- ─── SIDEBAR ─── -->
+<div class="sidebar">
+  <div class="sidebar-logo"><div class="logo-box">VPEI</div></div>
+  <nav class="nav-items">
+    <div class="nav-section">Menu chính</div>
+    <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-pie" style="width:16px;color:var(--text-muted)"></i> Dashboard</a>
+    <a href="scope_01.html" class="nav-item"><i class="fa-solid fa-industry" style="width:16px;color:var(--text-muted)"></i> Scope 1</a>
+    <a href="scope_02.html" class="nav-item"><i class="fa-solid fa-bolt" style="width:16px;color:var(--text-muted)"></i> Scope 2</a>
+    <a href="scope_03.html" class="nav-item"><i class="fa-solid fa-ship" style="width:16px;color:var(--text-muted)"></i> Scope 3</a>
+    <div class="nav-section" style="margin-top:10px">Báo cáo</div>
+    <a href="reports.html" class="nav-item"><i class="fa-solid fa-file-lines" style="width:16px;color:var(--text-muted)"></i> Reports</a>
+  </nav>
+  <div class="nav-bottom">
+    <a href="settings.html" class="nav-item active"><i class="fa-solid fa-gear" style="width:16px;color:var(--accent)"></i> Settings</a>
+  </div>
+</div>
+
+<!-- ─── MAIN ─── -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title"><i class="fa-solid fa-gear" style="color:var(--accent);margin-right:7px;font-size:.9rem"></i>Settings – Cấu hình hệ thống</div>
+      <div class="topbar-sub">Quản trị nền tảng · Phân quyền · Hệ số phát thải · Bảo mật</div>
+    </div>
+    <div class="topbar-right">
+      <div class="admin-badge"><i class="fa-solid fa-shield-halved"></i> Super Admin</div>
+      <div style="font-size:.72rem;color:var(--text-muted);font-weight:600;padding:5px 10px;background:var(--gray-soft);border-radius:7px;border:1px solid var(--gray-border)">
+        <i class="fa-solid fa-clock" style="margin-right:4px"></i>Phiên: <span id="sessionTimer">29:45</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div class="body-layout">
+
+    <!-- ─── SETTINGS MENU ─── -->
+    <div class="settings-menu">
+      <div class="smenu-section">Cấu hình</div>
+      <div class="smenu-item active" onclick="switchSection('general',this)">
+        <div class="smenu-icon" style="background:rgba(46,125,247,.1)"><i class="fa-solid fa-sliders" style="color:var(--accent)"></i></div>
+        Cài đặt chung
+      </div>
+      <div class="smenu-item" onclick="switchSection('users',this)">
+        <div class="smenu-icon" style="background:rgba(34,197,94,.1)"><i class="fa-solid fa-users" style="color:var(--green)"></i></div>
+        Người dùng &amp; Phân quyền
+      </div>
+      <div class="smenu-item" onclick="switchSection('scope',this)">
+        <div class="smenu-icon" style="background:rgba(14,165,233,.1)"><i class="fa-solid fa-layer-group" style="color:var(--teal)"></i></div>
+        Cấu hình Scope
+      </div>
+      <div class="smenu-item" onclick="switchSection('ef',this)">
+        <div class="smenu-icon" style="background:rgba(245,158,11,.1)"><i class="fa-solid fa-atom" style="color:var(--amber)"></i></div>
+        Hệ số phát thải
+      </div>
+      <div class="smenu-item" onclick="switchSection('report-fmt',this)">
+        <div class="smenu-icon" style="background:rgba(139,92,246,.1)"><i class="fa-solid fa-file-invoice" style="color:var(--purple)"></i></div>
+        Định dạng báo cáo
+      </div>
+      <div class="smenu-item" onclick="switchSection('security',this)">
+        <div class="smenu-icon" style="background:rgba(239,68,68,.1)"><i class="fa-solid fa-shield-halved" style="color:var(--red)"></i></div>
+        Bảo mật &amp; Nhật ký
+      </div>
+    </div>
+
+    <!-- ─── SETTINGS CONTENT ─── -->
+    <div class="settings-content">
+
+      <!-- ══════ 1. GENERAL ══════ -->
+      <div id="sec-general">
+        <div class="s-card">
+          <div class="s-card-header">
+            <div class="s-card-title"><i class="fa-solid fa-building" style="color:var(--accent)"></i> Thông tin doanh nghiệp</div>
+          </div>
+          <div class="s-card-body">
+            <div style="display:grid;grid-template-columns:120px 1fr;gap:20px;align-items:start">
+              <div>
+                <div class="form-label" style="margin-bottom:8px">Logo</div>
+                <div class="logo-upload" onclick="document.getElementById('logoFile').click()">
+                  <div class="logo-preview">VPEI</div>
+                  <div style="font-size:.68rem;color:var(--text-muted)">Nhấn để tải logo</div>
+                  <div style="font-size:.62rem;color:var(--gray-border);margin-top:2px">PNG · SVG · Tối đa 2MB</div>
+                  <input type="file" id="logoFile" style="display:none" accept="image/*" onchange="showToast('Logo đã được tải lên','success')">
+                </div>
+              </div>
+              <div class="form-grid" style="gap:12px">
+                <div class="form-group">
+                  <label class="form-label">Tên doanh nghiệp <span class="required">*</span></label>
+                  <input class="form-input" value="Cảng VPEI – Việt Nam Port &amp; Energy Infrastructure">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Mã số thuế</label>
+                  <input class="form-input" value="0314852369">
+                </div>
+                <div class="form-group" style="grid-column:1/-1">
+                  <label class="form-label">Địa chỉ</label>
+                  <input class="form-input" value="Số 1 Đường Cảng Biển, Khu kinh tế, TP. Hồ Chí Minh">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="s-card">
+          <div class="s-card-header">
+            <div class="s-card-title"><i class="fa-solid fa-cog" style="color:var(--teal)"></i> Cài đặt vận hành</div>
+          </div>
+          <div class="s-card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Năm tài chính mặc định</label>
+                <select class="form-select"><option>2026</option><option>2025</option><option>2024</option></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Múi giờ hệ thống</label>
+                <select class="form-select"><option>GMT+7 – Hà Nội / TP.HCM</option><option>GMT+0 – UTC</option></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Ngôn ngữ hiển thị</label>
+                <select class="form-select"><option>Tiếng Việt</option><option>English</option></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Đơn vị phát thải mặc định</label>
+                <select class="form-select"><option>tCO₂e (tấn)</option><option>kgCO₂e (kg)</option></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Chuẩn kiểm kê áp dụng</label>
+                <select class="form-select"><option>GHG Protocol Corporate Standard</option><option>ISO 14064-1:2018</option><option>Thông tư 96/2020/TT-BTNMT</option></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Định dạng ngày tháng</label>
+                <select class="form-select"><option>DD/MM/YYYY</option><option>MM/DD/YYYY</option><option>YYYY-MM-DD</option></select>
+              </div>
+            </div>
+            <div style="margin-top:16px;display:flex;justify-content:flex-end">
+              <button class="btn-save" onclick="saveSection('Cài đặt chung')"><i class="fa-solid fa-floppy-disk"></i> Lưu thay đổi</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════ 2. USERS ══════ -->
+      <div id="sec-users" class="hidden">
+        <div class="s-card">
+          <div class="s-card-header">
+            <div class="s-card-title"><i class="fa-solid fa-users" style="color:var(--green)"></i> Danh sách người dùng</div>
+            <button class="btn-green" onclick="openUserModal()"><i class="fa-solid fa-user-plus"></i> Thêm người dùng</button>
+          </div>
+          <div class="s-card-body" style="padding:0">
+            <div class="s-table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Tên</th><th>Email</th><th>Vai trò</th><th>Scope truy cập</th><th>Trạng thái</th><th style="text-align:center">Hành động</th></tr>
+                </thead>
+                <tbody id="usersTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="s-card">
+          <div class="s-card-header">
+            <div class="s-card-title"><i class="fa-solid fa-key" style="color:var(--amber)"></i> Ma trận phân quyền</div>
+          </div>
+          <div class="s-card-body" style="padding:0">
+            <div class="s-table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Vai trò</th><th style="text-align:center">Xem dữ liệu</th><th style="text-align:center">Nhập dữ liệu</th><th style="text-align:center">Phê duyệt</th><th style="text-align:center">Xuất báo cáo</th><th style="text-align:center">Cấu hình hệ thống</th></tr>
+                </thead>
+                <tbody id="permMatrix"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════ 3. SCOPE CONFIG ══════ -->
+      <div id="sec-scope" class="hidden">
+        <div class="scope-config-tabs">
+          <button class="sctab active" onclick="setScopeTab('s1',this)"><i class="fa-solid fa-industry" style="margin-right:6px"></i>Scope 1</button>
+          <button class="sctab" onclick="setScopeTab('s2',this)"><i class="fa-solid fa-bolt" style="margin-right:6px"></i>Scope 2</button>
+          <button class="sctab" onclick="setScopeTab('s3',this)"><i class="fa-solid fa-ship" style="margin-right:6px"></i>Scope 3</button>
+        </div>
+
+        <div id="scope-s1">
+          <div class="s-card">
+            <div class="s-card-header"><div class="s-card-title"><i class="fa-solid fa-industry" style="color:#2e7df7"></i> Cấu hình Scope 1 – Phát thải trực tiếp</div></div>
+            <div class="s-card-body">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Phương pháp tính</label>
+                  <select class="form-select"><option>Fuel-based (Tiêu thụ nhiên liệu)</option><option>Activity-based</option><option>Mass balance</option></select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Đơn vị nhiên liệu mặc định</label>
+                  <select class="form-select"><option>Lít (L)</option><option>Tấn (tấn)</option><option>m³</option></select>
+                </div>
+              </div>
+              <div style="margin-top:14px">
+                <div class="form-label" style="margin-bottom:8px">Danh mục nhiên liệu được phép nhập</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+                  ${['Dầu diesel','HFO (Dầu nặng)','MGO (Dầu nhẹ)','LNG','MDO','Xăng RON95','Khí tự nhiên','Than đá'].map(f=>`
+                  <label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1.5px solid var(--gray-border);border-radius:8px;cursor:pointer;font-size:.76rem;font-weight:600;color:#2a3a6b;transition:all .18s">
+                    <input type="checkbox" checked style="accent-color:var(--accent)"> ${f}
+                  </label>`).join('')}
+                </div>
+              </div>
+              <div style="margin-top:16px;display:flex;justify-content:flex-end">
+                <button class="btn-save" onclick="saveSection('Scope 1')"><i class="fa-solid fa-floppy-disk"></i> Lưu cấu hình</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="scope-s2" class="hidden">
+          <div class="s-card">
+            <div class="s-card-header"><div class="s-card-title"><i class="fa-solid fa-bolt" style="color:var(--amber)"></i> Cấu hình Scope 2 – Điện năng gián tiếp</div></div>
+            <div class="s-card-body">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Nguồn điện</label>
+                  <select class="form-select"><option>Lưới quốc gia (National Grid)</option><option>Tự phát điện</option><option>Năng lượng tái tạo</option></select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Phương pháp tính</label>
+                  <select class="form-select"><option>Location-based</option><option>Market-based</option></select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Đơn vị điện mặc định</label>
+                  <select class="form-select"><option>kWh</option><option>MWh</option></select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Hệ số điện lưới hiện tại</label>
+                  <input class="form-input" value="0.6235" disabled>
+                  <span class="form-hint">Nguồn: MONRE 2025 · Cập nhật tại mục Hệ số phát thải</span>
+                </div>
+              </div>
+              <div style="margin-top:16px;display:flex;justify-content:flex-end">
+                <button class="btn-save" onclick="saveSection('Scope 2')"><i class="fa-solid fa-floppy-disk"></i> Lưu cấu hình</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="scope-s3" class="hidden">
+          <div class="s-card">
+            <div class="s-card-header"><div class="s-card-title"><i class="fa-solid fa-ship" style="color:var(--green)"></i> Cấu hình Scope 3 – Vận tải &amp; Chuỗi cung ứng</div></div>
+            <div class="s-card-body">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Nhóm vận tải</label>
+                  <select class="form-select"><option>Upstream &amp; Downstream</option><option>Upstream only</option><option>Downstream only</option></select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Đơn vị hoạt động mặc định</label>
+                  <select class="form-select"><option>tấn.km</option><option>Chuyến (Trip)</option><option>km</option></select>
+                </div>
+              </div>
+              <div style="margin-top:14px">
+                <div class="form-label" style="margin-bottom:8px">Loại hình vận tải được phép nhập</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                  ${[['🚢','Tàu container'],['🚛','Xe container'],['⛵','Xà lan'],['🛥️','Tàu lai dắt'],['🏗️','Phương tiện nội bộ'],['✈️','Hàng không (nếu có)']].map(([ic,lb])=>`
+                  <label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1.5px solid var(--gray-border);border-radius:8px;cursor:pointer;font-size:.76rem;font-weight:600;color:#2a3a6b">
+                    <input type="checkbox" checked style="accent-color:var(--accent)"> ${ic} ${lb}
+                  </label>`).join('')}
+                </div>
+              </div>
+              <div style="margin-top:16px;display:flex;justify-content:flex-end">
+                <button class="btn-save" onclick="saveSection('Scope 3')"><i class="fa-solid fa-floppy-disk"></i> Lưu cấu hình</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════ 4. EMISSION FACTORS ══════ -->
+      <div id="sec-ef" class="hidden">
+        <div class="s-card">
+          <div class="s-card-header">
+            <div class="s-card-title"><i class="fa-solid fa-atom" style="color:var(--amber)"></i> Hệ số phát thải</div>
+            <button class="btn-green" onclick="openEFModal()"><i class="fa-solid fa-plus"></i> Thêm hệ số mới</button>
+          </div>
+          <div style="padding:12px 20px;border-bottom:1px solid var(--gray-border);background:#fafbfd;display:flex;align-items:center;gap:8px">
+            <div style="font-size:.68rem;font-weight:700;color:var(--amber);display:flex;align-items:center;gap:5px;padding:5px 11px;background:#fef9c3;border-radius:7px;border:1px solid #fde68a">
+              <i class="fa-solid fa-triangle-exclamation"></i> Không xóa vĩnh viễn hệ số đã dùng trong báo cáo. Chỉ được ngưng kích hoạt.
+            </div>
+            <div style="display:flex;gap:6px;margin-left:auto">
+              <select class="form-select" style="padding:5px 10px;font-size:.75rem;width:auto" onchange="filterEF(this.value)" id="efScopeFilter">
+                <option value="all">Tất cả Scope</option><option value="Scope 1">Scope 1</option><option value="Scope 2">Scope 2</option><option value="Scope 3">Scope 3</option>
+              </select>
+              <select class="form-select" style="padding:5px 10px;font-size:.75rem;width:auto" onchange="filterEFYear(this.value)">
+                <option>2026</option><option>2025</option><option>2024</option>
+              </select>
+            </div>
+          </div>
+          <div class="s-table-wrap">
+            <table>
+              <thead>
+                <tr><th>Loại nhiên liệu / Nguồn</th><th>Scope</th><th>Hệ số (tCO₂e/đơn vị)</th><th>Đơn vị</th><th>Nguồn tham chiếu</th><th>Năm áp dụng</th><th>Trạng thái</th><th style="text-align:center">Hành động</th></tr>
+              </thead>
+              <tbody id="efTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════ 5. REPORT FORMAT ══════ -->
+      <div id="sec-report-fmt" class="hidden">
+        <div class="s-card">
+          <div class="s-card-header"><div class="s-card-title"><i class="fa-solid fa-file-invoice" style="color:var(--purple)"></i> Cấu hình định dạng báo cáo</div></div>
+          <div class="s-card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Chuẩn báo cáo</label>
+                <select class="form-select">
+                  <option>Nội bộ doanh nghiệp</option>
+                  <option>ESG Reporting (GRI / SASB)</option>
+                  <option>Gửi cơ quan nhà nước (MONRE)</option>
+                  <option>Carbon Disclosure Project (CDP)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Đơn vị số thập phân</label>
+                <select class="form-select"><option>2 chữ số (VD: 1,285.45)</option><option>3 chữ số (VD: 1,285.456)</option><option>Làm tròn (VD: 1,285)</option></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Đơn vị phát thải hiển thị</label>
+                <select class="form-select"><option>tCO₂e (tấn)</option><option>kgCO₂e (kg)</option></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Ngôn ngữ báo cáo</label>
+                <select class="form-select"><option>Tiếng Việt</option><option>English</option><option>Song ngữ (VI / EN)</option></select>
+              </div>
+            </div>
+            <div style="margin-top:16px">
+              <div class="form-label" style="margin-bottom:10px">Chữ ký số &amp; Người duyệt</div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label" style="font-size:.65rem">Người duyệt mặc định</label>
+                  <select class="form-select">
+                    <option>Nguyễn Văn A – Giám đốc Môi trường</option>
+                    <option>Trần Thị B – Phó Giám đốc</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" style="font-size:.65rem">Chức danh hiển thị</label>
+                  <input class="form-input" value="Giám đốc Kiểm kê Phát thải">
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:16px">
+              <div class="form-label" style="margin-bottom:8px">Tùy chọn hiển thị trong báo cáo</div>
+              <div class="toggle-wrap">
+                <div class="toggle-info"><div class="toggle-label">Hiển thị logo trên trang bìa</div><div class="toggle-desc">Logo doanh nghiệp sẽ xuất hiện ở góc trên báo cáo</div></div>
+                <label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label>
+              </div>
+              <div class="toggle-wrap">
+                <div class="toggle-info"><div class="toggle-label">Đánh số trang tự động</div><div class="toggle-desc">Tự động thêm số trang vào footer</div></div>
+                <label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label>
+              </div>
+              <div class="toggle-wrap">
+                <div class="toggle-info"><div class="toggle-label">Watermark "Bản nháp" khi chưa phê duyệt</div><div class="toggle-desc">Tự động thêm dấu DRAFT khi báo cáo chưa Approved</div></div>
+                <label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label>
+              </div>
+              <div class="toggle-wrap">
+                <div class="toggle-info"><div class="toggle-label">Bao gồm phụ lục hệ số phát thải</div><div class="toggle-desc">Tự động đính kèm bảng hệ số EF sử dụng trong báo cáo</div></div>
+                <label class="toggle-sw"><input type="checkbox"><span class="slider"></span></label>
+              </div>
+            </div>
+            <div style="margin-top:16px;display:flex;justify-content:flex-end">
+              <button class="btn-save" onclick="saveSection('Định dạng báo cáo')"><i class="fa-solid fa-floppy-disk"></i> Lưu cấu hình</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════ 6. SECURITY ══════ -->
+      <div id="sec-security" class="hidden">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="s-card">
+            <div class="s-card-header"><div class="s-card-title"><i class="fa-solid fa-lock" style="color:var(--red)"></i> Chính sách bảo mật</div></div>
+            <div class="s-card-body">
+              <div class="toggle-wrap">
+                <div class="toggle-info"><div class="toggle-label">Xác thực 2 bước (2FA)</div><div class="toggle-desc">Yêu cầu OTP khi đăng nhập</div></div>
+                <label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label>
+              </div>
+              <div class="toggle-wrap">
+                <div class="toggle-info"><div class="toggle-label">Bắt buộc đổi mật khẩu định kỳ</div><div class="toggle-desc">Nhắc đổi mật khẩu mỗi 90 ngày</div></div>
+                <label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label>
+              </div>
+              <div class="toggle-wrap">
+                <div class="toggle-info"><div class="toggle-label">Khoá tài khoản sau 5 lần sai</div><div class="toggle-desc">Tự động khóa sau nhiều lần đăng nhập thất bại</div></div>
+                <label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label>
+              </div>
+              <div class="toggle-wrap">
+                <div class="toggle-info"><div class="toggle-label">Ghi log tất cả thao tác</div><div class="toggle-desc">Lưu nhật ký mọi hành động trong hệ thống</div></div>
+                <label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label>
+              </div>
+              <div class="form-group" style="margin-top:14px">
+                <label class="form-label">Thời gian tự động đăng xuất</label>
+                <select class="form-select"><option>30 phút</option><option>1 giờ</option><option>2 giờ</option><option>Không giới hạn</option></select>
+              </div>
+              <div style="margin-top:14px;display:flex;justify-content:flex-end">
+                <button class="btn-save" onclick="saveSection('Bảo mật')"><i class="fa-solid fa-floppy-disk"></i> Lưu</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="s-card">
+            <div class="s-card-header">
+              <div class="s-card-title"><i class="fa-solid fa-clock-rotate-left" style="color:var(--amber)"></i> Nhật ký hệ thống</div>
+              <select class="form-select" style="padding:5px 10px;font-size:.72rem;width:auto">
+                <option>Tất cả</option><option>Đăng nhập</option><option>Chỉnh sửa dữ liệu</option><option>Thay đổi hệ số</option><option>Xuất báo cáo</option>
+              </select>
+            </div>
+            <div class="s-card-body" style="max-height:380px;overflow-y:auto;" id="sysLogList"></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /settings-content -->
+  </div><!-- /body-layout -->
+</div><!-- /main -->
+
+<!-- ─── USER MODAL ─── -->
+<div class="modal-overlay" id="userModal" onclick="closeModal('userModal',event)">
+  <div class="modal">
+    <div class="modal-title"><i class="fa-solid fa-user-plus" style="color:var(--green)"></i> Thêm người dùng mới</div>
+    <div class="form-grid" style="gap:12px">
+      <div class="form-group"><label class="form-label">Họ và tên <span class="required">*</span></label><input class="form-input" id="u-name" placeholder="VD: Nguyễn Văn A"></div>
+      <div class="form-group"><label class="form-label">Email <span class="required">*</span></label><input class="form-input" id="u-email" placeholder="user@vpei.vn" type="email"></div>
+      <div class="form-group"><label class="form-label">Vai trò</label>
+        <select class="form-select" id="u-role">
+          <option value="super">Super Admin</option><option value="admin">Admin môi trường</option>
+          <option value="entry" selected>Data Entry</option><option value="reviewer">Reviewer</option><option value="viewer">Viewer</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Scope truy cập</label>
+        <select class="form-select" id="u-scope">
+          <option>Tất cả Scope (1+2+3)</option><option>Scope 1 only</option><option>Scope 2 only</option><option>Scope 3 only</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="document.getElementById('userModal').classList.remove('show')">Hủy</button>
+      <button class="btn-save" onclick="addUser()"><i class="fa-solid fa-user-plus"></i> Thêm người dùng</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── EF MODAL ─── -->
+<div class="modal-overlay" id="efModal" onclick="closeModal('efModal',event)">
+  <div class="modal">
+    <div class="modal-title"><i class="fa-solid fa-atom" style="color:var(--amber)"></i> Thêm hệ số phát thải mới</div>
+    <div style="background:#fef9c3;border:1.5px solid #fde68a;border-radius:8px;padding:8px 12px;font-size:.72rem;color:#a16207;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:6px">
+      <i class="fa-solid fa-lock"></i> Hệ số sau khi sử dụng trong báo cáo sẽ không thể xóa vĩnh viễn.
+    </div>
+    <div class="form-grid" style="gap:12px">
+      <div class="form-group"><label class="form-label">Loại nhiên liệu / Nguồn <span class="required">*</span></label><input class="form-input" id="ef-name" placeholder="VD: Dầu diesel B5"></div>
+      <div class="form-group"><label class="form-label">Scope</label>
+        <select class="form-select" id="ef-scope"><option>Scope 1</option><option>Scope 2</option><option>Scope 3</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Hệ số (tCO₂e) <span class="required">*</span></label><input class="form-input" id="ef-val" placeholder="VD: 2.640" type="number" step="0.001"></div>
+      <div class="form-group"><label class="form-label">Đơn vị</label>
+        <select class="form-select" id="ef-unit"><option>tCO₂e/tấn nhiên liệu</option><option>tCO₂e/MWh</option><option>kgCO₂e/L</option><option>tCO₂e/1000km</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Nguồn tham chiếu</label><input class="form-input" id="ef-source" placeholder="VD: Bộ TNMT 2026, IPCC 2006"></div>
+      <div class="form-group"><label class="form-label">Năm áp dụng</label>
+        <select class="form-select" id="ef-year"><option>2026</option><option>2025</option><option>2027</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="document.getElementById('efModal').classList.remove('show')">Hủy</button>
+      <button class="btn-save" onclick="addEF()"><i class="fa-solid fa-floppy-disk"></i> Lưu hệ số</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── DATA ─────────────────────────────────────────────────
+let users = [
+  { id:1, name:'Nguyễn Văn A', email:'admin@vpei.vn',    role:'super',    scope:'Tất cả', status:'active' },
+  { id:2, name:'Trần Thị B',   email:'env@vpei.vn',      role:'admin',    scope:'Tất cả', status:'active' },
+  { id:3, name:'Lê Minh C',    email:'entry@vpei.vn',    role:'entry',    scope:'Scope 2', status:'active' },
+  { id:4, name:'Phạm Văn D',   email:'review@vpei.vn',   role:'reviewer', scope:'Scope 1+3', status:'active' },
+  { id:5, name:'Hoàng Thị E',  email:'viewer@vpei.vn',   role:'viewer',   scope:'Tất cả', status:'inactive' },
+];
+
+let efData = [
+  { id:1, name:'Dầu diesel',           scope:'Scope 1', val:2.640,  unit:'tCO₂e/tấn', source:'IPCC 2006 · Bộ TNMT', year:2026, status:'active' },
+  { id:2, name:'HFO (Dầu nặng)',        scope:'Scope 1', val:3.114,  unit:'tCO₂e/tấn', source:'IMO 2023',              year:2026, status:'active' },
+  { id:3, name:'MGO (Dầu nhẹ)',         scope:'Scope 1', val:3.206,  unit:'tCO₂e/tấn', source:'IMO 2023',              year:2026, status:'active' },
+  { id:4, name:'LNG',                   scope:'Scope 1', val:2.750,  unit:'tCO₂e/tấn', source:'IPCC 2006',             year:2026, status:'active' },
+  { id:5, name:'Điện lưới quốc gia VN', scope:'Scope 2', val:0.6235, unit:'tCO₂e/MWh', source:'MONRE 2025',            year:2025, status:'active' },
+  { id:6, name:'Xăng RON95',            scope:'Scope 1', val:2.310,  unit:'tCO₂e/tấn', source:'IPCC 2006',             year:2026, status:'active' },
+  { id:7, name:'MDO',                   scope:'Scope 3', val:3.100,  unit:'tCO₂e/tấn', source:'IMO 2023',              year:2026, status:'active' },
+  { id:8, name:'Than đá',               scope:'Scope 1', val:2.420,  unit:'tCO₂e/tấn', source:'IPCC 2006',             year:2025, status:'inactive' },
+];
+
+const sysLogs = [
+  { type:'login',  action:'Đăng nhập thành công',      detail:'Nguyễn Văn A · IP: 192.168.1.10',          time:'14/03/2026 09:02' },
+  { type:'ef',     action:'Cập nhật hệ số phát thải',  detail:'HFO: 3.114 → 3.120 tCO₂e/tấn · Admin B',  time:'14/03/2026 08:45' },
+  { type:'report', action:'Xuất báo cáo PDF',           detail:'Báo cáo Tổng hợp – Năm 2025 · Admin A',   time:'13/03/2026 17:30' },
+  { type:'data',   action:'Chỉnh sửa dữ liệu',         detail:'Scope 3 – Tháng 06 · Lê Minh C',          time:'13/03/2026 15:12' },
+  { type:'login',  action:'Đăng xuất',                  detail:'Phạm Văn D · Phiên 2h14m',                time:'13/03/2026 14:55' },
+  { type:'user',   action:'Thêm người dùng mới',        detail:'Hoàng Thị E – Viewer · Admin A',          time:'12/03/2026 10:20' },
+  { type:'ef',     action:'Thêm hệ số mới',             detail:'MDO Scope 3 = 3.100 · Admin A',           time:'11/03/2026 09:00' },
+  { type:'data',   action:'Phê duyệt dữ liệu',         detail:'Scope 2 – Tháng 05/2026 · Admin B',       time:'10/03/2026 16:30' },
+];
+
+const roleLabels = { super:'Super Admin', admin:'Admin môi trường', entry:'Data Entry', reviewer:'Reviewer', viewer:'Viewer' };
+const roleClasses = { super:'role-super', admin:'role-admin', entry:'role-entry', reviewer:'role-reviewer', viewer:'role-viewer' };
+const perms = {
+  super:    [1,1,1,1,1], admin:[1,1,1,1,0], entry:[1,1,0,0,0], reviewer:[1,0,1,1,0], viewer:[1,0,0,1,0]
+};
+const logIcons = {
+  login:'fa-right-to-bracket',ef:'fa-atom',report:'fa-file-lines',data:'fa-database',user:'fa-user'
+};
+const logColors = {
+  login:'rgba(46,125,247,.1)',ef:'rgba(245,158,11,.1)',report:'rgba(139,92,246,.1)',data:'rgba(14,165,233,.1)',user:'rgba(34,197,94,.1)'
+};
+const logIconColors = { login:'var(--accent)',ef:'var(--amber)',report:'var(--purple)',data:'var(--teal)',user:'var(--green)' };
+
+// ─── INIT ──────────────────────────────────────────────────
+function init() {
+  renderUsers();
+  renderPermMatrix();
+  renderEF();
+  renderSysLog();
+  startSessionTimer();
+}
+
+// ─── SECTION SWITCH ────────────────────────────────────────
+function switchSection(id, el) {
+  ['general','users','scope','ef','report-fmt','security'].forEach(s => {
+    const el2 = document.getElementById('sec-'+s);
+    if(el2) el2.classList.toggle('hidden', s!==id);
+  });
+  document.querySelectorAll('.smenu-item').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ─── SCOPE TABS ────────────────────────────────────────────
+function setScopeTab(id, btn) {
+  ['s1','s2','s3'].forEach(s => document.getElementById('scope-'+s).classList.toggle('hidden', s!==id));
+  document.querySelectorAll('.sctab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ─── USERS ─────────────────────────────────────────────────
+function renderUsers() {
+  document.getElementById('usersTableBody').innerHTML = users.map(u=>`
+    <tr>
+      <td style="font-weight:700">${u.name}</td>
+      <td style="color:var(--text-muted)">${u.email}</td>
+      <td><span class="badge ${roleClasses[u.role]}">${roleLabels[u.role]}</span></td>
+      <td style="font-size:.73rem">${u.scope}</td>
+      <td><span class="badge ${u.status==='active'?'badge-active':'badge-inactive'}">${u.status==='active'?'Hoạt động':'Đã khóa'}</span></td>
+      <td style="text-align:center;white-space:nowrap">
+        <button class="tbl-action-btn edit" title="Chỉnh sửa" onclick="showToast('Chỉnh sửa người dùng: ${u.name}','success')"><i class="fa-solid fa-pen"></i></button>
+        <button class="tbl-action-btn lock" title="${u.status==='active'?'Khóa':'Mở khóa'}" onclick="toggleUserStatus(${u.id})" style="margin:0 3px"><i class="fa-solid ${u.status==='active'?'fa-lock':'fa-lock-open'}"></i></button>
+        <button class="tbl-action-btn" title="Reset mật khẩu" onclick="showToast('Đã gửi email reset mật khẩu cho ${u.email}','success')"><i class="fa-solid fa-key"></i></button>
+      </td>
+    </tr>`).join('');
+}
+
+function toggleUserStatus(id) {
+  const u = users.find(x=>x.id===id);
+  if(!u) return;
+  u.status = u.status==='active'?'inactive':'active';
+  renderUsers();
+  logAction('user',`${u.status==='active'?'Mở khóa':'Khóa'} tài khoản`,`${u.name} – ${u.email}`);
+  showToast(`Tài khoản ${u.name} đã ${u.status==='active'?'được mở khóa':'bị khóa'}`,'success');
+}
+
+function renderPermMatrix() {
+  const heads = ['Xem dữ liệu','Nhập dữ liệu','Phê duyệt','Xuất báo cáo','Cấu hình hệ thống'];
+  document.getElementById('permMatrix').innerHTML = Object.entries(perms).map(([role,p])=>`
+    <tr>
+      <td><span class="badge ${roleClasses[role]}">${roleLabels[role]}</span></td>
+      ${p.map(v=>`<td style="text-align:center"><i class="fa-solid ${v?'fa-check-circle':'fa-times-circle'}" style="color:${v?'var(--green)':'#d1d5db'};font-size:.85rem"></i></td>`).join('')}
+    </tr>`).join('');
+}
+
+function openUserModal() { document.getElementById('userModal').classList.add('show'); }
+function addUser() {
+  const name = document.getElementById('u-name').value.trim();
+  const email = document.getElementById('u-email').value.trim();
+  if(!name||!email) { showToast('Vui lòng nhập đầy đủ thông tin','warn'); return; }
+  const role = document.getElementById('u-role').value;
+  const scope = document.getElementById('u-scope').value;
+  users.push({ id:Date.now(), name, email, role, scope, status:'active' });
+  document.getElementById('userModal').classList.remove('show');
+  document.getElementById('u-name').value=''; document.getElementById('u-email').value='';
+  renderUsers();
+  logAction('user','Thêm người dùng',`${name} – ${roleLabels[role]}`);
+  showToast(`Đã thêm người dùng ${name} thành công`,'success');
+}
+
+// ─── EF ────────────────────────────────────────────────────
+function renderEF(filterScope='all', filterYear='2026') {
+  let data = efData;
+  if(filterScope!=='all') data=data.filter(x=>x.scope===filterScope);
+  document.getElementById('efTableBody').innerHTML = data.map(ef=>{
+    const sc = ef.scope==='Scope 1'?'#2e7df7':ef.scope==='Scope 2'?'#f59e0b':'#22c55e';
+    return `<tr>
+      <td style="font-weight:700">${ef.name}</td>
+      <td><span class="ef-scope-badge" style="background:${sc}18;color:${sc}">${ef.scope}</span></td>
+      <td><strong style="color:var(--navy)">${ef.val}</strong></td>
+      <td style="font-size:.72rem;color:var(--text-muted)">${ef.unit}</td>
+      <td style="font-size:.72rem;color:var(--text-muted)">${ef.source}</td>
+      <td style="font-size:.73rem;font-weight:600">${ef.year}</td>
+      <td><span class="badge ${ef.status==='active'?'badge-active':'badge-inactive'}">${ef.status==='active'?'Active':'Inactive'}</span></td>
+      <td style="text-align:center;white-space:nowrap">
+        <button class="tbl-action-btn edit" onclick="showToast('Chỉnh sửa: ${ef.name}','success')"><i class="fa-solid fa-pen"></i></button>
+        <button class="tbl-action-btn" style="margin:0 3px" onclick="toggleEFStatus(${ef.id})" title="${ef.status==='active'?'Ngưng kích hoạt':'Kích hoạt'}"><i class="fa-solid ${ef.status==='active'?'fa-pause':'fa-play'}"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterEF(scope) { renderEF(scope); }
+function filterEFYear(year) { renderEF(document.getElementById('efScopeFilter').value, year); }
+
+function toggleEFStatus(id) {
+  const ef = efData.find(x=>x.id===id);
+  if(!ef) return;
+  ef.status = ef.status==='active'?'inactive':'active';
+  renderEF();
+  logAction('ef',`${ef.status==='active'?'Kích hoạt':'Ngưng'} hệ số`,`${ef.name} = ${ef.val}`);
+  showToast(`Hệ số "${ef.name}" đã ${ef.status==='active'?'được kích hoạt':'bị ngưng sử dụng'}`,'success');
+}
+
+function openEFModal() { document.getElementById('efModal').classList.add('show'); }
+function addEF() {
+  const name = document.getElementById('ef-name').value.trim();
+  const val = parseFloat(document.getElementById('ef-val').value);
+  if(!name||!val) { showToast('Vui lòng nhập đầy đủ thông tin','warn'); return; }
+  efData.push({
+    id:Date.now(), name,
+    scope:document.getElementById('ef-scope').value,
+    val, unit:document.getElementById('ef-unit').value,
+    source:document.getElementById('ef-source').value||'Nhập thủ công',
+    year:parseInt(document.getElementById('ef-year').value), status:'active'
+  });
+  document.getElementById('efModal').classList.remove('show');
+  document.getElementById('ef-name').value=''; document.getElementById('ef-val').value=''; document.getElementById('ef-source').value='';
+  renderEF();
+  logAction('ef','Thêm hệ số mới',`${name} = ${val}`);
+  showToast(`Đã thêm hệ số "${name}" thành công`,'success');
+}
+
+// ─── SYS LOG ───────────────────────────────────────────────
+function renderSysLog() {
+  document.getElementById('sysLogList').innerHTML = sysLogs.map(l=>`
+    <div class="log-item">
+      <div class="log-icon" style="background:${logColors[l.type]||'var(--gray-soft)'}">
+        <i class="fa-solid ${logIcons[l.type]||'fa-circle'}" style="color:${logIconColors[l.type]||'var(--text-muted)'}"></i>
+      </div>
+      <div class="log-body">
+        <div class="log-action">${l.action}</div>
+        <div class="log-detail">${l.detail}</div>
+      </div>
+      <div class="log-time">${l.time}</div>
+    </div>`).join('');
+}
+
+function logAction(type, action, detail) {
+  sysLogs.unshift({ type, action, detail: detail+' · Admin A', time: new Date().toLocaleString('vi-VN') });
+  if(document.getElementById('sec-security') && !document.getElementById('sec-security').classList.contains('hidden'))
+    renderSysLog();
+}
+
+// ─── SAVE ──────────────────────────────────────────────────
+function saveSection(name) {
+  logAction('data','Lưu cấu hình',name);
+  showToast(`Đã lưu cấu hình "${name}" thành công`,'success');
+}
+
+// ─── MODAL ─────────────────────────────────────────────────
+function closeModal(id, e) { if(e.target===document.getElementById(id)) document.getElementById(id).classList.remove('show'); }
+
+// ─── SESSION TIMER ─────────────────────────────────────────
+function startSessionTimer() {
+  let secs = 29*60+45;
+  setInterval(()=>{
+    if(secs<=0) return;
+    secs--;
+    const m=Math.floor(secs/60), s=secs%60;
+    const el=document.getElementById('sessionTimer');
+    if(el) el.textContent=`${m}:${s.toString().padStart(2,'0')}`;
+    if(secs===60) showToast('Phiên làm việc sắp hết hạn – 1 phút còn lại','warn');
+  },1000);
+}
+
+// ─── TOAST ─────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg,type='success') {
+  const t=document.getElementById('toast');
+  const icons={success:'fa-circle-check',warn:'fa-triangle-exclamation',error:'fa-circle-xmark'};
+  t.className=`toast ${type} show`;
+  t.innerHTML=`<i class="fa-solid ${icons[type]}"></i><span>${msg}</span>`;
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+init();
+</script>
+</body>
+</html>

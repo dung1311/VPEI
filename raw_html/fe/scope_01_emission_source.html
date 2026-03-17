@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VPEI – Scope 1: Emission Source Management</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:#0d1f3c; --navy-mid:#152850; --navy-light:#1e3a6e;
+    --accent:#2e7df7; --accent-light:#5a9bff;
+    --white:#ffffff; --gray-soft:#f4f6fb; --gray-border:#dde3ef;
+    --text-muted:#7a8aab; --green:#22c55e; --red:#ef4444;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'DM Sans',sans-serif;background:var(--gray-soft);color:var(--navy);display:flex;height:100vh;overflow:hidden;}
+
+  /* SIDEBAR */
+  .sidebar{width:220px;background:var(--white);border-right:1px solid var(--gray-border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
+  .sidebar-logo{padding:20px 24px;border-bottom:1px solid var(--gray-border);display:flex;align-items:center;gap:10px;}
+  .logo-box{background:linear-gradient(135deg,var(--navy),var(--navy-light));border-radius:10px;padding:7px 12px;font-family:'Sora',sans-serif;font-weight:800;font-size:1.1rem;color:white;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:0.88rem;font-weight:500;color:#4a5a7b;transition:all 0.2s;text-decoration:none;border-left:3px solid transparent;}
+  .nav-item:hover{background:var(--gray-soft);color:var(--navy);}
+  .nav-item.active{background:rgba(46,125,247,0.08);color:var(--accent);border-left-color:var(--accent);font-weight:600;}
+  .nav-item.sub{padding-left:34px;font-size:0.83rem;}
+  .nav-bottom{padding:16px 0;border-top:1px solid var(--gray-border);}
+  .nav-expand{font-size:0.7rem;margin-left:auto;}
+
+  /* MAIN */
+  .main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+  .topbar{background:var(--white);border-bottom:1px solid var(--gray-border);padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+  .topbar-title{font-family:'Sora',sans-serif;font-weight:800;font-size:1.15rem;color:var(--navy);}
+  .topbar-right{display:flex;align-items:center;gap:10px;}
+  .select-pill{padding:6px 12px;border-radius:8px;border:1.5px solid var(--gray-border);font-size:0.83rem;font-weight:600;color:var(--navy);background:white;cursor:pointer;}
+  .badge-draft{padding:5px 14px;border-radius:20px;background:#fef9c3;color:#b45309;font-size:0.8rem;font-weight:600;}
+
+  .content{flex:1;overflow-y:auto;padding:24px 28px;}
+
+  /* SECTION HEADER */
+  .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .section-title{font-family:'Sora',sans-serif;font-size:1rem;font-weight:700;color:var(--navy);}
+  .btn-primary{padding:9px 18px;background:var(--navy);color:white;border:none;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif;display:flex;align-items:center;gap:6px;transition:all 0.2s;}
+  .btn-primary:hover{background:var(--navy-light);}
+  .btn-outline{padding:9px 18px;background:white;color:var(--navy);border:1.5px solid var(--gray-border);border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.2s;}
+  .btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+
+  /* DEVICE CARDS */
+  .device-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+  .device-card{background:white;border:1.5px solid var(--gray-border);border-radius:12px;padding:16px 18px;transition:all 0.2s;}
+  .device-card:hover{border-color:var(--accent);box-shadow:0 2px 12px rgba(46,125,247,0.1);}
+  .device-name{font-family:'Sora',sans-serif;font-weight:700;font-size:0.95rem;color:var(--navy);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;}
+  .device-actions{display:flex;gap:6px;}
+  .icon-btn{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:0.85rem;padding:2px;}
+  .icon-btn:hover{color:var(--accent);}
+  .device-count{display:flex;align-items:center;gap:6px;margin-bottom:10px;}
+  .count-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:var(--gray-soft);border:1px solid var(--gray-border);border-radius:5px;font-size:0.82rem;font-weight:600;color:var(--navy);}
+  .count-btn{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:0.75rem;line-height:1;}
+  .count-btn:hover{color:var(--accent);}
+  .device-emission-label{font-size:0.75rem;color:var(--text-muted);margin-bottom:3px;}
+  .device-emission-val{font-family:'Sora',sans-serif;font-size:0.95rem;font-weight:700;color:var(--navy);}
+
+  /* DATA INPUT */
+  .data-section{background:white;border-radius:14px;border:1px solid var(--gray-border);margin-bottom:20px;overflow:hidden;}
+  .data-section-header{padding:16px 20px;border-bottom:1px solid var(--gray-border);display:flex;align-items:center;justify-content:space-between;}
+  .data-table{width:100%;border-collapse:collapse;}
+  .data-table th{padding:11px 18px;text-align:left;font-size:0.8rem;font-weight:600;color:var(--text-muted);background:#fafbfd;border-bottom:1px solid var(--gray-border);}
+  .data-table td{padding:10px 18px;font-size:0.85rem;color:#2a3a6b;border-bottom:1px solid #f0f2f8;}
+  .data-table tr:last-child td{border-bottom:none;}
+  .input-cell{padding:7px 12px;border:1.5px solid var(--gray-border);border-radius:7px;font-size:0.85rem;color:var(--navy);width:120px;font-family:'DM Sans',sans-serif;}
+  .input-cell:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(46,125,247,0.1);}
+  .emission-val{font-weight:600;color:var(--navy);}
+  .add-row-btn{margin:12px 20px;padding:8px 14px;background:var(--gray-soft);border:1.5px dashed var(--gray-border);border-radius:8px;font-size:0.83rem;color:var(--text-muted);cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:'DM Sans',sans-serif;transition:all 0.2s;}
+  .add-row-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(46,125,247,0.04);}
+
+  /* BOTTOM SUMMARY */
+  .summary-row{display:grid;grid-template-columns:1.2fr 1.5fr 1.5fr;gap:16px;margin-bottom:20px;}
+  .summary-card{background:white;border-radius:14px;border:1px solid var(--gray-border);padding:20px;}
+  .summary-total{font-family:'Sora',sans-serif;font-size:2rem;font-weight:800;color:var(--navy);}
+  .summary-unit{font-size:0.85rem;color:var(--text-muted);}
+  .chart-mini-title{font-size:0.85rem;font-weight:600;color:var(--navy);margin-bottom:12px;}
+
+  /* FOOTER ACTIONS */
+  .footer-actions{background:white;border-top:1px solid var(--gray-border);padding:14px 28px;display:flex;justify-content:flex-end;gap:12px;flex-shrink:0;}
+  .btn-save{padding:10px 20px;background:white;border:1.5px solid var(--gray-border);border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer;color:var(--navy);transition:all 0.2s;}
+  .btn-save:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-submit{padding:10px 20px;background:var(--navy);color:white;border:none;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif;transition:all 0.2s;}
+  .btn-submit:hover{background:var(--navy-light);}
+  .btn-lock{padding:10px 20px;background:linear-gradient(135deg,var(--navy),var(--navy-light));color:white;border:none;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif;transition:all 0.2s;}
+  .btn-lock:hover{opacity:0.9;}
+
+  /* Modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:100;}
+  .modal-overlay.show{display:flex;}
+  .modal-card{background:white;border-radius:16px;padding:28px;width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.2);}
+  .modal-title{font-family:'Sora',sans-serif;font-weight:700;font-size:1.1rem;color:var(--navy);margin-bottom:20px;}
+  .modal-form label{display:block;font-size:0.82rem;font-weight:500;color:#3a4a6b;margin-bottom:5px;margin-top:12px;}
+  .modal-form input,.modal-form select{width:100%;padding:10px 12px;border:1.5px solid var(--gray-border);border-radius:8px;font-size:0.85rem;color:var(--navy);outline:none;}
+  .modal-form input:focus,.modal-form select:focus{border-color:var(--accent);}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+
+  
+    /*Nav*/
+    .nav-items { padding:16px 0; flex:1; }
+.nav-item { display:flex; align-items:center; gap:12px; padding:10px 20px; cursor:pointer; font-size:0.82rem; font-weight:500; color:#4a5a7b; transition:all 0.2s; text-decoration:none; border-left:3px solid transparent; }
+.nav-item:hover { background:var(--gray-soft); color:var(--navy); }
+.nav-item.active { background:rgba(46,125,247,0.08); color:var(--accent); border-left-color:var(--accent); font-weight:600; }
+.nav-item.sub { padding-left:36px; font-size:0.78rem; }
+.nav-item.sub.active { background:rgba(46,125,247,0.06); color:var(--accent); }
+.nav-section { padding:6px 20px 4px; font-size:0.68rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.1em; }
+.nav-expand { font-size:0.65rem; margin-left:auto; color:var(--text-muted); }
+.nav-bottom { padding:16px 0; border-top:1px solid var(--gray-border); }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-logo"><div class="logo-box">VPEI</div></div>
+  <nav class="nav-items">
+    <div class="nav-section">Menu chính</div>
+    <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-pie" style="width:16px;color:var(--text-muted)"></i> Dashboard</a>
+    <a href="scope_01.html" class="nav-item"><i class="fa-solid fa-industry" style="width:16px;color:var(--text-muted)"></i> Scope 1</a>
+    <a href="scope_02.html" class="nav-item"><i class="fa-solid fa-bolt" style="width:16px;color:var(--text-muted)"></i> Scope 2</a>
+    <a href="scope_03.html" class="nav-item"><i class="fa-solid fa-ship" style="width:16px;color:var(--text-muted)"></i> Scope 3</a>
+    <div class="nav-section" style="margin-top:10px">Báo cáo</div>
+    <a href="reports.html" class="nav-item"><i class="fa-solid fa-file-lines" style="width:16px;color:var(--text-muted)"></i> Reports</a>
+  </nav>
+  <div class="nav-bottom">
+    <a href="settings.html" class="nav-item active"><i class="fa-solid fa-gear" style="width:16px;color:var(--accent)"></i> Settings</a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title">Scope 1 – Emission Source Management</div>
+    <div class="topbar-right">
+      <select class="select-pill"><option>Năm: 2026 ▾</option><option>2025</option></select>
+      <select class="select-pill"><option>Tháng: 02 ▾</option><option>Tháng 01</option><option>Tháng 03</option></select>
+      <span class="badge-draft">● Draft</span>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- DEVICE MANAGEMENT -->
+    <div class="section-header">
+      <div class="section-title">Quản lý danh mục thiết bị</div>
+      <button class="btn-primary" onclick="document.getElementById('addModal').classList.add('show')">
+        + Thêm thiết bị
+      </button>
+    </div>
+
+    <div class="device-grid">
+      <div class="device-card">
+        <div class="device-name">
+          OOG Mobile Crane
+          <div class="device-actions">
+            <button class="icon-btn">✏️</button>
+            <button class="icon-btn">🗑</button>
+          </div>
+        </div>
+        <div class="device-count">
+          <div class="count-badge">
+            <span id="c1">12</span>
+            <button class="count-btn" onclick="changeCount('c1',1)">▲</button>
+            <button class="count-btn" onclick="changeCount('c1',-1)">▼</button>
+          </div>
+        </div>
+        <div class="device-emission-label">Total Emissions</div>
+        <div class="device-emission-val">8,540 tCO₂e</div>
+      </div>
+      <div class="device-card">
+        <div class="device-name">
+          Reach Stacker
+          <div class="device-actions">
+            <button class="icon-btn">✏️</button>
+            <button class="icon-btn">🗑</button>
+          </div>
+        </div>
+        <div class="device-count">
+          <div class="count-badge">
+            <span id="c2">15</span>
+            <button class="count-btn" onclick="changeCount('c2',1)">▲</button>
+            <button class="count-btn" onclick="changeCount('c2',-1)">▼</button>
+          </div>
+        </div>
+        <div class="device-emission-label">Total Emissions</div>
+        <div class="device-emission-val">10,200 tCO₂e</div>
+      </div>
+      <div class="device-card">
+        <div class="device-name">
+          Terberg
+          <div class="device-actions">
+            <button class="icon-btn">✏️</button>
+            <button class="icon-btn">🗑</button>
+          </div>
+        </div>
+        <div class="device-count">
+          <div class="count-badge">
+            <span id="c3">8</span>
+            <button class="count-btn" onclick="changeCount('c3',1)">▲</button>
+            <button class="count-btn" onclick="changeCount('c3',-1)">▼</button>
+          </div>
+        </div>
+        <div class="device-emission-label">Total Emissions</div>
+        <div class="device-emission-val">4,500 tCO₂e</div>
+      </div>
+      <div class="device-card">
+        <div class="device-name">
+          Forklift
+          <div class="device-actions">
+            <button class="icon-btn">✏️</button>
+            <button class="icon-btn">🗑</button>
+          </div>
+        </div>
+        <div class="device-count">
+          <div class="count-badge">
+            <span id="c4">20</span>
+            <button class="count-btn" onclick="changeCount('c4',1)">▲</button>
+            <button class="count-btn" onclick="changeCount('c4',-1)">▼</button>
+          </div>
+        </div>
+        <div class="device-emission-label">Total Emissions</div>
+        <div class="device-emission-val">6,800 tCO₂e</div>
+      </div>
+    </div>
+
+    <!-- DATA INPUT -->
+    <div class="data-section">
+      <div class="data-section-header">
+        <div class="section-title" style="margin:0;">Nhập dữ liệu hoạt động</div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn-primary">[ Nhập tay ]</button>
+          <button class="btn-outline">[ Import Excel ]</button>
+        </div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Thiết bị</th>
+            <th>Power (kW)</th>
+            <th>Thời gian hoạt động (h)</th>
+            <th>LF (%)</th>
+            <th>Tổng phát thải (tCO₂e)</th>
+          </tr>
+        </thead>
+        <tbody id="dataTableBody">
+          <tr>
+            <td style="font-weight:600;">OOG Mobile Crane</td>
+            <td><input class="input-cell" type="number" value="500" oninput="calcRow(this)"></td>
+            <td><input class="input-cell" type="number" value="120" oninput="calcRow(this)"></td>
+            <td><input class="input-cell" type="number" value="0.75" step="0.01" oninput="calcRow(this)"></td>
+            <td><span class="emission-val">320.5</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">Reach Stacker</td>
+            <td><input class="input-cell" type="number" value="350" oninput="calcRow(this)"></td>
+            <td><input class="input-cell" type="number" value="150" oninput="calcRow(this)"></td>
+            <td><input class="input-cell" type="number" value="0.80" step="0.01" oninput="calcRow(this)"></td>
+            <td><span class="emission-val">378.2</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <button class="add-row-btn" onclick="addRow()">+ Nhập tay</button>
+    </div>
+
+    <!-- SUMMARY ROW -->
+    <div class="summary-row">
+      <div class="summary-card">
+        <div class="chart-mini-title">Total Scope 1 Emissions</div>
+        <div class="summary-total">42,500</div>
+        <div style="font-size:0.9rem;color:var(--text-muted);font-weight:500;margin-top:4px;">tCO₂e</div>
+      </div>
+      <div class="summary-card">
+        <div class="chart-mini-title">Emission by Equipment</div>
+        <canvas id="equipBar" height="100"></canvas>
+      </div>
+      <div class="summary-card">
+        <div class="chart-mini-title">Emission Trend</div>
+        <canvas id="miniTrend" height="100"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER ACTIONS -->
+  <div class="footer-actions">
+    <button class="btn-save">[ Lưu dữ liệu ]</button>
+    <button class="btn-submit">[ Gửi ra soát ]</button>
+    <button class="btn-lock">[ Khóa kỳ kiểm kê ]</button>
+  </div>
+</div>
+
+<!-- ADD DEVICE MODAL -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal-card">
+    <div class="modal-title">+ Thêm thiết bị mới</div>
+    <div class="modal-form">
+      <label>Tên thiết bị</label>
+      <input type="text" placeholder="VD: STS Crane">
+      <label>Loại nhiên liệu</label>
+      <select>
+        <option>Diesel</option>
+        <option>LNG</option>
+        <option>Điện</option>
+        <option>Xăng</option>
+      </select>
+      <label>Số lượng</label>
+      <input type="number" value="1" min="1">
+      <label>Công suất (kW)</label>
+      <input type="number" placeholder="0">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="document.getElementById('addModal').classList.remove('show')">Hủy</button>
+      <button class="btn-primary" onclick="document.getElementById('addModal').classList.remove('show')">Thêm thiết bị</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Change count
+function changeCount(id, delta) {
+  const el = document.getElementById(id);
+  let v = parseInt(el.textContent) + delta;
+  if (v < 1) v = 1;
+  el.textContent = v;
+}
+
+// Add table row
+let rowCount = 3;
+const devices = ['Terberg','Forklift','OOG Mobile Crane','Reach Stacker'];
+function addRow() {
+  const tbody = document.getElementById('dataTableBody');
+  const dev = devices[rowCount % devices.length];
+  rowCount++;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td style="font-weight:600;">${dev}</td>
+    <td><input class="input-cell" type="number" value="300" oninput="calcRow(this)"></td>
+    <td><input class="input-cell" type="number" value="100" oninput="calcRow(this)"></td>
+    <td><input class="input-cell" type="number" value="0.70" step="0.01" oninput="calcRow(this)"></td>
+    <td><span class="emission-val">189.0</span></td>`;
+  tbody.appendChild(tr);
+}
+
+function calcRow(el) {
+  const tr = el.closest('tr');
+  const inputs = tr.querySelectorAll('input');
+  const power = parseFloat(inputs[0].value)||0;
+  const hours = parseFloat(inputs[1].value)||0;
+  const lf = parseFloat(inputs[2].value)||0;
+  const ems = (power * hours * lf * 0.000765).toFixed(1);
+  tr.querySelector('.emission-val').textContent = ems;
+}
+
+// Equipment bar mini
+const eb = document.getElementById('equipBar').getContext('2d');
+new Chart(eb,{
+  type:'bar',
+  data:{
+    labels:['OOG Mobile Crane','Reach Stacker','Terberg','Forklift'],
+    datasets:[{data:[8540,10200,4500,6800],backgroundColor:['#0d1f3c','#152850','#2e7df7','#5a9bff'],borderRadius:4}]
+  },
+  options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{display:false}}}
+});
+
+// Mini trend
+const mt = document.getElementById('miniTrend').getContext('2d');
+new Chart(mt,{
+  type:'line',
+  data:{
+    labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    datasets:[{data:[3200,3000,3400,3300,3600,3500,3700,3800,3600,3700,3500,3400],borderColor:'#2e7df7',borderWidth:2,pointRadius:0,fill:false,tension:0.4}]
+  },
+  options:{plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}}}
+});
+
+// Close modal on overlay click
+document.getElementById('addModal').addEventListener('click', function(e){
+  if(e.target===this) this.classList.remove('show');
+});
+</script>
+</body>
+</html>

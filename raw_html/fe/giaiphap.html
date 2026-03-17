@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giải pháp - SYNEK</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+        
+        * {
+            font-family: 'Roboto', sans-serif;
+        }
+        
+        .dropdown:hover .dropdown-menu {
+            display: block;
+        }
+        
+        .solution-card {
+            transition: all 0.3s ease;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .solution-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(30,64,175,0.85) 0%, rgba(220,38,38,0.85) 100%);
+            z-index: 1;
+        }
+        
+        .solution-card > * {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .solution-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+        }
+        
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .translate-active {
+            color: #dc2626 !important;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    
+    <!-- Header -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-4">
+            <div class="hidden md:flex items-center justify-between py-2 text-sm border-b border-gray-200">
+                <div class="flex items-center space-x-6 text-gray-600">
+                    <span><i class="fas fa-phone mr-2"></i>0936211299</span>
+                    <span><i class="fas fa-envelope mr-2"></i><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="fe97909891be8d87909b95d08890">[email&#160;protected]</a></span>
+                </div>
+                <div class="text-gray-600">
+                    CÔNG TY CỔ PHẦN SYNEK
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-between h-20">
+                <div class="flex-shrink-0">
+                    <a href="index.html" class="flex items-center">
+                        <img src="c:\Users\84976\Downloads\12.png" alt="SYNEK Logo" class="h-12">
+                    </a>
+                </div>
+                
+                <nav class="hidden lg:flex items-center space-x-8">
+                    <a href="index.html" class="text-gray-700 hover:text-blue-700 font-medium transition">Trang chủ</a>
+                    
+                    <div class="dropdown relative">
+                        <button class="text-blue-700 hover:text-blue-700 font-medium transition flex items-center">
+                            Về chúng tôi
+                        </button>
+                    </div>
+                    
+                    <div class="dropdown relative">
+                        <a href="giaiphap.html" class="text-gray-700 hover:text-blue-700 font-medium transition flex items-center">
+                            Giải pháp
+                        </a>
+                    </div>
+                    
+                    <div class="dropdown relative">
+                        <a href="dichvu.html" class="text-gray-700 hover:text-blue-700 font-medium transition flex items-center">
+                            Dịch vụ
+                        </a>
+                        
+                    </div>
+                    
+                    <div class="dropdown relative">
+                        <a href="tintuc.html" class="text-gray-700 hover:text-blue-700 font-medium transition flex items-center">
+                            Tin tức & Sự kiện
+                        </a>
+                    </div>
+                    
+                    <button onclick="openContactModal()" class="text-gray-700 hover:text-blue-700 font-medium transition">Liên hệ</button>
+                </nav>
+                
+                
+                <div class="flex items-center space-x-4">
+                    <button onclick="toggleSearch()" class="text-gray-600 hover:text-blue-700 transition">
+                        <i class="fas fa-search text-xl"></i>
+                    </button>
+                    
+                    <div class="flex items-center space-x-2 border-l pl-4">
+                        <button onclick="changeLang('vi')" id="lang-vi" class="text-sm font-medium text-gray-700 hover:text-blue-700 translate-active">VN</button>
+                        <span class="text-gray-400">|</span>
+                        <button onclick="changeLang('en')" id="lang-en" class="text-sm font-medium text-gray-700 hover:text-blue-700">ENG</button>
+                    </div>
+                    
+                    <a href="admin.html" class="text-gray-600 hover:text-blue-700 transition">
+                        <i class="fas fa-user-shield text-xl"></i>
+                    </a>
+                    
+                    <button onclick="toggleMobileMenu()" class="lg:hidden text-gray-600 hover:text-blue-700">
+                        <i class="fas fa-bars text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="searchBar" class="hidden bg-gray-100 py-4">
+            <div class="container mx-auto px-4">
+                <div class="flex items-center">
+                    <input type="text" placeholder="Tìm kiếm..." class="flex-1 px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:border-blue-500">
+                    <button onclick="performSearch()" class="bg-blue-700 text-white px-6 py-2 rounded-r-lg hover:bg-blue-800 transition">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="mobileMenu" class="hidden lg:hidden bg-white border-t">
+            <nav class="container mx-auto px-4 py-4">
+                <a href="index.html" class="block py-2 text-gray-700 hover:text-blue-700">Trang chủ</a>
+                <a href="chungtoi.html" class="block py-2 text-gray-700 hover:text-blue-700">Về chúng tôi</a>
+                <a href="giaiphap.html" class="block py-2 text-blue-700">Giải pháp</a>
+                <a href="#" class="block py-2 text-gray-700 hover:text-blue-700">Dịch vụ</a>
+                <a href="tintuc.html" class="block py-2 text-gray-700 hover:text-blue-700">Tin tức & Sự kiện</a>
+                <button onclick="openContactModal()" class="block w-full text-left py-2 text-gray-700 hover:text-blue-700">Liên hệ</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Breadcrumb -->
+    <section class="bg-gray-100 py-4">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center space-x-2 text-sm">
+                <a href="index.html" class="text-blue-700 hover:underline">Trang chủ</a>
+                <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+                <span class="text-gray-600">Giải pháp</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Hero Section -->
+    <section class="bg-gradient-to-br from-blue-900 to-red-700 text-white py-16">
+        <div class="container mx-auto px-4 text-center">
+            <h1 class="text-5xl font-bold mb-4">Giải pháp Logistics</h1>
+            <p class="text-xl">Tăng tốc logistics, kết nối hiệu quả toàn cầu</p>
+            <p class="text-lg mt-2">Đột phá vận chuyển, tối ưu chi phí và thời gian</p>
+        </div>
+    </section>
+
+    <!-- Solutions Grid -->
+    <section class="py-20 bg-white">
+        <div class="container mx-auto px-4">
+            <div class="grid md:grid-cols-2 gap-8" id="solutionsGrid">
+                <!-- Solutions will be loaded here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-16">
+        <div class="container mx-auto px-4">
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+                <div>
+                    <img src="c:\Users\84976\Downloads\12.png" alt="SYNEK Logo" class="h-12 mb-6 bg-white p-2 rounded">
+                    <h3 class="text-lg font-bold mb-4">CÔNG TY CỔ PHẦN SYNEK</h3>
+                    <div class="space-y-3 text-gray-400">
+                        <p><i class="fas fa-map-marker-alt mr-2"></i>Địa chỉ công ty</p>
+                        <p><i class="fas fa-envelope mr-2"></i><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="4d24232b220d3e34232826633b23">[email&#160;protected]</a></p>
+                        <p><i class="fas fa-phone mr-2"></i>0936211299</p>
+                    </div>
+                    <div class="flex space-x-4 mt-6">
+                        <a href="#" class="text-gray-400 hover:text-white transition"><i class="fab fa-facebook text-2xl"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white transition"><i class="fab fa-youtube text-2xl"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white transition"><i class="fab fa-tiktok text-2xl"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white transition"><i class="fab fa-instagram text-2xl"></i></a>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-bold mb-6">Giải pháp</h3>
+                    <ul class="space-y-3">
+                        <li><a href="giaiphap.html?id=1" class="text-gray-400 hover:text-white transition">Quản lý vận chuyển hàng hoá</a></li>
+                        <li><a href="giaiphap.html?id=2" class="text-gray-400 hover:text-white transition">Dịch vụ hàng dự án</a></li>
+                        <li><a href="giaiphap.html?id=3" class="text-gray-400 hover:text-white transition">Hợp đồng 4PL</a></li>
+                        <li><a href="giaiphap.html?id=4" class="text-gray-400 hover:text-white transition">Khai báo hải quan</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-bold mb-6">Dịch vụ</h3>
+                    <ul class="space-y-3">
+                        <li><a href="dichvu.html#hang-khong" class="text-gray-400 hover:text-white transition">Vận chuyển hàng không</a></li>
+                        <li><a href="dichvu.html#duong-bien" class="text-gray-400 hover:text-white transition">Vận tải đường biển</a></li>
+                        <li><a href="dichvu.html#duong-bo" class="text-gray-400 hover:text-white transition">Vận tải đường bộ</a></li>
+                        <li><a href="dichvu.html#hai-quan" class="text-gray-400 hover:text-white transition">Môi giới hải quan</a></li>
+                        <li><a href="dichvu.html#kho-bai" class="text-gray-400 hover:text-white transition">Kho bãi & Phân phối</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-bold mb-6">Về chúng tôi</h3>
+                    <ul class="space-y-3">
+                        <li><a href="chungtoi.html#mission" class="text-gray-400 hover:text-white transition">Sứ mệnh</a></li>
+                        <li><a href="chungtoi.html#values" class="text-gray-400 hover:text-white transition">Giá trị cốt lõi</a></li>
+                        <li><a href="chungtoi.html#vision" class="text-gray-400 hover:text-white transition">Tầm nhìn</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-800 pt-8 text-center text-gray-400">
+                <p>Copyright © 2025 CÔNG TY CỔ PHẦN SYNEK</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Contact Modal -->
+    <div id="contactModal" class="modal">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-blue-900">Liên hệ</h3>
+                <button onclick="closeContactModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <form onsubmit="submitContact(event)">
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Họ và tên *</label>
+                    <input type="text" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Email *</label>
+                    <input type="email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Số điện thoại *</label>
+                    <input type="tel" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 font-medium mb-2">Nội dung</label>
+                    <textarea rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 rounded-lg transition">
+                    Gửi thông tin
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="script.js"></script>
+    <script>
+        // Load solutions data
+        document.addEventListener('DOMContentLoaded', function() {
+            const solutions = [
+                {
+                    id: 1,
+                    title: 'Quản lý vận chuyển hàng hoá',
+                    description: 'Hệ thống quản lý vận chuyển toàn diện với công nghệ GPS theo dõi realtime, giúp tối ưu hóa tuyến đường và tiết kiệm chi phí vận hành.',
+                    image: 'solution1.jpg',
+                    icon: 'fa-box',
+                    features: ['Theo dõi realtime', 'Tối ưu tuyến đường', 'Báo cáo chi tiết', 'Quản lý đa phương thức']
+                },
+                {
+                    id: 2,
+                    title: 'Dịch vụ hàng dự án',
+                    description: 'Chuyên vận chuyển hàng dự án, hàng quá khổ quá tải với đội ngũ chuyên gia giàu kinh nghiệm và thiết bị hiện đại.',
+                    image: 'solution2.jpg',
+                    icon: 'fa-project-diagram',
+                    features: ['Hàng quá khổ', 'Thiết bị chuyên dụng', 'Tư vấn chuyên sâu', 'An toàn tuyệt đối']
+                },
+                {
+                    id: 3,
+                    title: 'Hợp đồng 4PL',
+                    description: 'Giải pháp logistics tổng thể 4PL, quản lý toàn bộ chuỗi cung ứng từ A-Z, giúp doanh nghiệp tập trung vào hoạt động kinh doanh cốt lõi.',
+                    image: 'solution3.jpg',
+                    icon: 'fa-handshake',
+                    features: ['Quản lý toàn diện', 'Tối ưu chi phí', 'Tư vấn chiến lược', 'Báo cáo thường xuyên']
+                },
+                {
+                    id: 4,
+                    title: 'Khai báo hải quan',
+                    description: 'Dịch vụ khai báo hải quan chuyên nghiệp, nhanh chóng với đội ngũ chuyên viên có chứng chỉ hành nghề, am hiểu luật pháp và thủ tục.',
+                    image: 'solution4.jpg',
+                    icon: 'fa-clipboard-check',
+                    features: ['Thủ tục nhanh gọn', 'Chứng chỉ hành nghề', 'Tư vấn HS code', 'Giảm thiểu rủi ro']
+                }
+            ];
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const solutionId = parseInt(urlParams.get('id'));
+            
+            const solutionsGrid = document.getElementById('solutionsGrid');
+            
+            if (solutionId) {
+                // Show detail of specific solution
+                const solution = solutions.find(s => s.id === solutionId);
+                if (solution) {
+                    solutionsGrid.innerHTML = `
+                        <div class="md:col-span-2">
+                            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                                <div class="relative h-96">
+                                    <img src="${solution.image}" alt="${solution.title}" class="w-full h-full object-cover">
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                                    <div class="absolute bottom-8 left-8 text-white">
+                                        <i class="fas ${solution.icon} text-5xl mb-4"></i>
+                                        <h2 class="text-4xl font-bold">${solution.title}</h2>
+                                    </div>
+                                </div>
+                                <div class="p-8">
+                                    <p class="text-gray-700 text-lg leading-relaxed mb-6">${solution.description}</p>
+                                    
+                                    <h3 class="text-2xl font-bold text-blue-900 mb-4">Tính năng nổi bật</h3>
+                                    <div class="grid md:grid-cols-2 gap-4 mb-8">
+                                        ${solution.features.map(feature => `
+                                            <div class="flex items-center space-x-3 bg-blue-50 p-4 rounded-lg">
+                                                <i class="fas fa-check-circle text-blue-700 text-xl"></i>
+                                                <span class="text-gray-700 font-medium">${feature}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                    
+                                    <div class="flex space-x-4">
+                                        <button onclick="openContactModal()" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-8 rounded-lg transition">
+                                            Liên hệ tư vấn
+                                        </button>
+                                        <a href="giaiphap.html" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-8 rounded-lg transition">
+                                            Xem tất cả giải pháp
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } else {
+                // Show all solutions
+                solutions.forEach(solution => {
+                    const card = document.createElement('div');
+                    card.className = 'solution-card text-white p-12 rounded-3xl hover:shadow-2xl transition cursor-pointer';
+                    card.style.backgroundImage = `url('${solution.image}')`;
+                    card.style.minHeight = '400px';
+                    card.innerHTML = `
+                        <i class="fas ${solution.icon} text-6xl mb-6"></i>
+                        <h3 class="text-3xl font-bold mb-4">${solution.title}</h3>
+                        <p class="text-lg mb-6">${solution.description}</p>
+                        <a href="giaiphap.html?id=${solution.id}" class="inline-block bg-white 
