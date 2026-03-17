@@ -8,12 +8,11 @@ Rules enforced here (not in the router):
 """
 import secrets
 import string
-from datetime import datetime
 from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from models.user import User, SUPER_ADMIN_USERNAME
+from models.user import User, SUPER_ADMIN_USERNAME, vn_now
 from schemas.user import UserCreate, UserUpdate
 from core.security import hash_password, verify_password
 
@@ -50,7 +49,7 @@ class UserService:
             return None
         if not user.is_active:
             return None
-        user.last_login = datetime.utcnow()
+        user.last_login = vn_now()
         db.commit()
         return user
 

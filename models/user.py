@@ -1,9 +1,15 @@
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from sqlalchemy import Boolean, Column, DateTime, Integer, String
 from core.database import Base
 
 # The one and only super admin — cannot be deleted or locked by anyone
 SUPER_ADMIN_USERNAME = "vpeiadmin"
+VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
+
+
+def vn_now() -> datetime:
+    return datetime.now(VN_TZ)
 
 
 class User(Base):
@@ -16,8 +22,8 @@ class User(Base):
     full_name       = Column(String, nullable=True)
     is_active       = Column(Boolean, default=True)
     is_admin        = Column(Boolean, default=False)
-    created_at      = Column(DateTime, default=datetime.utcnow)
-    last_login      = Column(DateTime, nullable=True)
+    created_at      = Column(DateTime(timezone=True), default=vn_now)
+    last_login      = Column(DateTime(timezone=True), nullable=True)
 
 
 class RevokedToken(Base):
@@ -27,5 +33,5 @@ class RevokedToken(Base):
     id         = Column(Integer, primary_key=True, index=True)
     jti        = Column(String, unique=True, index=True, nullable=False)
     username   = Column(String, index=True, nullable=False)
-    revoked_at = Column(DateTime, default=datetime.utcnow)
-    expires_at = Column(DateTime, nullable=False)
+    revoked_at = Column(DateTime(timezone=True), default=vn_now)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
