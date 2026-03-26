@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Request, Depends
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import APIRouter, Request, Depends, UploadFile, File, Query
+from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
@@ -26,7 +26,7 @@ async def scope2_page(request: Request, db: Session = Depends(get_db)):
     categories = electrical_items_service.get_scope2_categories(db)
 
     return templates.TemplateResponse(
-        "scope/scope_02_v2.html",
+        "scope/scope_02.html",
         {
             "request": request,
             "user": current_user,
@@ -68,6 +68,11 @@ async def scope2_manager_page(request: Request, db: Session = Depends(get_db)):
 async def create_electrical_item(item: ElectricalItemCreate, db: Session = Depends(get_db)):
     return electrical_items_service.create_electrical_item(item, db)
 
+
+@router.get("/api/scope2/items")
+async def list_electrical_items(db: Session = Depends(get_db)):
+    return {"items": electrical_items_service.get_scope2_categories(db)}
+
 @router.put("/api/scope2/items/{item_id}")
 async def update_electrical_item(item_id: int, item: ElectricalItemUpdate, db: Session = Depends(get_db)):
     return electrical_items_service.update_electrical_item(item_id, item, db)
@@ -75,6 +80,52 @@ async def update_electrical_item(item_id: int, item: ElectricalItemUpdate, db: S
 @router.delete("/api/scope2/items/{item_id}")
 async def delete_electrical_item(item_id: int, db: Session = Depends(get_db)):
     return electrical_items_service.delete_electrical_item(item_id, db)
+
+
+@router.post("/api/scope2/items/import-excel")
+async def import_electrical_items_excel(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    file_bytes = await file.read()
+    return electrical_items_service.import_scope2_items_from_excel(file_bytes, db)
+
+
+@router.get("/api/scope2/items/export-excel")
+async def export_electrical_items_excel(
+    mode: str | None = Query(default=None),
+    bucket: str | None = Query(default=None),
+    until_now: bool = Query(default=False),
+    db: Session = Depends(get_db),
+):
+    payload = electrical_items_service.export_scope2_items_excel(
+        db,
+        mode=mode,
+        bucket=bucket,
+        until_now=until_now,
+    )
+    return StreamingResponse(
+        iter([payload]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=scope2_items.xlsx"},
+    )
+
+
+@router.get("/api/scope2/items/export-pdf")
+async def export_electrical_items_pdf(
+    mode: str | None = Query(default=None),
+    bucket: str | None = Query(default=None),
+    until_now: bool = Query(default=False),
+    db: Session = Depends(get_db),
+):
+    payload = electrical_items_service.export_scope2_items_pdf(
+        db,
+        mode=mode,
+        bucket=bucket,
+        until_now=until_now,
+    )
+    return StreamingResponse(
+        iter([payload]),
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=scope2_items.pdf"},
+    )
 
 @router.get("/api/scope2/manager/devices")
 async def manager_devices(db: Session = Depends(get_db)):

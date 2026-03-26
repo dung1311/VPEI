@@ -92,7 +92,7 @@ td{padding:10px 14px;font-size:.8rem;color:#2a3a6b;border-bottom:1px solid #f0f2
       <div class="section-header"><div class="section-title"><i class="fa-solid fa-plug" style="color:var(--accent)"></i> Danh sách thiết bị</div></div>
       <div class="section-body">
         <table>
-          <thead><tr><th>Tên thiết bị</th><th>Loại</th><th>Công suất (kW)</th><th>Khu vực</th><th>Trạng thái</th></tr></thead>
+          <thead><tr><th>Thiết bị</th><th>Công suất (kW)</th><th>Khu vực</th></tr></thead>
           <tbody id="devicesTableBody"></tbody>
         </table>
       </div>
@@ -244,12 +244,83 @@ function renderDevices(){
   const tbody = document.getElementById('devicesTableBody');
   tbody.innerHTML = devices.map(d=>`
     <tr>
-      <td><span class="device-badge">${d.name}</span></td>
-      <td>${d.type || 'Khác'}</td>
+      <td>
+        <span class="device-badge">${d.name}</span>
+        <button class="tbl-action-btn edit" onclick="editDevice(${d.id})" title="Sửa thiết bị" style="margin-left:8px"><i class="fa-solid fa-pen"></i></button>
+        <button class="tbl-action-btn del" onclick="deleteDevice(${d.id})" title="Xóa thiết bị"><i class="fa-solid fa-trash"></i></button>
+      </td>
       <td><strong>${d.capacity}</strong> kW</td>
       <td>${d.area || ''}</td>
-      <td>${d.status === 'active' ? 'Hoạt động' : 'Tạm dừng'}</td>
     </tr>`).join('');
+}
+
+async function editDevice(id){
+  const target = devices.find(d => d.id === id);
+  if(!target) return;
+
+  const name = prompt('Tên thiết bị:', target.name || '');
+  if(name === null) return;
+  const cleanName = name.trim();
+  if(!cleanName){
+    alert('Tên thiết bị không được để trống');
+    return;
+  }
+
+  const powerRaw = prompt('Công suất (kW):', String(target.capacity ?? ''));
+  if(powerRaw === null) return;
+  const power = Number(powerRaw);
+  if(!Number.isFinite(power) || power <= 0){
+    alert('Công suất không hợp lệ');
+    return;
+  }
+
+  const areaRaw = prompt('Khu vực:', target.area || 'Cảng chính');
+  if(areaRaw === null) return;
+  const area = areaRaw.trim() || 'Cảng chính';
+
+  const payload = {
+    name: cleanName,
+    power,
+    location: area,
+    entry_date: new Date().toISOString().slice(0, 10),
+    description: ''
+  };
+
+  const res = await fetch(`/api/scope2/items/${id}`, {
+    method: 'PUT',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  });
+
+  if(!res.ok){
+    alert('Không cập nhật được thiết bị');
+    return;
+  }
+
+  const updated = await res.json();
+  devices = devices.map(d => d.id === id ? {
+    ...d,
+    name: updated.name ?? cleanName,
+    capacity: updated.capacity ?? power,
+    area: updated.area ?? area
+  } : d);
+
+  renderAll();
+}
+
+async function deleteDevice(id){
+  const target = devices.find(d => d.id === id);
+  if(!target) return;
+  if(!confirm(`Bạn có chắc muốn xóa thiết bị "${target.name}"?`)) return;
+
+  const res = await fetch(`/api/scope2/items/${id}`, {method:'DELETE'});
+  if(!res.ok){
+    alert('Không xóa được thiết bị');
+    return;
+  }
+
+  devices = devices.filter(d => d.id !== id);
+  renderAll();
 }
 
 function renderRecords(){
