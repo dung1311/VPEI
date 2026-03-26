@@ -26,7 +26,7 @@ async def scope2_page(request: Request, db: Session = Depends(get_db)):
     categories = electrical_items_service.get_scope2_categories(db)
 
     return templates.TemplateResponse(
-        "scope/scope_02.html",
+        "scope/scope_02_v2.html",
         {
             "request": request,
             "user": current_user,
