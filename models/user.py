@@ -1,3 +1,4 @@
+#models/user.py
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from sqlalchemy import Boolean, Column, DateTime, Integer, String

@@ -1,3 +1,4 @@
+# core/database.py
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from core.config import get_settings
@@ -27,7 +28,8 @@ def init_db():
     """Create all tables and seed the super admin account."""
     # Import models so SQLAlchemy registers them before create_all
     from models import user as _  # noqa: F401
-
+    from models import device as _  # noqa: F401
+    
     Base.metadata.create_all(bind=engine)
 
     from models.user import User
