@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VPEI – Scope 2: Electricity Data Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+:root { --navy:#0d1f3c; --navy-light:#1e3a6e; --accent:#2e7df7; --white:#fff; --gray-soft:#f4f6fb; --gray-border:#dde3ef; --text-muted:#7a8aab; --green:#22c55e; --red:#ef4444; --teal:#0ea5e9; --amber:#f59e0b; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Montserrat',sans-serif;background:var(--gray-soft);color:var(--navy);display:flex;height:100vh;overflow:hidden}
+.sidebar{width:220px;background:var(--white);border-right:1px solid var(--gray-border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.sidebar-logo{padding:20px 24px;border-bottom:1px solid var(--gray-border)}
+.logo-box{background:linear-gradient(135deg,var(--navy),var(--navy-light));border-radius:10px;padding:7px 12px;font-weight:800;font-size:1.1rem;color:#fff;letter-spacing:1px;width:max-content}
+.nav-items{padding:16px 0;flex:1}
+.nav-section{padding:6px 20px 4px;font-size:.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em}
+.nav-item{display:flex;align-items:center;gap:12px;padding:10px 20px;font-size:.82rem;font-weight:500;color:#4a5a7b;text-decoration:none;border-left:3px solid transparent}
+.nav-item:hover{background:var(--gray-soft);color:var(--navy)}
+.nav-item.active{background:rgba(46,125,247,.08);color:var(--accent);border-left-color:var(--accent);font-weight:600}
+.nav-bottom{padding:16px 0;border-top:1px solid var(--gray-border)}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:#fff;border-bottom:1px solid var(--gray-border);padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between}
+.topbar-title{font-weight:800;font-size:1.05rem}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.btn-outline-sm{padding:6px 13px;border-radius:8px;border:1.5px solid var(--gray-border);font-size:.75rem;font-weight:600;color:var(--navy);background:#fff;cursor:pointer;display:flex;align-items:center;gap:6px}
+.btn-outline-sm:hover{border-color:var(--accent);color:var(--accent)}
+.badge-open{padding:5px 13px;border-radius:20px;background:#dcfce7;color:#16a34a;font-size:.72rem;font-weight:700}
+.page-tabs{background:#fff;border-bottom:1px solid var(--gray-border);padding:0 28px;display:flex}
+.page-tab{padding:13px 20px;font-size:.82rem;font-weight:600;color:var(--text-muted);cursor:pointer;border-bottom:2.5px solid transparent;display:flex;align-items:center;gap:7px}
+.page-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.content{flex:1;overflow-y:auto;padding:24px 28px;display:flex;flex-direction:column;gap:18px}
+.section-card{background:#fff;border-radius:14px;border:1px solid var(--gray-border);overflow:hidden}
+.section-header{padding:14px 20px;border-bottom:1px solid var(--gray-border);display:flex;align-items:center;justify-content:space-between}
+.section-title{font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;display:flex;align-items:center;gap:8px}
+.section-body{padding:20px}
+.form-grid{display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr;gap:10px}
+.form-input,.form-select{padding:9px 12px;border:1.5px solid var(--gray-border);border-radius:8px;font-size:.82rem;font-family:'Montserrat',sans-serif;width:100%}
+.form-input:focus,.form-select:focus{outline:none;border-color:var(--accent)}
+.input-label{font-size:.72rem;font-weight:600;color:var(--navy);margin-bottom:4px;display:block}
+.btn-save{padding:10px 18px;border-radius:9px;font-size:.82rem;font-weight:700;cursor:pointer;border:none;background:var(--navy);color:#fff}
+.btn-save:hover{background:var(--navy-light)}
+.summary-box{background:linear-gradient(135deg,rgba(46,125,247,.06),rgba(14,165,233,.06));border:1.5px solid rgba(46,125,247,.2);border-radius:12px;padding:16px}
+table{width:100%;border-collapse:collapse}
+th{padding:9px 14px;text-align:left;font-size:.7rem;font-weight:700;color:var(--text-muted);background:#fafbfd;border-bottom:1px solid var(--gray-border);text-transform:uppercase}
+td{padding:10px 14px;font-size:.8rem;color:#2a3a6b;border-bottom:1px solid #f0f2f8}
+.tbl-action-btn{width:28px;height:28px;border-radius:6px;border:1.5px solid var(--gray-border);background:#fff;cursor:pointer}
+.tbl-action-btn.del:hover{border-color:var(--red);color:var(--red)}
+.tbl-action-btn.edit:hover{border-color:var(--accent);color:var(--accent)}
+.device-badge{display:inline-block;padding:3px 9px;border-radius:5px;background:rgba(14,165,233,.1);color:var(--teal);font-weight:700;font-size:.73rem}
+.history-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid #f0f2f8}
+.history-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center}
+.history-icon.add{background:rgba(34,197,94,.1);color:var(--green)}
+.history-icon.edit{background:rgba(46,125,247,.1);color:var(--accent)}
+.history-icon.del{background:rgba(239,68,68,.1);color:var(--red)}
+.history-icon.upload{background:rgba(245,158,11,.1);color:var(--amber)}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="sidebar-logo"><div class="logo-box">VPEI</div></div>
+  <nav class="nav-items">
+    <div class="nav-section">Menu chính</div>
+    <a href="/dashboard" class="nav-item"><i class="fa-solid fa-chart-pie" style="width:16px;color:var(--text-muted)"></i> Dashboard</a>
+    <a href="/scope1" class="nav-item"><i class="fa-solid fa-industry" style="width:16px;color:var(--text-muted)"></i> Scope 1</a>
+    <a href="/scope2" class="nav-item active"><i class="fa-solid fa-bolt" style="width:16px;color:var(--accent)"></i> Scope 2</a>
+    <a href="/scope3" class="nav-item"><i class="fa-solid fa-ship" style="width:16px;color:var(--text-muted)"></i> Scope 3</a>
+    <div class="nav-section" style="margin-top:10px">Báo cáo</div>
+    <a href="/reports" class="nav-item"><i class="fa-solid fa-file-lines" style="width:16px;color:var(--text-muted)"></i> Reports</a>
+  </nav>
+  <div class="nav-bottom"><a href="/settings" class="nav-item"><i class="fa-solid fa-gear" style="width:16px;color:var(--text-muted)"></i> Settings</a></div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title"><i class="fa-solid fa-bolt" style="color:var(--accent);margin-right:7px;font-size:.9rem"></i>VPEI – Scope 2 Data Management</div>
+    <div class="topbar-right">
+      <a href="/scope2" style="text-decoration:none"><button class="btn-outline-sm"><i class="fa-solid fa-arrow-left"></i> Tổng quan</button></a>
+      <span class="badge-open"><i class="fa-solid fa-circle" style="font-size:.5rem"></i> Open</span>
+    </div>
+  </div>
+
+  <div class="page-tabs">
+    <a class="page-tab" id="tab-btn-devices" onclick="switchTab('devices',this)"><i class="fa-solid fa-list"></i> Danh sách thiết bị</a>
+    <a class="page-tab active" id="tab-btn-data" onclick="switchTab('data',this)"><i class="fa-solid fa-chart-bar"></i> Nhập dữ liệu</a>
+    <a class="page-tab" id="tab-btn-history" onclick="switchTab('history',this)"><i class="fa-solid fa-clock-rotate-left"></i> Lịch sử</a>
+  </div>
+
+  <div class="content">
+    <div id="tab-devices" class="section-card hidden">
+      <div class="section-header"><div class="section-title"><i class="fa-solid fa-plug" style="color:var(--accent)"></i> Danh sách thiết bị</div></div>
+      <div class="section-body">
+        <table>
+          <thead><tr><th>Tên thiết bị</th><th>Loại</th><th>Công suất (kW)</th><th>Khu vực</th><th>Trạng thái</th></tr></thead>
+          <tbody id="devicesTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tab-data">
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title"><i class="fa-solid fa-keyboard" style="color:var(--accent)"></i> Khu vực nhập liệu</div>
+          <button class="btn-outline-sm" onclick="uploadExcelMock()"><i class="fa-solid fa-file-arrow-up"></i> Nhập Excel (mock)</button>
+        </div>
+        <div class="section-body">
+          <div class="form-grid">
+            <div><label class="input-label">Thiết bị</label><select class="form-select" id="f-device"></select></div>
+            <div><label class="input-label">Kỳ báo cáo</label><input class="form-input" id="f-period" placeholder="VD: Tháng 06/2026"></div>
+            <div><label class="input-label">Điện tiêu thụ (kWh)</label><input class="form-input" id="f-kwh" type="number" min="1"></div>
+            <div><label class="input-label">Ghi chú</label><input class="form-input" id="f-note"></div>
+          </div>
+          <div class="form-grid" style="margin-top:10px;grid-template-columns:1fr 1fr auto">
+            <div><label class="input-label">Từ ngày</label><input class="form-input" id="f-from" type="date"></div>
+            <div><label class="input-label">Đến ngày</label><input class="form-input" id="f-to" type="date"></div>
+            <div style="display:flex;align-items:flex-end"><button class="btn-save" onclick="saveData()"><i class="fa-solid fa-floppy-disk"></i> Lưu dữ liệu</button></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="summary-box">
+        Tổng điện đã nhập: <strong id="sum-total-kwh">0</strong> kWh · Tổng phát thải: <strong id="sum-total-co2">0</strong> tCO₂e
+      </div>
+
+      <div class="section-card">
+        <div class="section-header"><div class="section-title"><i class="fa-solid fa-table" style="color:var(--text-muted)"></i> Dữ liệu mới cập nhật</div></div>
+        <div class="section-body" style="padding:0">
+          <table>
+            <thead><tr><th>Mục</th><th>Điện (kWh)</th><th>Từ ngày</th><th>Đến ngày</th><th>Phát thải</th><th>Kỳ</th><th>Thao tác</th></tr></thead>
+            <tbody id="recentTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-history" class="section-card hidden">
+      <div class="section-header"><div class="section-title"><i class="fa-solid fa-clock-rotate-left" style="color:var(--accent)"></i> Lịch sử & kiểm toán</div></div>
+      <div class="section-body" id="historyList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const EF = Number("{{ ef | default(0.6235) }}");
+let devices = {{ devices_json | default([]) | tojson }};
+let records = {{ records_json | default([]) | tojson }};
+let auditLog = {{ audit_json | default([]) | tojson }};
+let pendingOverwrite = null;
+
+function switchTab(tab, el){
+  ['devices','data','history'].forEach(t=>document.getElementById('tab-'+t).classList.toggle('hidden', t!==tab));
+  document.querySelectorAll('.page-tab').forEach(x=>x.classList.remove('active'));
+  el.classList.add('active');
+  if(tab==='devices') renderDevices();
+  if(tab==='history') renderHistory();
+}
+
+function fmtDateInput(v){ if(!v) return ''; const [y,m,d] = v.split('-'); return `${d}/${m}/${y}`; }
+
+function buildDeviceDropdown(){
+  const sel = document.getElementById('f-device');
+  sel.innerHTML = '<option value="">Chọn thiết bị / hạng mục</option>';
+  devices.forEach(d=>{
+    const o = document.createElement('option');
+    o.value = d.name;
+    o.textContent = `${d.name} (${d.capacity} kW)`;
+    sel.appendChild(o);
+  });
+}
+
+async function saveData(){
+  const device = document.getElementById('f-device').value;
+  const kwh = parseFloat(document.getElementById('f-kwh').value);
+  const period = document.getElementById('f-period').value.trim();
+  if(!device || !kwh || kwh <= 0 || !period){
+    alert('Vui lòng nhập đủ thiết bị, kỳ báo cáo và kWh hợp lệ');
+    return;
+  }
+
+  const payload = {
+    device,
+    kwh,
+    period,
+    from_date: fmtDateInput(document.getElementById('f-from').value),
+    to_date: fmtDateInput(document.getElementById('f-to').value),
+    note: document.getElementById('f-note').value || ''
+  };
+
+  const dup = records.find(r => r.device === device && r.period === period);
+  let res;
+  if (dup) {
+    res = await fetch(`/api/scope2/manager/records/${dup.id}`, {
+      method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    });
+    if(!res.ok){ alert('Không ghi đè được dữ liệu'); return; }
+    const data = await res.json();
+    records = records.map(r => r.id === dup.id ? data.record : r);
+  } else {
+    res = await fetch('/api/scope2/manager/records', {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    });
+    if(!res.ok){ alert('Không lưu được dữ liệu'); return; }
+    const data = await res.json();
+    records.push(data.record);
+  }
+
+  document.getElementById('f-device').value = '';
+  document.getElementById('f-kwh').value = '';
+  document.getElementById('f-from').value = '';
+  document.getElementById('f-to').value = '';
+  document.getElementById('f-note').value = '';
+  await refreshAudit();
+  renderAll();
+}
+
+async function deleteRecord(id){
+  if(!confirm('Bạn có chắc muốn xóa bản ghi này?')) return;
+  const res = await fetch(`/api/scope2/manager/records/${id}`, {method:'DELETE'});
+  if(!res.ok){ alert('Không xóa được dữ liệu'); return; }
+  records = records.filter(r=>r.id!==id);
+  await refreshAudit();
+  renderAll();
+}
+
+async function uploadExcelMock(){
+  const res = await fetch('/api/scope2/manager/upload-excel-mock', {method:'POST'});
+  if(!res.ok){ alert('Mock upload thất bại'); return; }
+  const data = await res.json();
+  if(Array.isArray(data.rows)) data.rows.forEach(r=>records.push(r));
+  alert(`Đã mock import thành công ${data.imported || 0} bản ghi`);
+  await refreshAudit();
+  renderAll();
+}
+
+async function refreshAudit(){
+  const res = await fetch('/api/scope2/manager/audit');
+  if(!res.ok) return;
+  const out = await res.json();
+  auditLog = out.logs || [];
+}
+
+function renderDevices(){
+  const tbody = document.getElementById('devicesTableBody');
+  tbody.innerHTML = devices.map(d=>`
+    <tr>
+      <td><span class="device-badge">${d.name}</span></td>
+      <td>${d.type || 'Khác'}</td>
+      <td><strong>${d.capacity}</strong> kW</td>
+      <td>${d.area || ''}</td>
+      <td>${d.status === 'active' ? 'Hoạt động' : 'Tạm dừng'}</td>
+    </tr>`).join('');
+}
+
+function renderRecords(){
+  const tbody = document.getElementById('recentTableBody');
+  if(!records.length){
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#7a8aab;padding:20px">Chưa có dữ liệu</td></tr>';
+    return;
+  }
+  tbody.innerHTML = records.map(r=>`
+    <tr>
+      <td><span class="device-badge">${r.device}</span></td>
+      <td><strong>${Number(r.kwh).toLocaleString('vi-VN')}</strong></td>
+      <td>${r.from || '–'}</td>
+      <td>${r.to || '–'}</td>
+      <td style="color:var(--accent);font-weight:700">${(Number(r.kwh)/1000*EF).toFixed(3)}</td>
+      <td>${r.period}</td>
+      <td style="white-space:nowrap">
+        <button class="tbl-action-btn del" onclick="deleteRecord(${r.id})" title="Xóa"><i class="fa-solid fa-trash"></i></button>
+      </td>
+    </tr>`).join('');
+}
+
+function renderHistory(){
+  const list = document.getElementById('historyList');
+  if(!auditLog.length){
+    list.innerHTML = '<div style="text-align:center;color:#7a8aab">Chưa có lịch sử</div>';
+    return;
+  }
+  const icons = {add:'fa-plus', edit:'fa-pen', del:'fa-trash', upload:'fa-file-arrow-up'};
+  list.innerHTML = auditLog.map(a=>`
+    <div class="history-item">
+      <div class="history-icon ${a.type}"><i class="fa-solid ${icons[a.type] || 'fa-clock'}"></i></div>
+      <div>
+        <div style="font-size:.82rem;font-weight:700">${a.action}</div>
+        <div style="font-size:.74rem;color:#7a8aab">${a.detail}</div>
+        <div style="font-size:.7rem;color:#7a8aab">${a.time}</div>
+      </div>
+    </div>`).join('');
+}
+
+function updateSummary(){
+  const total = records.reduce((s,r)=>s + Number(r.kwh || 0), 0);
+  document.getElementById('sum-total-kwh').textContent = total.toLocaleString('vi-VN');
+  document.getElementById('sum-total-co2').textContent = (total/1000*EF).toFixed(3);
+}
+
+function renderAll(){
+  buildDeviceDropdown();
+  renderDevices();
+  renderRecords();
+  renderHistory();
+  updateSummary();
+}
+
+refreshAudit().then(renderAll);
+</script>
+</body>
+</html>
