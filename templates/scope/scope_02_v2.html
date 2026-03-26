@@ -153,6 +153,16 @@ tr:hover td { background:#f8f9fd; }
 .btn-primary:hover { background:var(--navy-light); }
 .btn-secondary { padding:10px 20px; border-radius:9px; font-size:0.82rem; font-weight:600; cursor:pointer; border:1.5px solid var(--gray-border); background:white; color:var(--navy); font-family:'Montserrat',sans-serif; }
 .scope-note { background:rgba(46,125,247,0.06); border:1.5px solid rgba(46,125,247,0.2); border-radius:8px; padding:8px 12px; font-size:0.73rem; color:var(--accent); font-weight:600; margin-bottom:14px; display:flex; align-items:center; gap:6px; }
+.bulk-upload-box { margin-top:8px; border:1.5px dashed var(--gray-border); border-radius:10px; padding:10px; background:#fbfcff; }
+.bulk-upload-head { font-size:0.72rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:8px; }
+.bulk-upload-row { display:flex; gap:8px; align-items:center; }
+.bulk-upload-row input[type=file] { flex:1; font-size:0.74rem; color:#4a5a7b; }
+.btn-bulk { padding:8px 10px; border-radius:8px; border:1.5px solid var(--gray-border); background:#fff; color:var(--navy); font-size:0.74rem; font-weight:700; cursor:pointer; font-family:'Montserrat',sans-serif; white-space:nowrap; }
+.btn-bulk:hover { border-color:var(--accent); color:var(--accent); }
+.bulk-upload-help { margin-top:8px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.bulk-upload-note { font-size:0.68rem; color:var(--text-muted); }
+.bulk-template-link { border:none; background:transparent; color:var(--accent); font-size:0.7rem; font-weight:700; cursor:pointer; padding:0; }
+.bulk-template-link:hover { text-decoration:underline; }
 
 .kpi-detail { background:white; border-radius:12px; border:1px solid var(--gray-border); padding:18px; display:none; }
 .kpi-detail.show { display:block; }
@@ -399,6 +409,17 @@ function toggleMenu(id){
     <div class="form-group">
       <label class="form-label">Ghi chú</label>
       <input class="form-input" type="text" id="f-note" placeholder="Thông tin bổ sung (nếu có)">
+    </div>
+    <div class="bulk-upload-box">
+      <div class="bulk-upload-head"><i class="fa-solid fa-file-arrow-up" style="margin-right:5px"></i>Nhập hàng loạt từ Excel</div>
+      <div class="bulk-upload-row">
+        <input type="file" id="bulkExcelFile" accept=".xlsx,.xls">
+        <button class="btn-bulk" type="button" onclick="importBulkExcel()"><i class="fa-solid fa-upload" style="margin-right:4px"></i>Xác nhận</button>
+      </div>
+      <div class="bulk-upload-help">
+        <span class="bulk-upload-note">Cột bắt buộc: name, power, location, entry_date</span>
+        <button type="button" class="bulk-template-link" onclick="downloadImportTemplate()"><i class="fa-solid fa-download" style="margin-right:4px"></i>Tải mẫu Excel</button>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn-secondary" onclick="hideModal()">Hủy</button>
@@ -735,6 +756,7 @@ function showModal() {
   editingItemId=null;
   document.getElementById('modalTitle').innerHTML='<i class="fa-solid fa-plus-circle" style="color:var(--accent);margin-right:8px"></i>Thêm hạng mục Scope 2';
   document.getElementById('modalSaveBtn').innerHTML='<i class="fa-solid fa-floppy-disk" style="margin-right:6px"></i>Lưu hạng mục';
+  document.getElementById('bulkExcelFile').value='';
   document.getElementById('modalOverlay').classList.add('show');
 }
 function hideModal() { document.getElementById('modalOverlay').classList.remove('show'); editingItemId=null; }
@@ -784,8 +806,63 @@ async function deleteCategory(id) {
     ab?setTimeMode(getMode(),ab):onPeriodChange();
   } catch(e){console.error(e);alert('Lỗi kết nối');}
 }
-function exportExcel(){alert('Xuất Excel – Tính năng sẽ kết nối API xuất báo cáo.');}
-function exportPDF(){alert('Xuất PDF – Tính năng sẽ kết nối API xuất báo cáo.');}
+
+async function importBulkExcel() {
+  const fileInput = document.getElementById('bulkExcelFile');
+  const file = fileInput.files && fileInput.files[0];
+  if (!file) {
+    alert('Vui lòng chọn file Excel để nhập dữ liệu');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const res = await fetch('/api/scope2/items/import-excel', {
+      method: 'POST',
+      body: formData
+    });
+
+    const out = await res.json();
+    if (!res.ok) {
+      alert(out.detail || 'Nhập file thất bại');
+      return;
+    }
+
+    const reload = await fetch('/api/scope2/items');
+    if (reload.ok) {
+      const data = await reload.json();
+      categories = data.items || [];
+      selected = new Set(categories.map(c => c.id));
+      const ab = document.querySelector('.time-tab.active');
+      ab ? setTimeMode(getMode(), ab) : onPeriodChange();
+    }
+
+    alert(`Nhập Excel thành công: ${out.imported || 0} dòng, lỗi: ${out.failed || 0}`);
+  } catch (e) {
+    console.error(e);
+    alert('Lỗi kết nối khi import Excel');
+  }
+}
+
+function downloadImportTemplate() {
+  window.open('/api/scope2/items/import-template-excel', '_blank');
+}
+
+function exportExcel() {
+  const mode = getMode();
+  const bucket = getCurrentBucketValue();
+  const params = new URLSearchParams({ mode, bucket });
+  window.open(`/api/scope2/items/export-excel?${params.toString()}`, '_blank');
+}
+
+function exportPDF() {
+  const mode = getMode();
+  const bucket = getCurrentBucketValue();
+  const params = new URLSearchParams({ mode, bucket });
+  window.open(`/api/scope2/items/export-pdf?${params.toString()}`, '_blank');
+}
 
 (function init(){
   const mb=Array.from(document.querySelectorAll('.time-tab')).find(b=>b.innerText.trim()==='Tháng');

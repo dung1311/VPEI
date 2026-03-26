@@ -26,7 +26,7 @@ async def scope2_page(request: Request, db: Session = Depends(get_db)):
     categories = electrical_items_service.get_scope2_categories(db)
 
     return templates.TemplateResponse(
-        "scope/scope_02.html",
+        "scope/scope_02_v2.html",
         {
             "request": request,
             "user": current_user,
@@ -86,6 +86,16 @@ async def delete_electrical_item(item_id: int, db: Session = Depends(get_db)):
 async def import_electrical_items_excel(file: UploadFile = File(...), db: Session = Depends(get_db)):
     file_bytes = await file.read()
     return electrical_items_service.import_scope2_items_from_excel(file_bytes, db)
+
+
+@router.get("/api/scope2/items/import-template-excel")
+async def download_import_template_excel():
+    payload = electrical_items_service.export_scope2_import_template_excel()
+    return StreamingResponse(
+        iter([payload]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=scope2_import_template.xlsx"},
+    )
 
 
 @router.get("/api/scope2/items/export-excel")

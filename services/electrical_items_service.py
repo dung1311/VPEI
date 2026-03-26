@@ -364,6 +364,19 @@ def export_scope2_items_excel(
     return out.getvalue()
 
 
+def export_scope2_import_template_excel() -> bytes:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Scope2_Template"
+    ws.append(["name", "power", "location", "entry_date", "description"])
+    ws.append(["Hệ thống điều hòa trung tâm", 350, "Văn phòng", "2026-03-27", "Ví dụ dữ liệu mẫu"])
+    ws.append(["Chiếu sáng khu bến", 120, "Cảng chính", "2026-03-27", ""])
+
+    out = BytesIO()
+    wb.save(out)
+    return out.getvalue()
+
+
 def export_scope2_items_pdf(
     db: Session,
     mode: Optional[str] = None,
