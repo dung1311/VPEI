@@ -955,6 +955,19 @@ async function addCategory() {
     description: document.getElementById('f-note').value
   };
 
+  if (editingItemId) {
+    const reason = prompt('Nhập lý do cập nhật (bắt buộc):', '');
+    if (reason === null) {
+      return;
+    }
+    const cleanReason = reason.trim();
+    if (!cleanReason) {
+      alert('Bạn phải nhập lý do cập nhật');
+      return;
+    }
+    payload.update_reason = cleanReason;
+  }
+
   try {
     const endpoint = editingItemId ? `/api/scope2/items/${editingItemId}` : '/api/scope2/items';
     const method = editingItemId ? 'PUT' : 'POST';

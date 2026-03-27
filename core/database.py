@@ -28,6 +28,7 @@ def init_db():
     # Import models so SQLAlchemy registers them before create_all
     from models import user as _  # noqa: F401
     from models import electrical_item as _  # noqa: F401
+    from models import audit_log as _  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
 

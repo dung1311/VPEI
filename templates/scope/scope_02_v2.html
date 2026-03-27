@@ -198,7 +198,7 @@ tr:hover td { background:#f8f9fd; }
       <i class="fa-solid fa-chevron-down nav-expand"></i>
     </div>
     <div id="scope2Menu" class="submenu">
-      <a href="/scope2/manager" class="nav-item sub">Quản lý phát thải</a>
+      <a href="/scope2/manager" class="nav-item sub">Lịch sử hoạt động</a>
     </div>
     <a href="/scope3" class="nav-item"><i class="fa-solid fa-ship" style="width:16px;color:var(--text-muted)"></i> Scope 3</a>
     <div class="nav-section" style="margin-top:10px">Báo cáo</div>
@@ -769,6 +769,16 @@ async function addCategory() {
   if(!name){alert('Vui lòng nhập tên hạng mục!');return;}
   if(!entryDate){alert('Vui lòng chọn ngày nhập dữ liệu!');return;}
   const payload={name,power:cap,location:document.getElementById('f-area').value,entry_date:entryDate,description:document.getElementById('f-note').value};
+  if (editingItemId) {
+    const reason = prompt('Nhập lý do cập nhật (bắt buộc):', '');
+    if (reason === null) return;
+    const cleanReason = reason.trim();
+    if (!cleanReason) {
+      alert('Bạn phải nhập lý do cập nhật');
+      return;
+    }
+    payload.update_reason = cleanReason;
+  }
   try {
     const endpoint=editingItemId?`/api/scope2/items/${editingItemId}`:'/api/scope2/items';
     const res=await fetch(endpoint,{method:editingItemId?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});

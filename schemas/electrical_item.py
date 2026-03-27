@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 class ElectricalItemCreate(BaseModel):
@@ -15,6 +15,7 @@ class ElectricalItemUpdate(BaseModel):
     location: str
     entry_date: str
     description: Optional[str] = None
+    update_reason: str = Field(..., min_length=3)
 
 class ElectricalItemResponse(BaseModel):
     id: int
@@ -26,12 +27,3 @@ class ElectricalItemResponse(BaseModel):
 
     class Config:
         from_attributes = True
-
-
-class ManagerRecordCreate(BaseModel):
-    device: str
-    kwh: float
-    period: str
-    from_date: Optional[str] = ""
-    to_date: Optional[str] = ""
-    note: Optional[str] = ""

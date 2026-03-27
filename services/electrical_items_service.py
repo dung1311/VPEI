@@ -1,5 +1,4 @@
 from datetime import datetime
-from itertools import count
 from io import BytesIO
 import os
 from sqlalchemy.orm import Session
@@ -15,26 +14,21 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
 from models.electrical_item import ElectricalItem, ItemLocation
+from services.scope2_activity_service import record_activity
 
 EF = 0.6235
-_record_id_seq = count(1000)
-MANAGER_RECORDS: List[Dict[str, Any]] = []
-MANAGER_AUDIT: List[Dict[str, Any]] = []
 
-def _now_vn() -> str:
-    return datetime.now().strftime("%d/%m/%Y %H:%M")
 
-def _add_audit(action_type: str, action: str, detail: str, user: str = "Admin"):
-    MANAGER_AUDIT.insert(
-        0,
-        {
-            "type": action_type,
-            "action": action,
-            "detail": detail,
-            "user": user,
-            "time": _now_vn(),
-        },
-    )
+def _format_activity_date(value: str) -> str:
+    raw = (value or "").strip()
+    if not raw:
+        return ""
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y"):
+        try:
+            return datetime.strptime(raw, fmt).strftime("%d/%m/%Y")
+        except ValueError:
+            continue
+    return raw
 
 def _parse_entry_date(value: str) -> datetime:
     value = (value or "").strip()
@@ -151,30 +145,7 @@ def get_scope2_categories(db: Session) -> List[Dict[str, Any]]:
         })
     return categories
 
-def get_manager_devices(db: Session) -> List[Dict[str, Any]]:
-    items_db = db.query(ElectricalItem).order_by(desc(ElectricalItem.id)).all()
-    return [
-        {
-            "id": item.id,
-            "name": item.name,
-            "type": "Khác",
-            "capacity": item.power,
-            "area": item.location.value if item.location else "Cảng chính",
-            "status": "active",
-        }
-        for item in items_db
-    ]
-
-def get_manager_records() -> List[Dict[str, Any]]:
-    return MANAGER_RECORDS
-
-def get_manager_audit() -> List[Dict[str, Any]]:
-    return MANAGER_AUDIT
-
-def get_ef() -> float:
-    return EF
-
-def create_electrical_item(item_data, db: Session) -> Dict[str, Any]:
+def create_electrical_item(item_data, db: Session, actor: str = "system") -> Dict[str, Any]:
     try:
         dt = _parse_entry_date(item_data.entry_date)
     except ValueError:
@@ -199,6 +170,13 @@ def create_electrical_item(item_data, db: Session) -> Dict[str, Any]:
     db.add(db_item)
     db.commit()
     db.refresh(db_item)
+
+    record_activity(
+        db,
+        actor,
+        "Thêm item (nhập thủ công)",
+        f"{db_item.name} - {db_item.power:g} kW - {_format_activity_date(db_item.period_value)}",
+    )
     
     return {
         "id": db_item.id,
@@ -210,7 +188,7 @@ def create_electrical_item(item_data, db: Session) -> Dict[str, Any]:
         "note": db_item.description or ""
     }
 
-def update_electrical_item(item_id: int, item_data, db: Session) -> Dict[str, Any]:
+def update_electrical_item(item_id: int, item_data, db: Session, actor: str = "system") -> Dict[str, Any]:
     db_item = db.query(ElectricalItem).filter(ElectricalItem.id == item_id).first()
     if not db_item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
@@ -228,6 +206,13 @@ def update_electrical_item(item_id: int, item_data, db: Session) -> Dict[str, An
     except ValueError:
         location_enum = ItemLocation.MAIN_PORT
 
+    reason = (item_data.update_reason or "").strip()
+    if not reason:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="update_reason is required",
+        )
+
     db_item.name = item_data.name
     db_item.power = item_data.power
     db_item.location = location_enum
@@ -237,6 +222,13 @@ def update_electrical_item(item_id: int, item_data, db: Session) -> Dict[str, An
 
     db.commit()
     db.refresh(db_item)
+
+    record_activity(
+        db,
+        actor,
+        "Sửa item",
+        f"{db_item.name} - {db_item.power:g} kW - {_format_activity_date(db_item.period_value)} - Lý do: {reason}",
+    )
 
     return {
         "id": db_item.id,
@@ -248,7 +240,7 @@ def update_electrical_item(item_id: int, item_data, db: Session) -> Dict[str, An
         "note": db_item.description or "",
     }
 
-def delete_electrical_item(item_id: int, db: Session) -> Dict[str, Any]:
+def delete_electrical_item(item_id: int, db: Session, actor: str = "system") -> Dict[str, Any]:
     db_item = db.query(ElectricalItem).filter(ElectricalItem.id == item_id).first()
     if not db_item:
         raise HTTPException(
@@ -256,12 +248,25 @@ def delete_electrical_item(item_id: int, db: Session) -> Dict[str, Any]:
             detail="Item not found",
         )
 
+    deleted_snapshot = {
+        "name": db_item.name,
+        "power": db_item.power,
+        "period_value": db_item.period_value or "",
+    }
     db.delete(db_item)
     db.commit()
+
+    record_activity(
+        db,
+        actor,
+        "Xóa item",
+        f"{deleted_snapshot['name']} - {deleted_snapshot['power']:g} kW - {_format_activity_date(deleted_snapshot['period_value'])}",
+    )
+
     return {"ok": True, "deleted_id": item_id}
 
 
-def import_scope2_items_from_excel(file_bytes: bytes, db: Session) -> Dict[str, Any]:
+def import_scope2_items_from_excel(file_bytes: bytes, db: Session, actor: str = "system") -> Dict[str, Any]:
     try:
         wb = load_workbook(filename=BytesIO(file_bytes), data_only=True)
     except Exception:
@@ -330,6 +335,12 @@ def import_scope2_items_from_excel(file_bytes: bytes, db: Session) -> Dict[str, 
             errors.append(f"Row {row_no}: {ex}")
 
     db.commit()
+    record_activity(
+        db,
+        actor,
+        "Thêm item (nhập Excel)",
+        f"Imported {imported} item(s), failed {failed} item(s)",
+    )
     return {"ok": True, "imported": imported, "failed": failed, "errors": errors}
 
 
@@ -338,6 +349,7 @@ def export_scope2_items_excel(
     mode: Optional[str] = None,
     bucket: Optional[str] = None,
     until_now: bool = False,
+    actor: str = "system",
 ) -> bytes:
     items_db = db.query(ElectricalItem).order_by(desc(ElectricalItem.id)).all()
     items_db = _filter_items_by_period(items_db, mode=mode, bucket=bucket, until_now=until_now)
@@ -361,6 +373,12 @@ def export_scope2_items_excel(
 
     out = BytesIO()
     wb.save(out)
+    record_activity(
+        db,
+        actor,
+        "Xuất report Excel",
+        f"{len(items_db)} item(s) - mode={mode or 'all'} - bucket={bucket or 'all'} - until_now={until_now}",
+    )
     return out.getvalue()
 
 
@@ -382,6 +400,7 @@ def export_scope2_items_pdf(
     mode: Optional[str] = None,
     bucket: Optional[str] = None,
     until_now: bool = False,
+    actor: str = "system",
 ) -> bytes:
     items_db = db.query(ElectricalItem).order_by(desc(ElectricalItem.id)).all()
     items_db = _filter_items_by_period(items_db, mode=mode, bucket=bucket, until_now=until_now)
@@ -428,69 +447,10 @@ def export_scope2_items_pdf(
 
     elems.append(table)
     doc.build(elems)
+    record_activity(
+        db,
+        actor,
+        "Xuất report PDF",
+        f"{len(items_db)} item(s) - mode={mode or 'all'} - bucket={bucket or 'all'} - until_now={until_now}",
+    )
     return out.getvalue()
-
-def create_manager_record(payload) -> Dict[str, Any]:
-    global _record_id_seq
-    new_record = {
-        "id": next(_record_id_seq),
-        "device": payload.device,
-        "kwh": payload.kwh,
-        "from": payload.from_date or "",
-        "to": payload.to_date or "",
-        "period": payload.period,
-        "note": payload.note or "",
-    }
-    MANAGER_RECORDS.append(new_record)
-    _add_audit("add", "Thêm dữ liệu", f"{payload.device} – {int(payload.kwh):,} kWh – {payload.period}")
-    return new_record
-
-def delete_manager_record(record_id: int) -> Dict[str, Any]:
-    idx = next((i for i, r in enumerate(MANAGER_RECORDS) if r["id"] == record_id), -1)
-    if idx == -1:
-        raise HTTPException(status_code=404, detail="Record not found")
-
-    target = MANAGER_RECORDS[idx]
-    del MANAGER_RECORDS[idx]
-    _add_audit("del", "Xóa dữ liệu", f"{target['device']} – {int(target['kwh']):,} kWh – {target['period']}")
-    return {"ok": True, "deleted_id": record_id}
-
-def update_manager_record(record_id: int, payload) -> Dict[str, Any]:
-    idx = next((i for i, r in enumerate(MANAGER_RECORDS) if r["id"] == record_id), -1)
-    if idx == -1:
-        raise HTTPException(status_code=404, detail="Record not found")
-
-    MANAGER_RECORDS[idx] = {
-        "id": record_id,
-        "device": payload.device,
-        "kwh": payload.kwh,
-        "from": payload.from_date or "",
-        "to": payload.to_date or "",
-        "period": payload.period,
-        "note": payload.note or "",
-    }
-    _add_audit("edit", "Ghi đè dữ liệu", f"{payload.device} – {int(payload.kwh):,} kWh – {payload.period}")
-    return MANAGER_RECORDS[idx]
-
-def mock_upload_excel() -> Dict[str, Any]:
-    global _record_id_seq
-    mock_rows = [
-        {"device": "Cẩu điện", "kwh": 128000, "from": "01/06/2026", "to": "30/06/2026", "period": "Tháng 06/2026", "note": ""},
-        {"device": "Kho lạnh", "kwh": 34000, "from": "01/06/2026", "to": "30/06/2026", "period": "Tháng 06/2026", "note": ""},
-        {"device": "Văn phòng", "kwh": 8200, "from": "01/06/2026", "to": "30/06/2026", "period": "Tháng 06/2026", "note": ""},
-    ]
-
-    rows_with_id = []
-    for row in mock_rows:
-        row_with_id = {"id": next(_record_id_seq), **row}
-        MANAGER_RECORDS.append(row_with_id)
-        rows_with_id.append(row_with_id)
-
-    _add_audit("upload", "Tải lên Excel", f"{len(mock_rows)} bản ghi – Thành công")
-    return {
-        "ok": True,
-        "message": "Mock import success",
-        "imported": len(mock_rows),
-        "rows": rows_with_id,
-        "warnings": ["Hàng 5: trùng kỳ báo cáo (mock warning)"]
-    }

@@ -1,15 +1,21 @@
-from fastapi import APIRouter, Request, Depends, UploadFile, File, Query
+from fastapi import APIRouter, Request, Depends, UploadFile, File, Query, HTTPException, status
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from core.database import get_db
-from core.security import decode_token
+from core.security import decode_token, get_token_payload
 from services import electrical_items_service
-from schemas.electrical_item import ElectricalItemCreate, ElectricalItemUpdate, ManagerRecordCreate
+from services import scope2_activity_service
+from schemas.electrical_item import ElectricalItemCreate, ElectricalItemUpdate
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
+
+
+def _actor_from_request(request: Request) -> str:
+    payload = get_token_payload(request) or {}
+    return payload.get("sub") or "system"
 
 @router.get("/scope2", response_class=HTMLResponse)
 async def scope2_page(request: Request, db: Session = Depends(get_db)):
@@ -47,26 +53,22 @@ async def scope2_manager_page(request: Request, db: Session = Depends(get_db)):
         resp.delete_cookie("access_token")
         return resp
 
-    devices = electrical_items_service.get_manager_devices(db)
-    records = electrical_items_service.get_manager_records()
-    audit = electrical_items_service.get_manager_audit()
-    ef = electrical_items_service.get_ef()
+    history = scope2_activity_service.get_scope2_activity_history(db)
 
     return templates.TemplateResponse(
         "scope/scope_02_manager.html",
         {
             "request": request,
             "user": current_user,
-            "devices_json": devices,
-            "records_json": records,
-            "audit_json": audit,
-            "ef": ef,
+            "audit_json": history["logs"],
+            "available_years_json": history["available_years"],
+            "can_delete": bool(current_user.get("is_admin")),
         },
     )
 
 @router.post("/api/scope2/items")
-async def create_electrical_item(item: ElectricalItemCreate, db: Session = Depends(get_db)):
-    return electrical_items_service.create_electrical_item(item, db)
+async def create_electrical_item(item: ElectricalItemCreate, request: Request, db: Session = Depends(get_db)):
+    return electrical_items_service.create_electrical_item(item, db, actor=_actor_from_request(request))
 
 
 @router.get("/api/scope2/items")
@@ -74,18 +76,18 @@ async def list_electrical_items(db: Session = Depends(get_db)):
     return {"items": electrical_items_service.get_scope2_categories(db)}
 
 @router.put("/api/scope2/items/{item_id}")
-async def update_electrical_item(item_id: int, item: ElectricalItemUpdate, db: Session = Depends(get_db)):
-    return electrical_items_service.update_electrical_item(item_id, item, db)
+async def update_electrical_item(item_id: int, item: ElectricalItemUpdate, request: Request, db: Session = Depends(get_db)):
+    return electrical_items_service.update_electrical_item(item_id, item, db, actor=_actor_from_request(request))
 
 @router.delete("/api/scope2/items/{item_id}")
-async def delete_electrical_item(item_id: int, db: Session = Depends(get_db)):
-    return electrical_items_service.delete_electrical_item(item_id, db)
+async def delete_electrical_item(item_id: int, request: Request, db: Session = Depends(get_db)):
+    return electrical_items_service.delete_electrical_item(item_id, db, actor=_actor_from_request(request))
 
 
 @router.post("/api/scope2/items/import-excel")
-async def import_electrical_items_excel(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def import_electrical_items_excel(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
     file_bytes = await file.read()
-    return electrical_items_service.import_scope2_items_from_excel(file_bytes, db)
+    return electrical_items_service.import_scope2_items_from_excel(file_bytes, db, actor=_actor_from_request(request))
 
 
 @router.get("/api/scope2/items/import-template-excel")
@@ -100,6 +102,7 @@ async def download_import_template_excel():
 
 @router.get("/api/scope2/items/export-excel")
 async def export_electrical_items_excel(
+    request: Request,
     mode: str | None = Query(default=None),
     bucket: str | None = Query(default=None),
     until_now: bool = Query(default=False),
@@ -110,6 +113,7 @@ async def export_electrical_items_excel(
         mode=mode,
         bucket=bucket,
         until_now=until_now,
+        actor=_actor_from_request(request),
     )
     return StreamingResponse(
         iter([payload]),
@@ -120,6 +124,7 @@ async def export_electrical_items_excel(
 
 @router.get("/api/scope2/items/export-pdf")
 async def export_electrical_items_pdf(
+    request: Request,
     mode: str | None = Query(default=None),
     bucket: str | None = Query(default=None),
     until_now: bool = Query(default=False),
@@ -130,6 +135,7 @@ async def export_electrical_items_pdf(
         mode=mode,
         bucket=bucket,
         until_now=until_now,
+        actor=_actor_from_request(request),
     )
     return StreamingResponse(
         iter([payload]),
@@ -137,39 +143,26 @@ async def export_electrical_items_pdf(
         headers={"Content-Disposition": "attachment; filename=scope2_items.pdf"},
     )
 
-@router.get("/api/scope2/manager/devices")
-async def manager_devices(db: Session = Depends(get_db)):
-    devices = electrical_items_service.get_manager_devices(db)
-    return {"devices": devices}
-
-@router.get("/api/scope2/manager/records")
-async def manager_records():
-    records = electrical_items_service.get_manager_records()
-    return {"records": records}
-
-
-@router.post("/api/scope2/manager/records")
-async def manager_create_record(payload: ManagerRecordCreate):
-    record = electrical_items_service.create_manager_record(payload)
-    return {"ok": True, "record": record}
-
-
-@router.delete("/api/scope2/manager/records/{record_id}")
-async def manager_delete_record(record_id: int):
-    return electrical_items_service.delete_manager_record(record_id)
-
-
-@router.put("/api/scope2/manager/records/{record_id}")
-async def manager_update_record(record_id: int, payload: ManagerRecordCreate):
-    record = electrical_items_service.update_manager_record(record_id, payload)
-    return {"ok": True, "record": record}
-
-
-@router.post("/api/scope2/manager/upload-excel-mock")
-async def manager_upload_excel_mock():
-    return electrical_items_service.mock_upload_excel()
-
 @router.get("/api/scope2/manager/audit")
-async def manager_audit_log():
-    audit = electrical_items_service.get_manager_audit()
-    return {"logs": audit}
+async def manager_audit_log(
+    year: int | None = Query(default=None),
+    month: int | None = Query(default=None),
+    db: Session = Depends(get_db),
+):
+    history = scope2_activity_service.get_scope2_activity_history(db, year=year, month=month)
+    return history
+
+
+@router.delete("/api/scope2/manager/audit/{activity_id}")
+async def manager_delete_audit_log(
+    activity_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    payload = get_token_payload(request) or {}
+    if not payload.get("is_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admin can delete activities",
+        )
+    return scope2_activity_service.delete_scope2_activity(db, activity_id)
