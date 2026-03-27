@@ -11,7 +11,8 @@ from services.scope1_emission_source import DashboardService as StatusService
 router = APIRouter(prefix="/scope1", tags=["Scope 1 Dashboard"])
 templates = Jinja2Templates(directory="templates")
 
-@router.get("/dashboard", response_class=HTMLResponse)
+@router.get("/", response_class=HTMLResponse)
+@router.get("", response_class=HTMLResponse)
 def render_dashboard(request: Request, year: int = Query(None), month: int = Query(None), db: Session = Depends(get_db)):
     now = datetime.now()
     curr_year = year or now.year
