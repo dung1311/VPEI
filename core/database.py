@@ -28,7 +28,7 @@ def init_db():
     """Create all tables and seed the super admin account."""
     # Import models so SQLAlchemy registers them before create_all
     from models import user as _  # noqa: F401
-    from models import device as _  # noqa: F401
+    from models import scope1 as _  # noqa: F401
     
     Base.metadata.create_all(bind=engine)
 

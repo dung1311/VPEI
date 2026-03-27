@@ -2,7 +2,7 @@
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List
 from datetime import datetime
-from models.device import DeviceTypeEnum, FuelTypeEnum, RecordStatusEnum
+from models.scope1 import DeviceTypeEnum, FuelTypeEnum, RecordStatusEnum
 
 # ==========================================
 class DeviceCategoryBase(BaseModel):
@@ -54,3 +54,27 @@ class ActivityDataResponse(ActivityDataBase):
     
     category: Optional[DeviceCategoryResponse] = None 
     model_config = ConfigDict(from_attributes=True)
+
+class PeriodStatusResponse(BaseModel):
+    year: int
+    month: int
+    status: RecordStatusEnum 
+    total_co2e: float
+    record_count: int
+
+    # schemas/device.py
+from pydantic import BaseModel
+from models.scope1 import RecordStatusEnum
+
+class PeriodStatusUpdate(BaseModel):
+    year: int
+    month: int
+    new_status: RecordStatusEnum
+
+class PeriodSummaryResponse(BaseModel):
+    year: int
+    month: int
+    overall_status: RecordStatusEnum
+    total_co2e: float
+    record_count: int
+    is_editable: bool 

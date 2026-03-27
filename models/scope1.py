@@ -1,6 +1,6 @@
 # models/device.py
 from enum import StrEnum
-from sqlalchemy import Column, Integer, String, Float, Enum, ForeignKey, DateTime, Boolean
+from sqlalchemy import Column, Index, Integer, String, Float, Enum, ForeignKey, DateTime, Boolean
 from core.database import Base
 from sqlalchemy.orm import relationship
 from models.user import vn_now
@@ -72,3 +72,4 @@ class ActivityData(Base):
     created_at = Column(DateTime(timezone=True), default=vn_now)
 
     category = relationship("DeviceCategory", back_populates="activities")
+    __table_args__ = (Index('ix_period', 'period_year', 'period_month'),)

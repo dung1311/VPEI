@@ -1,5 +1,5 @@
 # services/scope1.py
-from schemas.device import  ActivityDataEntry, DeviceCreate, DeviceDisplay
+from schemas.scope1_emission_source import  ActivityDataEntry, DeviceCreate, DeviceDisplay
 
 # Helper format số
 def fmt(value) -> str:
