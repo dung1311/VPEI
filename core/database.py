@@ -30,6 +30,9 @@ def init_db():
     from models import user as _  # noqa: F401
     from models import scope1 as _  # noqa: F401
     
+    from models import electrical_item as _  # noqa: F401
+    from models import audit_log as _  # noqa: F401
+
     Base.metadata.create_all(bind=engine)
 
     from models.user import User
