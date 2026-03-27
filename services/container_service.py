@@ -186,6 +186,8 @@ def get_all_containers(db: Session) -> List[Dict[str, Any]]:
     return [
         {
             "id": c.id,
+            "record_kind": "container",
+            "vehicleType": "truck",
             "license_plate": c.license_plate,
             "start_time": c.start_time.isoformat(),
             "end_time": c.end_time.isoformat(),
@@ -342,8 +344,11 @@ def delete_container(
 def get_scope3_summary(db: Session) -> Dict[str, Any]:
     """Get Scope 3 emissions summary"""
     containers = db.query(Container).all()
+    from models.scope3_other_vehicle import Scope3OtherVehicle
 
-    if not containers:
+    others = db.query(Scope3OtherVehicle).all()
+
+    if not containers and not others:
         return {
             "total_co2": 0.0,
             "total_trips": 0,
@@ -353,11 +358,15 @@ def get_scope3_summary(db: Session) -> Dict[str, Any]:
         }
 
     total_co2 = sum(c.e_total for c in containers)
+    total_co2 += sum(o.e_total for o in others)
     total_distance = sum((c.distance_1 + c.distance_2 + c.distance_3) for c in containers)
+    total_trips = len(containers) + sum(int(o.trips or 0) for o in others)
+    count = len(containers) + len(others)
 
     return {
         "total_co2": round(total_co2, 2),
         "total_distance": round(total_distance, 2),
-        "count": len(containers),
-        "avg_co2_per_trip": round(total_co2 / len(containers), 2),
+        "count": count,
+        "total_trips": total_trips,
+        "avg_co2_per_trip": round(total_co2 / count, 2) if count else 0.0,
     }

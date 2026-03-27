@@ -8,6 +8,8 @@ from core.security import decode_token, get_token_payload
 from services import container_service
 from schemas.container import ContainerCreate, ContainerUpdate
 from services import container_activity_service
+from schemas.scope3_other_vehicle import Scope3OtherVehicleCreate
+from services import scope3_other_vehicle_service
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -85,9 +87,43 @@ async def create_container(
 
 @router.get("/api/scope3/containers")
 async def list_containers(db: Session = Depends(get_db)):
-    """Get all container records"""
+    """Get all Scope 3 records (containers + temporary other vehicles)"""
     containers = container_service.get_all_containers(db)
-    return {"items": containers, "count": len(containers)}
+    others = scope3_other_vehicle_service.get_all_other_vehicle_records(db)
+    items = sorted(
+        [*containers, *others],
+        key=lambda x: x.get("start_time") or x.get("created_at") or "",
+        reverse=True,
+    )
+    return {"items": items, "count": len(items)}
+
+
+@router.post("/api/scope3/other-vehicles")
+async def create_other_vehicle_record(
+    payload: Scope3OtherVehicleCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Create temporary non-truck record for Scope 3 testing"""
+    return scope3_other_vehicle_service.create_other_vehicle_record(
+        payload,
+        db,
+        actor=_actor_from_request(request),
+    )
+
+
+@router.delete("/api/scope3/other-vehicles/{record_id}")
+async def delete_other_vehicle_record(
+    record_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Delete temporary non-truck record"""
+    return scope3_other_vehicle_service.delete_other_vehicle_record(
+        record_id,
+        db,
+        actor=_actor_from_request(request),
+    )
 
 
 @router.get("/api/scope3/containers/{container_id}")

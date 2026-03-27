@@ -7,6 +7,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.min.js"></script>
 <style>
 :root {
   --navy: #0d1f3c; --navy-mid: #152850; --navy-light: #1e3a6e;
@@ -106,6 +109,7 @@ body { font-family:'Montserrat',sans-serif; background:var(--gray-soft); color:v
 .table-card { background:white; border-radius:13px; border:1px solid var(--gray-border); overflow:hidden; }
 .table-header { padding:12px 18px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--gray-border); }
 .table-header-title { font-size:.75rem; font-weight:800; color:var(--navy); text-transform:uppercase; letter-spacing:.06em; display:flex; align-items:center; gap:7px; }
+.tbl-actions { display:flex; gap:7px; align-items:center; }
 .tbl-btn { padding:5px 12px; border-radius:7px; font-size:.72rem; font-weight:600; border:1.5px solid var(--gray-border); cursor:pointer; background:white; color:var(--navy); font-family:'Montserrat',sans-serif; display:flex; align-items:center; gap:5px; transition:all .18s; }
 .tbl-btn:hover { border-color:var(--accent); color:var(--accent); }
 table { width:100%; border-collapse:collapse; }
@@ -115,6 +119,16 @@ tr:last-child td { border-bottom:none; }
 tr:hover td { background:#f8f9fd; }
 .tbl-action-btn { width:27px; height:27px; border-radius:6px; border:1.5px solid var(--gray-border); background:white; cursor:pointer; font-size:.7rem; transition:all .18s; display:inline-flex; align-items:center; justify-content:center; }
 .tbl-action-btn.del:hover { border-color:var(--red); color:var(--red); }
+
+/* ─── RECORDS LAYOUT ─── */
+.records-layout { display:grid; grid-template-columns:1.45fr .9fr; gap:14px; align-items:start; }
+.records-layout.no-chart { grid-template-columns:1fr; }
+.records-chart-card { position:sticky; top:10px; }
+
+@media (max-width: 1200px) {
+  .records-layout { grid-template-columns:1fr; }
+  .records-chart-card { position:relative; top:0; }
+}
 
 /* ─── MODAL ─── */
 .modal-overlay { display:none; position:fixed; inset:0; background:rgba(13,31,60,.45); z-index:999; align-items:center; justify-content:center; backdrop-filter:blur(3px); }
@@ -411,27 +425,69 @@ function toggleMenu(id) {
 
     <!-- ══════════ RECORDS TAB ══════════ -->
     <div id="page-records" class="hidden">
-      <div class="table-card">
-        <div class="table-header">
-          <div class="table-header-title"><i class="fa-solid fa-list"></i> Danh sách bản ghi</div>
-          <div class="tbl-actions"></div>
+      <div class="section-card" style="margin-bottom:12px;">
+        <div class="section-header" style="border-bottom:none;padding-bottom:8px;">
+          <div class="section-title"><i class="fa-solid fa-filter"></i> Lọc bản ghi theo phương tiện</div>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Biển số / Tên</th>
-              <th>Loại</th>
-              <th>Journey Type</th>
-              <th>CO₂e (tCO₂e)</th>
-              <th>Ghi chú</th>
-              <th>Hành động</th>
-            </tr>
-          </thead>
-          <tbody id="recordsTableBody">
-            <!-- Records will be rendered here -->
-          </tbody>
-        </table>
+        <div class="section-body" style="padding-top:0;">
+          <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+            <div class="vehicle-tabs" id="recordsFilterTabs">
+              <button class="vtab active" onclick="setRecordsFilter('all', this)">
+                <span class="vtab-dot" style="background:var(--navy)"></span> Tất cả
+              </button>
+              <button class="vtab" onclick="setRecordsFilter('truck', this)">
+                <span class="vtab-dot" style="background:#0ea5e9"></span> Xe container
+              </button>
+              <button class="vtab" onclick="setRecordsFilter('container-ship', this)">
+                <span class="vtab-dot" style="background:#2e7df7"></span> Tàu container
+              </button>
+              <button class="vtab" onclick="setRecordsFilter('barge', this)">
+                <span class="vtab-dot" style="background:#22c55e"></span> Xà lan
+              </button>
+              <button class="vtab" onclick="setRecordsFilter('tugboat', this)">
+                <span class="vtab-dot" style="background:#f59e0b"></span> Tàu kéo
+              </button>
+            </div>
+
+            <div style="display:flex;gap:8px;align-items:center;">
+              <select id="recordsMonthFilter" class="select-pill" onchange="setRecordsTimeFilter()">
+                <option value="all">Tất cả tháng</option>
+                <option value="1">Tháng 1</option><option value="2">Tháng 2</option><option value="3">Tháng 3</option>
+                <option value="4">Tháng 4</option><option value="5">Tháng 5</option><option value="6">Tháng 6</option>
+                <option value="7">Tháng 7</option><option value="8">Tháng 8</option><option value="9">Tháng 9</option>
+                <option value="10">Tháng 10</option><option value="11">Tháng 11</option><option value="12">Tháng 12</option>
+              </select>
+              <select id="recordsYearFilter" class="select-pill" onchange="setRecordsTimeFilter()">
+                <option value="all">Tất cả năm</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="records-layout" id="recordsLayout">
+        <div class="table-card">
+          <div class="table-header">
+            <div class="table-header-title"><i class="fa-solid fa-list"></i> Danh sách bản ghi</div>
+            <div class="tbl-actions">
+              <button class="tbl-btn" onclick="exportRecordsExcel()"><i class="fa-solid fa-file-excel" style="color:#16a34a"></i> Excel</button>
+              <button class="tbl-btn" onclick="exportRecordsPdf()"><i class="fa-solid fa-file-pdf" style="color:#dc2626"></i> PDF</button>
+            </div>
+          </div>
+          <div id="recordsTablesContainer" style="display:flex;flex-direction:column;gap:12px;padding:12px;"></div>
+        </div>
+
+        <div class="section-card records-chart-card" id="recordsChartCard">
+          <div class="section-header">
+            <div class="section-title" id="recordsChartTitle"><i class="fa-solid fa-chart-pie"></i> Tỷ trọng phát thải theo phương tiện</div>
+          </div>
+          <div class="section-body">
+            <canvas id="recordsEmissionDonut" height="220"></canvas>
+            <div id="recordsEmissionHint" style="margin-top:10px;font-size:.74rem;color:var(--text-muted)">
+              Biểu đồ sẽ hiển thị khi có dữ liệu phát thải.
+            </div>
+          </div>
+        </div>
       </div>
     </div><!-- /page-records -->
 
@@ -468,6 +524,10 @@ let selectedVehicleType = 'truck';
 let deleteTarget = null;
 let editingContainerId = null;
 let toastTimer;
+let recordsDonutRef = null;
+let selectedRecordsFilter = 'all';
+let selectedRecordsMonth = 'all';
+let selectedRecordsYear = 'all';
 
 function setMainTab(tabName) {
   const tabs = ['overview', 'input', 'records'];
@@ -612,7 +672,7 @@ async function saveContainerData() {
   }
 }
 
-function saveOtherVehicleData() {
+async function saveOtherVehicleData() {
   const name = document.getElementById('other-name').value.trim();
   const period = document.getElementById('other-period').value.trim();
   const trips = parseInt(document.getElementById('other-trips').value, 10) || 0;
@@ -623,55 +683,436 @@ function saveOtherVehicleData() {
     return;
   }
 
-  const record = {
-    id: Date.now(),
-    vehicleType: selectedVehicleType,
-    name,
-    period,
-    trips,
-    consumption,
-    eTotal: (consumption * VEHICLES[selectedVehicleType].ef / 1000).toFixed(2)
-  };
-
-  containerRecords.push(record);
-  document.getElementById('other-name').value = '';
-  document.getElementById('other-period').value = '';
-  document.getElementById('other-trips').value = '';
-  document.getElementById('other-consumption').value = '';
-  renderRecordsTable();
-  updateOverview();
-  showToast('✓ Đã lưu dữ liệu thành công!', 'success');
-}
-
-function renderRecordsTable() {
-  const tbody = document.getElementById('recordsTableBody');
-  if (!containerRecords || containerRecords.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">Chưa có bản ghi nào</td></tr>';
+  if (!['container-ship', 'barge', 'tugboat'].includes(selectedVehicleType)) {
+    showToast('Loại phương tiện này chưa hỗ trợ trong form tạm', 'warn');
     return;
   }
 
-  tbody.innerHTML = containerRecords.map((r, idx) => {
-    const label = r.license_plate || r.name || '—';
-    const journey = r.journey_type || '—';
+  try {
+    const response = await fetch('/api/scope3/other-vehicles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        vehicle_type: selectedVehicleType,
+        name,
+        period,
+        trips,
+        consumption
+      })
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.detail || 'Lỗi lưu dữ liệu phương tiện');
+    }
+
+    document.getElementById('other-name').value = '';
+    document.getElementById('other-period').value = '';
+    document.getElementById('other-trips').value = '';
+    document.getElementById('other-consumption').value = '';
+
+    await loadAllRecords();
+    await updateOverview();
+    showToast('✓ Đã lưu dữ liệu thành công (EF random)', 'success');
+  } catch (err) {
+    showToast('❌ ' + (err.message || 'Lỗi khi lưu dữ liệu'), 'error');
+  }
+}
+
+function getRecordVehicleType(record) {
+  return record.vehicleType || record.type || 'truck';
+}
+
+function getRecordEmission(record) {
+  const value = parseFloat(record.e_total ?? record.eTotal ?? record.co2 ?? 0);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function getRecordMonthYear(record) {
+  if (record.start_time) {
+    const d = new Date(record.start_time);
+    if (!Number.isNaN(d.getTime())) return { month: d.getMonth() + 1, year: d.getFullYear() };
+  }
+
+  const periodText = String(record.period || '').trim();
+  const m = periodText.match(/(\d{1,2})\s*\/\s*(\d{4})/);
+  if (m) return { month: parseInt(m[1], 10), year: parseInt(m[2], 10) };
+
+  const y = periodText.match(/(20\d{2})/);
+  if (y) return { month: null, year: parseInt(y[1], 10) };
+
+  return { month: null, year: null };
+}
+
+function formatPortEntryDate(record) {
+  if (!record.start_time) return '—';
+  const d = new Date(record.start_time);
+  if (Number.isNaN(d.getTime())) return '—';
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${day}/${month}/${year} ${hh}:${mm}`;
+}
+
+function refreshYearFilterOptions() {
+  const sel = document.getElementById('recordsYearFilter');
+  if (!sel) return;
+
+  const years = [...new Set(containerRecords.map((r) => getRecordMonthYear(r).year).filter(Boolean))]
+    .sort((a, b) => b - a);
+
+  const previous = selectedRecordsYear;
+  sel.innerHTML = '<option value="all">Tất cả năm</option>' + years.map((y) => `<option value="${y}">${y}</option>`).join('');
+  if (previous !== 'all' && years.includes(parseInt(previous, 10))) {
+    sel.value = previous;
+  } else {
+    sel.value = 'all';
+    selectedRecordsYear = 'all';
+  }
+}
+
+function getRecordsByFilter() {
+  return containerRecords.filter((r) => {
+    const type = getRecordVehicleType(r);
+    if (selectedRecordsFilter !== 'all' && type !== selectedRecordsFilter) return false;
+
+    const when = getRecordMonthYear(r);
+    if (selectedRecordsYear !== 'all' && String(when.year) !== String(selectedRecordsYear)) return false;
+    if (selectedRecordsMonth !== 'all' && String(when.month) !== String(selectedRecordsMonth)) return false;
+
+    return true;
+  });
+}
+
+function setRecordsFilter(filterKey, btn) {
+  selectedRecordsFilter = filterKey;
+  document.querySelectorAll('#recordsFilterTabs .vtab').forEach((b) => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderRecordsTable();
+}
+
+function setRecordsTimeFilter() {
+  const monthSel = document.getElementById('recordsMonthFilter');
+  const yearSel = document.getElementById('recordsYearFilter');
+  selectedRecordsMonth = monthSel ? monthSel.value : 'all';
+  selectedRecordsYear = yearSel ? yearSel.value : 'all';
+  renderRecordsTable();
+}
+
+function renderRecordsEmissionChart(filteredRecords) {
+  const hint = document.getElementById('recordsEmissionHint');
+  const canvas = document.getElementById('recordsEmissionDonut');
+  const chartTitle = document.getElementById('recordsChartTitle');
+  const chartCard = document.getElementById('recordsChartCard');
+  const layout = document.getElementById('recordsLayout');
+  if (!canvas) return;
+
+  const shouldShowChart = selectedRecordsFilter === 'all';
+  if (chartCard) chartCard.classList.toggle('hidden', !shouldShowChart);
+  if (layout) layout.classList.toggle('no-chart', !shouldShowChart);
+
+  if (!shouldShowChart) {
+    if (recordsDonutRef) {
+      recordsDonutRef.destroy();
+      recordsDonutRef = null;
+    }
+    return;
+  }
+
+  const filterVehicle = VEHICLES[selectedRecordsFilter] || null;
+  if (chartTitle) {
+    chartTitle.innerHTML = filterVehicle
+      ? `<i class="fa-solid fa-chart-pie"></i> Tỷ trọng phát thải (${filterVehicle.icon} ${filterVehicle.label})`
+      : '<i class="fa-solid fa-chart-pie"></i> Tỷ trọng phát thải theo phương tiện';
+  }
+
+  const grouped = {};
+  filteredRecords.forEach((r) => {
+    const type = getRecordVehicleType(r);
+    const emission = getRecordEmission(r);
+    if (!grouped[type]) {
+      grouped[type] = {
+        label: VEHICLES[type]?.label || type,
+        color: VEHICLES[type]?.color || '#94a3b8',
+        value: 0
+      };
+    }
+    grouped[type].value += emission;
+  });
+
+  const items = Object.values(grouped).filter((x) => x.value > 0);
+  const total = items.reduce((s, x) => s + x.value, 0);
+
+  if (recordsDonutRef) {
+    recordsDonutRef.destroy();
+    recordsDonutRef = null;
+  }
+
+  if (!items.length || total <= 0) {
+    if (hint) hint.textContent = 'Biểu đồ sẽ hiển thị khi có dữ liệu phát thải.';
+    return;
+  }
+
+  if (hint) {
+    hint.textContent = 'Tổng phát thải: ' + total.toLocaleString('vi-VN', { maximumFractionDigits: 2 }) + ' tCO₂e';
+  }
+
+  recordsDonutRef = new Chart(canvas.getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: items.map((x) => x.label),
+      datasets: [{
+        data: items.map((x) => +x.value.toFixed(2)),
+        backgroundColor: items.map((x) => x.color),
+        borderColor: '#fff',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      cutout: '62%',
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: { font: { size: 10, family: 'Montserrat' }, boxWidth: 10, padding: 8 }
+        },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const value = Number(ctx.raw || 0);
+              const pct = total > 0 ? (value / total * 100).toFixed(1) : '0.0';
+              return `${ctx.label}: ${value.toLocaleString('vi-VN', { maximumFractionDigits: 2 })} tCO₂e (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderRecordsTable() {
+  const container = document.getElementById('recordsTablesContainer');
+  const filteredRecords = getRecordsByFilter();
+  const typeOrder = ['truck', 'container-ship', 'barge', 'tugboat'];
+
+  if (!container) return;
+
+  if (!filteredRecords || filteredRecords.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:24px;font-size:.82rem">Chưa có bản ghi nào</div>';
+    renderRecordsEmissionChart([]);
+    return;
+  }
+
+  const grouped = {};
+  filteredRecords.forEach((r) => {
+    const type = getRecordVehicleType(r);
+    if (!grouped[type]) grouped[type] = [];
+    grouped[type].push(r);
+  });
+
+  const keys = selectedRecordsFilter === 'all'
+    ? typeOrder.filter((k) => (grouped[k] || []).length > 0)
+    : [selectedRecordsFilter];
+
+  container.innerHTML = keys.map((type) => {
+    const rows = grouped[type] || [];
+    const vehicle = VEHICLES[type] || { label: type, color: '#64748b', icon: '🚚' };
+
+    const rowHtml = rows.map((r, idx) => {
+      const emission = getRecordEmission(r);
+      const label = r.license_plate || r.name || '—';
+      const journey = r.journey_type || '—';
+      const portEntryDate = type === 'truck' ? formatPortEntryDate(r) : '—';
+      const canEdit = (r.record_kind || 'container') === 'container';
+
+      return `
+        <tr>
+          <td>${idx + 1}</td>
+          <td><strong>${label}</strong></td>
+          <td>${vehicle.icon} ${vehicle.label}</td>
+          <td>${portEntryDate}</td>
+          <td>${journey}</td>
+          <td style="font-weight:700;color:${vehicle.color}">${emission.toLocaleString('vi-VN', { maximumFractionDigits: 2 })} tCO₂e</td>
+          <td>${r.note || '—'}</td>
+          <td style="display:flex; gap:4px;">
+            ${canEdit
+              ? `<button class="tbl-action-btn edit" onclick="startEditContainer(${r.id})" title="Sửa" style="background:#fef3c7;color:#d97706;">
+                  <i class="fa-solid fa-pencil"></i>
+                </button>`
+              : ''}
+            <button class="tbl-action-btn del" onclick="deleteRecord(${r.id})" title="Xóa">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
     return `
-      <tr>
-        <td>${idx + 1}</td>
-        <td><strong>${label}</strong></td>
-        <td>Xe container</td>
-        <td>${journey}</td>
-        <td style="font-weight:700;color:var(--accent)">${r.e_total} tCO₂e</td>
-        <td>${r.note || '—'}</td>
-        <td style="display:flex; gap:4px;">
-          <button class="tbl-action-btn edit" onclick="startEditContainer(${r.id})" title="Sửa" style="background:#fef3c7;color:#d97706;">
-            <i class="fa-solid fa-pencil"></i>
-          </button>
-          <button class="tbl-action-btn del" onclick="deleteRecord(${r.id})" title="Xóa">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        </td>
-      </tr>
+      <div style="border:1px solid var(--gray-border);border-radius:10px;overflow:hidden;background:white;">
+        <div style="padding:10px 14px;border-bottom:1px solid var(--gray-border);font-size:.78rem;font-weight:800;color:${vehicle.color};display:flex;align-items:center;gap:8px;">
+          <span>${vehicle.icon}</span><span>${vehicle.label}</span><span style="font-size:.7rem;color:var(--text-muted);font-weight:700">(${rows.length} bản ghi)</span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Biển số / Tên</th>
+                <th>Loại</th>
+                <th>Ngày vào cảng</th>
+                <th>Journey Type</th>
+                <th>CO₂e (tCO₂e)</th>
+                <th>Ghi chú</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody>${rowHtml}</tbody>
+          </table>
+        </div>
+      </div>
     `;
   }).join('');
+
+  renderRecordsEmissionChart(filteredRecords);
+}
+
+function toExportRow(r, idx) {
+  const vehicleType = getRecordVehicleType(r);
+  const vehicle = VEHICLES[vehicleType] || { label: vehicleType };
+  const emission = getRecordEmission(r);
+  const label = r.license_plate || r.name || '—';
+  const journey = r.journey_type || '—';
+  const portEntryDate = vehicleType === 'truck' ? formatPortEntryDate(r) : '—';
+  const monthYear = getRecordMonthYear(r);
+  const period = r.period || (monthYear.month && monthYear.year ? `Tháng ${monthYear.month}/${monthYear.year}` : '—');
+
+  return {
+    '#': idx + 1,
+    'Biển số / Tên': label,
+    'Loại phương tiện': vehicle.label,
+    'Ngày vào cảng': portEntryDate,
+    'Journey Type': journey,
+    'Kỳ': period,
+    'CO2e (tCO2e)': Number(emission.toFixed(4)),
+    'Ghi chú': r.note || '—'
+  };
+}
+
+function getExportRows() {
+  const filteredRecords = getRecordsByFilter();
+  return filteredRecords.map((r, idx) => toExportRow(r, idx));
+}
+
+function getGroupedExportRows() {
+  const typeOrder = ['truck', 'container-ship', 'barge', 'tugboat'];
+  const filteredRecords = getRecordsByFilter();
+  const grouped = {};
+
+  filteredRecords.forEach((r) => {
+    const key = getRecordVehicleType(r) || 'unknown';
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(r);
+  });
+
+  const keys = selectedRecordsFilter === 'all'
+    ? typeOrder.filter((k) => (grouped[k] || []).length > 0)
+    : [selectedRecordsFilter];
+
+  return keys.map((k) => ({
+    key: k,
+    label: VEHICLES[k]?.label || k,
+    rows: (grouped[k] || []).map((r, idx) => toExportRow(r, idx)),
+  })).filter((g) => g.rows.length > 0);
+}
+
+function exportRecordsExcel() {
+  const groups = getGroupedExportRows();
+  if (!groups.length) {
+    showToast('Không có dữ liệu để xuất Excel', 'warn');
+    return;
+  }
+
+  const wb = XLSX.utils.book_new();
+
+  groups.forEach((g, idx) => {
+    const ws = XLSX.utils.json_to_sheet(g.rows);
+    const name = (g.label || `Sheet_${idx + 1}`).replace(/[\\/?*\[\]:]/g, '').slice(0, 31);
+    XLSX.utils.book_append_sheet(wb, ws, name || `Sheet_${idx + 1}`);
+  });
+
+  const typePart = selectedRecordsFilter === 'all' ? 'all' : selectedRecordsFilter;
+  const ymPart = `${selectedRecordsYear}-${selectedRecordsMonth}`;
+  const filename = `scope3_records_${typePart}_${ymPart}.xlsx`;
+  XLSX.writeFile(wb, filename);
+  showToast('Đã xuất Excel thành công', 'success');
+}
+
+function exportRecordsPdf() {
+  const groups = getGroupedExportRows();
+  if (!groups.length) {
+    showToast('Không có dữ liệu để xuất PDF', 'warn');
+    return;
+  }
+
+  if (!window.pdfMake) {
+    showToast('Không tải được thư viện PDF', 'error');
+    return;
+  }
+
+  const content = [
+    { text: 'VPEI - Scope 3 Records', style: 'header' },
+    { text: `Bộ lọc: ${selectedRecordsFilter} | Tháng: ${selectedRecordsMonth} | Năm: ${selectedRecordsYear}`, style: 'subheader', margin: [0, 0, 0, 10] }
+  ];
+
+  groups.forEach((g, idx) => {
+    content.push({ text: `${VEHICLES[g.key]?.icon || ''} ${g.label} (${g.rows.length} bản ghi)`, style: 'sectionTitle', margin: [0, idx === 0 ? 2 : 10, 0, 6] });
+    content.push({
+      table: {
+        headerRows: 1,
+        widths: [22, 95, 82, 82, 60, 55, 62, '*'],
+        body: [
+          ['#', 'Biển số / Tên', 'Loại phương tiện', 'Ngày vào cảng', 'Journey Type', 'Kỳ', 'CO₂e', 'Ghi chú'],
+          ...g.rows.map((r) => [
+            String(r['#'] ?? ''),
+            String(r['Biển số / Tên'] ?? ''),
+            String(r['Loại phương tiện'] ?? ''),
+            String(r['Ngày vào cảng'] ?? ''),
+            String(r['Journey Type'] ?? ''),
+            String(r['Kỳ'] ?? ''),
+            String(r['CO2e (tCO2e)'] ?? ''),
+            String(r['Ghi chú'] ?? '')
+          ])
+        ]
+      },
+      layout: 'lightHorizontalLines',
+      fontSize: 8
+    });
+  });
+
+  const docDefinition = {
+    pageOrientation: 'landscape',
+    pageSize: 'A4',
+    pageMargins: [24, 24, 24, 24],
+    defaultStyle: {
+      font: 'Roboto',
+      fontSize: 9
+    },
+    styles: {
+      header: { fontSize: 13, bold: true },
+      subheader: { fontSize: 9, color: '#475569' },
+      sectionTitle: { fontSize: 10, bold: true, color: '#0d1f3c' }
+    },
+    content
+  };
+
+  const typePart = selectedRecordsFilter === 'all' ? 'all' : selectedRecordsFilter;
+  const ymPart = `${selectedRecordsYear}-${selectedRecordsMonth}`;
+  const filename = `scope3_records_${typePart}_${ymPart}.pdf`;
+  window.pdfMake.createPdf(docDefinition).download(filename);
+  showToast('Đã xuất PDF thành công', 'success');
 }
 
 function deleteRecord(id) {
@@ -682,7 +1123,12 @@ function deleteRecord(id) {
 async function confirmDelete() {
   if (deleteTarget === null) return;
   try {
-    const response = await fetch(`/api/scope3/containers/${deleteTarget}`, {
+    const target = containerRecords.find((r) => r.id === deleteTarget);
+    const endpoint = target && target.record_kind === 'other_vehicle'
+      ? `/api/scope3/other-vehicles/${deleteTarget}`
+      : `/api/scope3/containers/${deleteTarget}`;
+
+    const response = await fetch(endpoint, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' }
     });
@@ -710,14 +1156,16 @@ async function updateOverview() {
     const summary = await response.json();
 
     document.getElementById('kpi-total').innerHTML = summary.total_co2.toLocaleString('vi-VN', { maximumFractionDigits: 1 }) + '<span class="kpi-unit"> tCO₂e</span>';
-    document.getElementById('kpi-trips').innerHTML = (summary.count || 0) + '<span class="kpi-unit"> lượt</span>';
-    document.getElementById('kpi-trips-type').textContent = (summary.count || 0) + ' chuyến';
+    document.getElementById('kpi-trips').innerHTML = (summary.total_trips || summary.count || 0) + '<span class="kpi-unit"> lượt</span>';
+    document.getElementById('kpi-trips-type').textContent = (summary.count || 0) + ' bản ghi';
 
     if (containerRecords && containerRecords.length > 0) {
-      const topRecord = containerRecords.reduce((max, r) => parseFloat(r.e_total) > parseFloat(max.e_total) ? r : max);
-      const topLabel = topRecord.license_plate || '—';
-      document.getElementById('kpi-top').textContent = '🚛 ' + topLabel;
-      document.getElementById('kpi-top-val').textContent = topRecord.e_total + ' tCO₂e';
+      const topRecord = containerRecords.reduce((max, r) => parseFloat(r.e_total || 0) > parseFloat(max.e_total || 0) ? r : max);
+      const topType = getRecordVehicleType(topRecord);
+      const vehicle = VEHICLES[topType] || { icon: '🚚' };
+      const topLabel = topRecord.license_plate || topRecord.name || '—';
+      document.getElementById('kpi-top').textContent = vehicle.icon + ' ' + topLabel;
+      document.getElementById('kpi-top-val').textContent = (parseFloat(topRecord.e_total || 0)).toLocaleString('vi-VN', { maximumFractionDigits: 2 }) + ' tCO₂e';
     }
   } catch (err) {
     console.error('Lỗi cập nhật overview:', err);
@@ -739,6 +1187,7 @@ async function loadAllRecords() {
     if (!response.ok) throw new Error('Lỗi tải dữ liệu');
     const data = await response.json();
     containerRecords = data.items || [];
+    refreshYearFilterOptions();
     renderRecordsTable();
   } catch (err) {
     console.error('Lỗi khi tải records:', err);
@@ -758,6 +1207,7 @@ function showToast(msg, type = 'success') {
 
 async function init() {
   setEditMode(false);
+  setRecordsTimeFilter();
   await loadAllRecords();
   await updateOverview();
 }
