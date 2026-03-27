@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from core.config import get_settings
 
@@ -29,8 +29,18 @@ def init_db():
     from models import user as _  # noqa: F401
     from models import electrical_item as _  # noqa: F401
     from models import audit_log as _  # noqa: F401
+    from models import container as _  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
+
+    # Ensure audit_log table has scope column for per-scope activity history.
+    inspector = inspect(engine)
+    if 'audit_logs' in inspector.get_table_names():
+        columns = [col['name'] for col in inspector.get_columns('audit_logs')]
+        if 'scope' not in columns:
+            with engine.begin() as conn:
+                conn.execute(text('ALTER TABLE audit_logs ADD COLUMN scope VARCHAR DEFAULT NULL'))
+                conn.execute(text('CREATE INDEX IF NOT EXISTS ix_audit_logs_scope ON audit_logs (scope)'))
 
     from models.user import User
     from core.security import hash_password
