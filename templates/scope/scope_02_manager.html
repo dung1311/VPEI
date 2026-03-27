@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VPEI - Scope 2 Activity History</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+:root {
+  --navy:#0d1f3c;
+  --navy-light:#1e3a6e;
+  --accent:#2e7df7;
+  --white:#fff;
+  --gray-soft:#f4f6fb;
+  --gray-border:#dde3ef;
+  --text-muted:#7a8aab;
+  --green:#22c55e;
+  --red:#ef4444;
+  --amber:#f59e0b;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family:'Montserrat',sans-serif;
+  background:var(--gray-soft);
+  color:var(--navy);
+  display:flex;
+  min-height:100vh;
+}
+.sidebar {
+  width:220px;
+  background:var(--white);
+  border-right:1px solid var(--gray-border);
+  display:flex;
+  flex-direction:column;
+}
+.sidebar-logo {
+  padding:20px 24px;
+  border-bottom:1px solid var(--gray-border);
+}
+.logo-box {
+  background:linear-gradient(135deg,var(--navy),var(--navy-light));
+  border-radius:10px;
+  padding:7px 12px;
+  font-weight:800;
+  font-size:1.1rem;
+  color:#fff;
+  letter-spacing:1px;
+  width:max-content;
+}
+.nav-items { padding:16px 0; flex:1; }
+.nav-section {
+  padding:6px 20px 4px;
+  font-size:.68rem;
+  font-weight:700;
+  color:var(--text-muted);
+  text-transform:uppercase;
+  letter-spacing:.1em;
+}
+.nav-item {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:10px 20px;
+  font-size:.82rem;
+  font-weight:500;
+  color:#4a5a7b;
+  text-decoration:none;
+  border-left:3px solid transparent;
+}
+.nav-item:hover { background:var(--gray-soft); color:var(--navy); }
+.nav-item.active {
+  background:rgba(46,125,247,.08);
+  color:var(--accent);
+  border-left-color:var(--accent);
+  font-weight:600;
+}
+.main {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
+.topbar {
+  background:#fff;
+  border-bottom:1px solid var(--gray-border);
+  padding:0 28px;
+  height:60px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.topbar-title { font-weight:800; font-size:1.02rem; }
+.content {
+  padding:24px 28px;
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
+.card {
+  background:#fff;
+  border:1px solid var(--gray-border);
+  border-radius:14px;
+  overflow:hidden;
+}
+.card-header {
+  padding:14px 18px;
+  border-bottom:1px solid var(--gray-border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.card-title {
+  font-size:.8rem;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+.card-body { padding:18px; }
+.filter-grid {
+  display:grid;
+  grid-template-columns:180px 180px auto;
+  gap:10px;
+  align-items:end;
+}
+label {
+  display:block;
+  font-size:.72rem;
+  font-weight:700;
+  color:var(--text-muted);
+  margin-bottom:4px;
+}
+.select, .btn {
+  width:100%;
+  border-radius:8px;
+  border:1.5px solid var(--gray-border);
+  padding:9px 12px;
+  font-size:.82rem;
+  font-family:'Montserrat',sans-serif;
+  background:#fff;
+}
+.select:focus, .btn:focus { outline:none; border-color:var(--accent); }
+.btn {
+  width:auto;
+  cursor:pointer;
+  font-weight:700;
+  color:#fff;
+  background:var(--navy);
+  border-color:var(--navy);
+}
+.btn:hover { background:var(--navy-light); }
+.summary {
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.summary-item {
+  border:1px solid var(--gray-border);
+  border-radius:10px;
+  padding:12px 14px;
+  background:#fafbfd;
+  min-width:220px;
+}
+.summary-item .k {
+  font-size:.72rem;
+  color:var(--text-muted);
+  font-weight:700;
+  text-transform:uppercase;
+}
+.summary-item .v {
+  margin-top:4px;
+  font-size:1.1rem;
+  font-weight:800;
+}
+table { width:100%; border-collapse:collapse; }
+th {
+  padding:10px 12px;
+  text-align:left;
+  font-size:.7rem;
+  font-weight:700;
+  color:var(--text-muted);
+  background:#fafbfd;
+  border-bottom:1px solid var(--gray-border);
+  text-transform:uppercase;
+}
+td {
+  padding:10px 12px;
+  font-size:.8rem;
+  color:#2a3a6b;
+  border-bottom:1px solid #f0f2f8;
+}
+.action-btn {
+  width:30px;
+  height:30px;
+  border-radius:8px;
+  border:1.5px solid var(--gray-border);
+  background:#fff;
+  color:var(--text-muted);
+  cursor:pointer;
+}
+.action-btn:hover {
+  border-color:var(--red);
+  color:var(--red);
+}
+.badge {
+  display:inline-block;
+  border-radius:999px;
+  font-size:.7rem;
+  font-weight:700;
+  padding:3px 9px;
+}
+.badge.add { background:rgba(34,197,94,.14); color:var(--green); }
+.badge.edit { background:rgba(46,125,247,.14); color:var(--accent); }
+.badge.del { background:rgba(239,68,68,.12); color:var(--red); }
+.badge.report { background:rgba(245,158,11,.16); color:var(--amber); }
+.empty {
+  text-align:center;
+  color:var(--text-muted);
+  padding:20px;
+  font-size:.82rem;
+}
+@media (max-width: 900px) {
+  .sidebar { display:none; }
+  .content { padding:14px; }
+  .topbar { padding:0 14px; }
+  .filter-grid { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="sidebar-logo"><div class="logo-box">VPEI</div></div>
+  <nav class="nav-items">
+    <div class="nav-section">Menu chính</div>
+    <a href="/dashboard" class="nav-item"><i class="fa-solid fa-chart-pie" style="width:16px;color:var(--text-muted)"></i> Dashboard</a>
+    <a href="/scope1" class="nav-item"><i class="fa-solid fa-industry" style="width:16px;color:var(--text-muted)"></i> Scope 1</a>
+    <a href="/scope2" class="nav-item active"><i class="fa-solid fa-bolt" style="width:16px;color:var(--accent)"></i> Scope 2</a>
+    <a href="/scope3" class="nav-item"><i class="fa-solid fa-ship" style="width:16px;color:var(--text-muted)"></i> Scope 3</a>
+  </nav>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title"><i class="fa-solid fa-clock-rotate-left" style="color:var(--accent);margin-right:7px"></i>Lịch sử hoạt động Scope 2</div>
+    <a href="/scope2" style="text-decoration:none;color:var(--accent);font-size:.8rem;font-weight:700">
+      <i class="fa-solid fa-arrow-left"></i> Quay lại Scope 2
+    </a>
+  </div>
+
+  <div class="content">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Bộ lọc theo tháng/năm</div>
+      </div>
+      <div class="card-body">
+        <div class="filter-grid">
+          <div>
+            <label for="year-filter">Năm</label>
+            <select id="year-filter" class="select"></select>
+          </div>
+          <div>
+            <label for="month-filter">Tháng</label>
+            <select id="month-filter" class="select">
+              <option value="">Tất cả tháng</option>
+              <option value="1">Tháng 01</option>
+              <option value="2">Tháng 02</option>
+              <option value="3">Tháng 03</option>
+              <option value="4">Tháng 04</option>
+              <option value="5">Tháng 05</option>
+              <option value="6">Tháng 06</option>
+              <option value="7">Tháng 07</option>
+              <option value="8">Tháng 08</option>
+              <option value="9">Tháng 09</option>
+              <option value="10">Tháng 10</option>
+              <option value="11">Tháng 11</option>
+              <option value="12">Tháng 12</option>
+            </select>
+          </div>
+          <div><button id="btn-filter" class="btn"><i class="fa-solid fa-filter"></i> Lọc dữ liệu</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="summary">
+      <div class="summary-item">
+        <div class="k">Tổng hoạt động</div>
+        <div class="v" id="sum-count">0</div>
+      </div>
+      <div class="summary-item">
+        <div class="k">Thời gian gần nhất</div>
+        <div class="v" id="sum-last">-</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Danh sách hoạt động</div>
+      </div>
+      <div class="card-body" style="padding:0">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:120px">Loại</th>
+              <th>Hành động</th>
+              <th>Chi tiết</th>
+              <th style="width:140px">Người thực hiện</th>
+              <th style="width:180px">Thời gian</th>
+            </tr>
+          </thead>
+          <tbody id="history-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let logs = JSON.parse('{{ audit_json | default([]) | tojson }}');
+const availableYears = JSON.parse('{{ available_years_json | default([]) | tojson }}');
+const canDelete = JSON.parse('{{ can_delete | default(false) | tojson }}');
+
+function toBadge(type){
+  const labelMap = {
+    add: 'Thêm',
+    edit: 'Sửa',
+    del: 'Xóa',
+    report: 'Report'
+  };
+  const text = labelMap[type] || 'Khác';
+  return `<span class="badge ${type}">${text}</span>`;
+}
+
+function renderTable(){
+  const body = document.getElementById('history-body');
+  if(!Array.isArray(logs) || !logs.length){
+    const colspan = canDelete ? 6 : 5;
+    body.innerHTML = `<tr><td colspan="${colspan}" class="empty">Không có hoạt động trong bộ lọc đã chọn</td></tr>`;
+    document.getElementById('sum-count').textContent = '0';
+    document.getElementById('sum-last').textContent = '-';
+    return;
+  }
+
+  body.innerHTML = logs.map(item => `
+    <tr>
+      <td>${toBadge(item.type)}</td>
+      <td><strong>${item.action || ''}</strong></td>
+      <td>${item.detail || ''}</td>
+      <td>${item.user || ''}</td>
+      <td>${item.time || ''}</td>
+      ${canDelete ? `<td><button class="action-btn" title="Xóa hoạt động" onclick="deleteActivity(${item.id})"><i class="fa-solid fa-trash"></i></button></td>` : ''}
+    </tr>
+  `).join('');
+
+  document.getElementById('sum-count').textContent = String(logs.length);
+  document.getElementById('sum-last').textContent = logs[0]?.time || '-';
+}
+
+async function deleteActivity(id){
+  if(!canDelete){
+    alert('Bạn không có quyền xóa hoạt động');
+    return;
+  }
+  if(!confirm('Bạn có chắc muốn xóa hoạt động này?')){
+    return;
+  }
+  const res = await fetch(`/api/scope2/manager/audit/${id}`, { method: 'DELETE' });
+  if(!res.ok){
+    const out = await res.json().catch(() => ({}));
+    alert(out.detail || 'Không thể xóa hoạt động');
+    return;
+  }
+  await loadHistory();
+}
+
+function initYearFilter(){
+  const yearSel = document.getElementById('year-filter');
+  yearSel.innerHTML = '<option value="">Tất cả năm</option>';
+  availableYears.forEach(y => {
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = `Năm ${y}`;
+    yearSel.appendChild(opt);
+  });
+}
+
+async function loadHistory(){
+  const year = document.getElementById('year-filter').value;
+  const month = document.getElementById('month-filter').value;
+  const params = new URLSearchParams();
+  if(year) params.append('year', year);
+  if(month) params.append('month', month);
+
+  const res = await fetch(`/api/scope2/manager/audit?${params.toString()}`);
+  if(!res.ok){
+    logs = [];
+    renderTable();
+    return;
+  }
+
+  const data = await res.json();
+  logs = data.logs || [];
+  renderTable();
+}
+
+document.getElementById('btn-filter').addEventListener('click', loadHistory);
+if (canDelete) {
+  const headRow = document.querySelector('thead tr');
+  if (headRow) {
+    const th = document.createElement('th');
+    th.style.width = '90px';
+    th.textContent = 'Thao tác';
+    headRow.appendChild(th);
+  }
+}
+initYearFilter();
+renderTable();
+</script>
+</body>
+</html>
