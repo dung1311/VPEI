@@ -67,7 +67,7 @@
   .chart-card { background:white; border-radius:14px; padding:20px; border:1px solid var(--gray-border); }
   .chart-title { font-size:0.88rem; font-weight:600; color:var(--navy); margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; }
   .toggle-btn { display:flex; gap:4px; }
-  .tbtn { padding:4px 10px; border-radius:6px; font-size:0.75rem; cursor:pointer; border:1px solid var(--gray-border); background:white; color:#4a5a7b; }
+  .tbtn { padding:4px 10px; border-radius:6px; font-size:0.75rem; cursor:pointer; border:1px solid var(--gray-border); background:white; color:#4a5a7b; transition:all 0.2s;}
   .tbtn.active { background:var(--navy); color:white; border-color:var(--navy); }
 
   /* TABLE */
@@ -94,7 +94,7 @@
     
     <a href="/dashboard" class="nav-item"><i class="fa-solid fa-chart-pie" style="width:16px;color:var(--text-muted)"></i> Dashboard</a>
     
-    <div class="nav-item active" onclick="toggleMenu('scope1Menu')">
+    <div class="nav-item active" onclick="window.location.href='/scope1'">
       <i class="fa-solid fa-industry" style="width:16px;color:var(--accent)"></i> Scope 1
       <i class="fa-solid fa-chevron-down nav-expand"></i>
     </div>
@@ -179,8 +179,8 @@
         <div class="chart-title">
           Xu hướng phát thải
           <div class="toggle-btn">
-            <button class="tbtn">6 tháng</button>
-            <button class="tbtn active">12 tháng</button>
+            <button id="btn-6m" class="tbtn" onclick="updateTrendChart(6)">6 tháng</button>
+            <button id="btn-12m" class="tbtn active" onclick="updateTrendChart(12)">12 tháng</button>
           </div>
         </div>
         <canvas id="trendLine" height="180"></canvas>
@@ -229,6 +229,10 @@
 <script id="current-ctx" type="application/json">{"year": {{ current_year }}, "month": {{ current_month }}}</script>
 
 <script>
+// Biến toàn cục để giữ instance của biểu đồ trend và dữ liệu đầy đủ
+let trendChartObj = null;
+let fullTrendData = null;
+
 function toggleMenu(id){
   const menu = document.getElementById(id);
   if(menu.classList.contains("open")){
@@ -252,6 +256,9 @@ function exportExcel() {
 document.addEventListener("DOMContentLoaded", function() {
     const rawData = JSON.parse(document.getElementById('chart-data').textContent);
     
+    // Lưu lại toàn bộ 12 tháng dữ liệu để xử lý cắt mảng
+    fullTrendData = rawData.line_chart;
+    
     // Tiến độ tỷ trọng trong bảng
     document.querySelectorAll('.progress-bar').forEach(bar => {
         bar.style.width = bar.getAttribute('data-percentage') + '%';
@@ -268,14 +275,14 @@ document.addEventListener("DOMContentLoaded", function() {
       options:{plugins:{legend:{display:false}}, scales:{x:{grid:{display:false},ticks:{font:{size:10}}}, y:{grid:{color:'#f0f0f0'},ticks:{font:{size:10}}}}}
     });
 
-    // Trend line chart
+    // Trend line chart (Khởi tạo mặc định 12 tháng)
     const tlCtx = document.getElementById('trendLine').getContext('2d');
-    new Chart(tlCtx,{
+    trendChartObj = new Chart(tlCtx,{
       type:'line',
       data:{
-        labels: rawData.line_chart.labels,
+        labels: fullTrendData.labels,
         datasets:[{
-          data: rawData.line_chart.values,
+          data: fullTrendData.values,
           borderColor:'#2e7df7', borderWidth:2, pointRadius:3,
           backgroundColor:'rgba(46,125,247,0.08)', fill:true, tension:0.4,
           pointBackgroundColor:'#2e7df7'
@@ -284,6 +291,30 @@ document.addEventListener("DOMContentLoaded", function() {
       options:{plugins:{legend:{display:false}}, scales:{x:{grid:{display:false},ticks:{font:{size:10}}}, y:{grid:{color:'#f0f0f0'},ticks:{font:{size:10}}}}}
     });
 });
+
+// Hàm cập nhật biểu đồ Trend (cắt mảng dữ liệu theo số tháng truyền vào)
+function updateTrendChart(months) {
+    // Đổi màu hiển thị của nút
+    document.getElementById('btn-6m').classList.remove('active');
+    document.getElementById('btn-12m').classList.remove('active');
+    
+    if (months === 6) {
+        document.getElementById('btn-6m').classList.add('active');
+    } else {
+        document.getElementById('btn-12m').classList.add('active');
+    }
+
+    // Cắt mảng lấy n phần tử cuối cùng
+    const slicedLabels = fullTrendData.labels.slice(-months);
+    const slicedValues = fullTrendData.values.slice(-months);
+
+    // Cập nhật lại data cho biểu đồ và render lại
+    if (trendChartObj) {
+        trendChartObj.data.labels = slicedLabels;
+        trendChartObj.data.datasets[0].data = slicedValues;
+        trendChartObj.update();
+    }
+}
 </script>
 </body>
 </html>

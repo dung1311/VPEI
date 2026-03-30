@@ -70,6 +70,7 @@ async def scope1_emission_source_page(request: Request, year: int = Query(None),
         "current_month": m,
         "status": status_str,
         "total_scope1_co2": summary["kpis"]["total_co2e"],
+        "trend_data": summary["line_chart"]  
     })
 
 

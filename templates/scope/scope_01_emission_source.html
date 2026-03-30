@@ -128,7 +128,7 @@
       <a href="/scope1/emission-source" class="nav-item sub active">Quản lý nguồn phát thải</a>
     </div>
     
-    <div class="nav-item" onclick="window.location.href='/scope2'">
+    <div class="nav-item" onclick="toggleMenu('scope2Menu')">
       <i class="fa-solid fa-bolt" style="width:16px;color:var(--text-muted)"></i> Scope 2
       <i class="fa-solid fa-chevron-down nav-expand"></i>
     </div>
@@ -434,6 +434,7 @@
 </div>
 
 <script id="categories-data" type="application/json">{{ categories | default([]) | tojson | safe }}</script>
+<script id="trend-data" type="application/json">{{ trend_data | default({"labels":[], "values":[]}) | tojson | safe }}</script>
 <script id="current-ctx" type="application/json">{"year": {{ current_year }}, "month": {{ current_month }}, "status": "{{ status }}"}</script>
 
 <script>
@@ -488,12 +489,14 @@ document.addEventListener("DOMContentLoaded", function() {
       options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{display:false}}}
     });
 
+    // MINI TREND CHART FROM API DATA
+    const trendData = JSON.parse(document.getElementById('trend-data').textContent);
     const mt = document.getElementById('miniTrend').getContext('2d');
     new Chart(mt,{
       type:'line',
       data:{
-        labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-        datasets:[{data:[3200,3000,3400,3300,3600,3500,3700,3800,3600,3700,3500,3400],borderColor:'#2e7df7',borderWidth:2,pointRadius:0,fill:false,tension:0.4}]
+        labels: trendData.labels,
+        datasets:[{data: trendData.values, borderColor:'#2e7df7', borderWidth:2, pointRadius:0, fill:false, tension:0.4}]
       },
       options:{plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}}}
     });
