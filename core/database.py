@@ -31,6 +31,7 @@ def init_db():
     from models import audit_log as _  # noqa: F401
     from models import container as _  # noqa: F401
     from models import scope3_other_vehicle as _  # noqa: F401
+    from models import ship as _  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
 
