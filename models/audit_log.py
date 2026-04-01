@@ -11,3 +11,4 @@ class AuditLog(Base):
     description = Column(String, nullable=True)
     month_year = Column(String, index=True, nullable=False) # e.g., "03/2026"
     created_at = Column(DateTime(timezone=True), default=vn_now)
+    scope = Column(String, index=True, nullable=True)  # e.g., "scope2", "scope3"

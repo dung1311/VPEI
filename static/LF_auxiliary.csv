@@ -1,0 +1,9 @@
+ship,trip,maneuver,mooring
+bulk_carrier,0.17,0.45,0.10
+container_ship,0.13,0.48,0.19
+cruise_ship,0.80,0.80,0.64
+general_cargo_ship,0.17,0.45,0.22
+other_ship,0.17,0.45,0.22
+ro_ro_ship,0.15,0.45,0.26
+reefer_ship,0.20,0.67,0.32
+oil_tanker,0.24,0.33,0.26
