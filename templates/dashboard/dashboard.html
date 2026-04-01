@@ -124,11 +124,13 @@
 
     <div class="charts-row">
       <div class="chart-card">
-        <div class="chart-title">
-          Xu hướng phát thải hàng tháng – {{ data.current_year }}
-          <span style="float:right;font-weight:400;font-size:0.75rem;color:#7a8aab;">
-            — Scope 1 &nbsp;— Scope 2 &nbsp;— Scope 3
-          </span>
+        <div class="chart-title" style="display: flex; justify-content: space-between; align-items: center;">
+          <span>Xu hướng phát thải hàng tháng – {{ data.current_year }}</span>
+          <div style="font-weight:500; font-size:0.75rem; color:#4a5a7b; display:flex; gap:14px; align-items:center;">
+            <span style="display:flex; align-items:center; gap:4px;"><span style="color:#0d1f3c; font-size:1.2rem; line-height:0;">•</span> Scope 1</span>
+            <span style="display:flex; align-items:center; gap:4px;"><span style="color:#2e7df7; font-size:1.2rem; line-height:0;">•</span> Scope 2</span>
+            <span style="display:flex; align-items:center; gap:4px;"><span style="color:#94a3b8; font-size:1.2rem; line-height:0;">•</span> Scope 3</span>
+          </div>
         </div>
         <div style="position: relative; height: 240px; width: 100%;">
           <canvas id="trendChart"></canvas>
@@ -194,21 +196,76 @@ new Chart(trendCtx, {
   data: {
     labels: dbData.trend.months,
     datasets: [
-      { label:'Scope 1', data: dbData.trend.scope1, borderColor:'#0d1f3c', borderWidth:2, pointRadius:3, fill:false, tension:0.4 },
-      { label:'Scope 2', data: dbData.trend.scope2, borderColor:'#2e7df7', borderWidth:2, pointRadius:3, fill:false, tension:0.4 },
-      { label:'Scope 3', data: dbData.trend.scope3, borderColor:'#94a3b8', borderWidth:2, pointRadius:3, fill:false, tension:0.4, borderDash:[4,3] }
+      { 
+          label: 'Scope 1', 
+          data: dbData.trend.scope1, 
+          borderColor: '#0d1f3c', // Deep Navy
+          borderWidth: 2, 
+          pointRadius: 3, 
+          pointBackgroundColor: '#0d1f3c',
+          fill: false, 
+          tension: 0.4 
+      },
+      { 
+          label: 'Scope 2', 
+          data: dbData.trend.scope2, 
+          borderColor: '#2e7df7', // Ocean Blue
+          borderWidth: 2, 
+          pointRadius: 3, 
+          pointBackgroundColor: '#2e7df7',
+          fill: false, 
+          tension: 0.4 
+      },
+      { 
+          label: 'Scope 3', 
+          data: dbData.trend.scope3, 
+          borderColor: '#94a3b8', // Gray
+          borderWidth: 2, 
+          pointRadius: 3, 
+          pointBackgroundColor: '#94a3b8',
+          fill: false, 
+          tension: 0.4, 
+          borderDash: [4,3] // Đường đứt nét tinh tế
+      }
     ]
   },
   options: { 
-      plugins:{legend:{display:false}}, 
-      scales:{ 
-          x:{grid:{display:false}, ticks:{font:{size:10, family:'DM Sans'}}}, 
-          y:{grid:{color:'#f0f0f0'}, ticks:{font:{size:10, family:'DM Sans'}}, beginAtZero: true} 
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+          mode: 'index', // Hover vào 1 cột sẽ hiện tooltip của cả 3 đường
+          intersect: false,
       },
-      maintainAspectRatio: false
+      plugins: {
+          legend: { display: false }, // Đã dùng Legend HTML ở trên nên ẩn cái mặc định
+          tooltip: {
+              backgroundColor: 'rgba(13, 31, 60, 0.85)', // Nền tooltip màu navy trong suốt
+              titleFont: { family: 'DM Sans', size: 12, weight: 'bold' },
+              bodyFont: { family: 'DM Sans', size: 11 },
+              padding: 10,
+              cornerRadius: 8,
+              boxPadding: 4,
+              callbacks: {
+                  label: function(context) {
+                      let val = context.parsed.y || 0;
+                      return ` ${context.dataset.label}: ${val.toLocaleString('vi-VN', {maximumFractionDigits: 1})} tCO₂e`;
+                  }
+              }
+          }
+      }, 
+      scales: { 
+          x: {
+              grid: { display: false, drawBorder: false }, // Bỏ kẻ dọc
+              ticks: { font: { size: 10, family: 'DM Sans' }, color: '#7a8aab' }
+          }, 
+          y: {
+              grid: { color: '#f0f2f8', drawBorder: false, lineWidth: 1 }, // Lưới ngang siêu mỏng, tinh tế
+              ticks: { font: { size: 10, family: 'DM Sans' }, color: '#7a8aab', padding: 8 }, 
+              beginAtZero: true
+          } 
+      }
   }
 });
-
 // 2. BIỂU ĐỒ CẤU TRÚC THEO QUÝ (Stacked Bar Chart)
 const scopeCtx = document.getElementById('scopeBar').getContext('2d');
 new Chart(scopeCtx, {
