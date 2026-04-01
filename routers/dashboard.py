@@ -10,21 +10,24 @@ from datetime import datetime
 from core.database import get_db
 from core.security import decode_token
 
+# Import các services
 from services import scope1 as scope1_services
 from services import electrical_items_service
+from services import scope2_activity_service
 from services import container_service, ship_service
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
 def get_val(obj, attr_name, default=0.0):
+    """Hàm phụ trợ lấy giá trị an toàn cho cả Dict và Object"""
     try:
         val = obj.get(attr_name, default) if isinstance(obj, dict) else getattr(obj, attr_name, default)
         return float(val) if val is not None else default
     except Exception:
         return default
 
-# ─── THUẬT TOÁN SHAP DATA-DRIVEN ───
+# ─── THUẬT TOÁN SHAP CHUẨN (1 VECTOR MỖI THUỘC TÍNH) ───
 def calculate_shap_from_data(containers, ships):
     impacts = []
     
@@ -59,6 +62,7 @@ def calculate_shap_from_data(containers, ships):
                 low_group = df_s[df_s[col] <= median_val]['co2']
                 
                 if not high_group.empty and not low_group.empty:
+                    # Tính chênh lệch biên (Marginal impact) - Đại diện cho: "Khi thuộc tính này CAO thì CO2 thay đổi bao nhiêu"
                     diff = (high_group.mean() - low_group.mean()) / 2.0
                     if abs(diff) > 0.001: 
                         impacts.append({"feature": col, "val": diff})
@@ -84,7 +88,6 @@ def calculate_shap_from_data(containers, ships):
             
     if len(cont_data) > 1:
         df_c = pd.DataFrame(cont_data)
-        overall_mean_c = df_c['co2'].mean()
         
         for col in df_c.columns:
             if col == 'co2': continue
@@ -102,6 +105,7 @@ def calculate_shap_from_data(containers, ships):
     if not impacts:
         return []
 
+    # Sắp xếp lấy Top 10 thuộc tính có độ ảnh hưởng cực đoan nhất (âm hay dương đều lấy)
     impacts.sort(key=lambda x: abs(x["val"]), reverse=True)
     top_10 = impacts[:10]
 
@@ -118,6 +122,7 @@ def calculate_shap_from_data(containers, ships):
     return formatted_shap
 
 
+# ─── API HIỂN THỊ DASHBOARD ───
 @router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard_page(request: Request, year: int = Query(None), db: Session = Depends(get_db)):
     token = request.cookies.get("access_token")
@@ -134,30 +139,29 @@ async def dashboard_page(request: Request, year: int = Query(None), db: Session 
     current_year = year or now.year
     current_month = now.month
 
+    # Hàm parse ngày an toàn
     def parse_date(dt_val):
         if not dt_val: return None
         if isinstance(dt_val, datetime): return dt_val
         if isinstance(dt_val, str):
             try:
+                # Xử lý chuỗi ISO hoặc chuỗi có định dạng chuẩn
                 return datetime.fromisoformat(dt_val.replace('Z', '+00:00').split('.')[0])
             except ValueError:
                 return None
         return None
 
-    # ─── 1. TÍNH CHÍNH XÁC XU HƯỚNG 12 THÁNG CỦA SCOPE 1 ───
+    # ─── 1. SCOPE 1 ───
     s1_trend = [0.0] * 12
     s1_total = 0.0
     s1_breakdown = {}
     try:
-        # Chạy vòng lặp 12 tháng để tính tổng
         for m in range(1, 13):
             acts = scope1_services.ActivityDataService.get_by_period(db, current_year, m)
             month_co2 = 0.0
-            
             for a in acts:
                 val = float(getattr(a, 'total_co2e', 0.0) or 0.0)
                 month_co2 += val
-                
                 cat = getattr(a, 'category', None)
                 dtype = cat.device_type.value if cat and hasattr(cat.device_type, 'value') else "Thiết bị S1 Khác"
                 s1_breakdown[dtype] = s1_breakdown.get(dtype, 0.0) + val
@@ -167,27 +171,38 @@ async def dashboard_page(request: Request, year: int = Query(None), db: Session 
     except Exception as e: 
         print("Lỗi Scope 1:", e)
 
-    # ─── 2. TÍNH CHÍNH XÁC XU HƯỚNG 12 THÁNG CỦA SCOPE 2 ───
+    # ─── 2. SCOPE 2 (Tính từ kWh * EF) ───
     s2_trend = [0.0] * 12
     s2_total = 0.0
     s2_breakdown = {}
     try:
-        s2_categories = electrical_items_service.get_scope2_categories(db)
-        for c in s2_categories:
-            val = float(c.get("total_emissions", 0.0) if isinstance(c, dict) else getattr(c, "total_emissions", 0.0))
-            name = c.get("name", "Thiết bị điện") if isinstance(c, dict) else getattr(c, "name", "Thiết bị điện")
-            s2_breakdown[name] = s2_breakdown.get(name, 0.0) + val
-            s2_total += val
+        s2_items = electrical_items_service.get_scope2_categories(db)
+        
+        GRID_EF = 0.0006235
+        
+        for item in s2_items:
+            kwh = float(item.get("kwh", 0.0) if isinstance(item, dict) else getattr(item, "kwh", 0.0))
             
-        # Phân bổ đều tổng điện năng ra 12 tháng để biểu đồ có Line
-        if s2_total > 0:
-            avg_s2 = s2_total / 12.0
-            s2_trend = [avg_s2] * 12
-            
+            if kwh > 0:
+                val_co2 = kwh * GRID_EF
+                s2_total += val_co2
+                
+                # Gom nhóm thiết bị
+                name = item.get("name", "Thiết bị điện (S2)") if isinstance(item, dict) else getattr(item, "name", "Thiết bị điện (S2)")
+                s2_breakdown[str(name)] = s2_breakdown.get(str(name), 0.0) + val_co2
+                
+                # Phân bổ vào tháng Trend
+                raw_date = item.get("entry_date", None) if isinstance(item, dict) else getattr(item, "entry_date", None)
+                dt = parse_date(raw_date)
+                
+                if dt and dt.year == current_year:
+                    s2_trend[dt.month - 1] += val_co2
+
     except Exception as e: 
         print("Lỗi Scope 2:", e)
 
-    # ─── 3. TÍNH CHÍNH XÁC XU HƯỚNG 12 THÁNG CỦA SCOPE 3 ───
+
+    # ─── 3. SCOPE 3 ───
     s3_trend = [0.0] * 12
     s3_total = 0.0
     c_co2 = 0.0
@@ -214,6 +229,7 @@ async def dashboard_page(request: Request, year: int = Query(None), db: Session 
         s3_total = c_co2 + s_co2
     except Exception as e: print("Lỗi Scope 3:", e)
 
+    # ─── 4. SHAP & AI INSIGHT ───
     shap_data = calculate_shap_from_data(containers, ships)
     
     if shap_data:
@@ -223,8 +239,9 @@ async def dashboard_page(request: Request, year: int = Query(None), db: Session 
         else:
             ai_insight = f"Phân tích dữ liệu chỉ ra: <strong>{top['feature_name']}</strong> là yếu tố giúp GIẢM phát thải tốt nhất. Việc chỉ số này tăng cao giúp <strong>giảm trung bình {abs(top['val']):.2f} tấn CO₂e</strong>. Đề xuất ưu tiên điều phối các chuyến hàng có đặc điểm này."
     else:
-        ai_insight = "Cần thêm các bản ghi có dữ liệu đa dạng (các tàu có công suất, vận tốc khác nhau...) để hệ thống có thể phân tích xu hướng."
+        ai_insight = "Cần thêm các bản ghi có dữ liệu đa dạng (các tàu/xe có công suất, vận tốc khác nhau...) để hệ thống AI có thể phân tích xu hướng."
 
+    # ─── 5. TỔNG HỢP TOP THIẾT BỊ ───
     equip_list = []
     for k, v in s1_breakdown.items():
         if v > 0: equip_list.append({"label": f"{k} (S1)", "value": v})
@@ -241,6 +258,7 @@ async def dashboard_page(request: Request, year: int = Query(None), db: Session 
     top_labels = [x["label"] for x in equip_list] or ["Chưa có dữ liệu"]
     top_values = [x["value"] for x in equip_list] or [1]
 
+    # Chia quý
     def to_quarters(t): return [sum(t[0:3]), sum(t[3:6]), sum(t[6:9]), sum(t[9:12]), sum(t)]
 
     data = {

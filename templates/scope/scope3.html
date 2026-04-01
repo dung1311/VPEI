@@ -13,7 +13,7 @@
 <style>
 :root {
   --navy: #0d1f3c; --navy-mid: #152850; --navy-light: #1e3a6e;
-  --accent: #2e7df7; --accent-light: #5a9bff;
+  --accent: #0d1f3c; --accent-light: #5a9bff;
   --white: #ffffff; --gray-soft: #f4f6fb; --gray-border: #dde3ef;
   --text-muted: #7a8aab; --green: #22c55e; --red: #ef4444;
   --teal: #0ea5e9; --amber: #f59e0b; --purple: #8b5cf6; --orange: #f97316;
@@ -209,7 +209,7 @@ function toggleMenu(id) {
     <div id="page-overview">
       <div class="kpi-row">
         <div class="kpi-card">
-          <div class="kpi-icon" style="background:rgba(46,125,247,.1);color:#2e7df7"><i class="fa-solid fa-cloud"></i></div>
+          <div class="kpi-icon" style="background:rgba(46,125,247,.1);color:#0d1f3c"><i class="fa-solid fa-cloud"></i></div>
           <div class="kpi-label">Tổng CO₂e</div>
           <div class="kpi-value" id="kpi-total">{{ "{:,.1f}".format(summary.total_co2e|default(0)) }}<span class="kpi-unit"> tCO₂e</span></div>
           <div class="kpi-change up" id="kpi-total-chg">↑ +0%</div>
@@ -354,8 +354,9 @@ function toggleMenu(id) {
             <div class="vehicle-tabs" id="recordsFilterTabs">
               <button class="vtab active" onclick="setRecordsFilter('all', this)"><span class="vtab-dot" style="background:var(--navy)"></span> Tất cả</button>
               <button class="vtab" onclick="setRecordsFilter('truck', this)"><span class="vtab-dot" style="background:#0ea5e9"></span> Xe container</button>
-              <button class="vtab" onclick="setRecordsFilter('container-ship', this)"><span class="vtab-dot" style="background:#2e7df7"></span> Tàu biển</button>
+              <button class="vtab" onclick="setRecordsFilter('container-ship', this)"><span class="vtab-dot" style="background:#0d1f3c"></span> Tàu biển</button>
             </div>
+
 
             <div style="display:flex;gap:8px;align-items:center;">
               <select id="recordsMonthFilter" class="select-pill" onchange="setRecordsTimeFilter()">
@@ -449,7 +450,7 @@ function toggleMenu(id) {
 <script>
 const VEHICLES = {
   'truck': { label: 'Xe container', icon: '🚛', color: '#0ea5e9' },
-  'container-ship': { label: 'Tàu biển', icon: '🚢', color: '#2e7df7' }
+  'container-ship': { label: 'Tàu biển', icon: '🚢', color: '#0d1f3c' }
 };
 
 const SHIP_TYPES = {
@@ -706,6 +707,7 @@ function renderRecordsEmissionChart(filteredRecords) {
 }
 
 // ─── RENDER BẢNG & CHI TIẾT TÊN TÀU ───
+// ─── RENDER BẢNG & CHI TIẾT TÊN PHƯƠNG TIỆN ───
 function renderRecordsTable() {
   const container = document.getElementById('recordsTablesContainer');
   const filteredRecords = getRecordsByFilter();
@@ -756,10 +758,10 @@ function renderRecordsTable() {
     return `
       <div style="border:1px solid var(--gray-border);border-radius:10px;overflow:hidden;background:white;margin-bottom:10px;">
         <div style="padding:10px 14px;border-bottom:1px solid var(--gray-border);font-size:.78rem;font-weight:800;color:${vehicleGroup.color};">
-          ${vehicleGroup.icon} Tàu biển (${rows.length})
+          ${vehicleGroup.icon} ${vehicleGroup.label} (${rows.length})
         </div>
         <table>
-            <thead><tr><th>#</th><th>Biển số / Tên</th><th>Loại</th><th>Ngày vào cảng</th><th>CO₂e (tCO₂e)</th><th>Hành động</th></tr></thead>
+            <thead><tr><th>#</th><th>Biển số / Tên</th><th>Loại</th><th>Thời gian</th><th>CO₂e (tCO₂e)</th><th>Hành động</th></tr></thead>
             <tbody>${rowHtml}</tbody>
         </table>
       </div>
@@ -996,6 +998,8 @@ async function loadAllRecords() {
     containerRecords = [...cItems, ...sItems];
     refreshYearFilterOptions();
     renderRecordsTable();
+    populateTopbarMonths();
+    updateOverview();
   } catch (err) { showToast('⚠️ Không thể tải dữ liệu', 'warn'); }
 }
 
@@ -1009,12 +1013,133 @@ function showToast(msg, type = 'success') {
   toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
 }
 
+let vehicleBarChartRef = null;
+let trendLineChartRef = null;
+
+function populateTopbarMonths() {
+    const select = document.querySelector('.topbar-right select');
+    if (!select) return;
+    
+    // Gắn sự kiện để khi đổi select, tổng quan cập nhật theo
+    select.onchange = updateOverview;
+
+    const months = new Set();
+    containerRecords.forEach(r => {
+        const dt = getRecordMonthYear(r);
+        if (dt && dt.month && dt.year) {
+            const padM = String(dt.month).padStart(2, '0');
+            months.add(`Tháng ${padM}/${dt.year}`);
+        }
+    });
+
+    if (months.size > 0) {
+        const sorted = Array.from(months).sort().reverse();
+        select.innerHTML = '<option value="all">Tất cả thời gian</option>' +
+                           sorted.map(m => `<option value="${m}">${m}</option>`).join('');
+        select.value = 'all'; // Mặc định hiển thị Tất cả để số liệu luôn hiện
+    } else {
+        select.innerHTML = '<option value="all">Tất cả thời gian</option>';
+    }
+}
+
+function updateOverview() {
+  const select = document.querySelector('.topbar-right select');
+  const currentMonthStr = select ? select.value : 'all';
+  
+  let filterMonth = 'all';
+  let filterYear = 'all';
+  
+  if (currentMonthStr !== 'all') {
+      const match = currentMonthStr.match(/Tháng (\d{2})\/(\d{4})/);
+      if (match) {
+        filterMonth = parseInt(match[1], 10);
+        filterYear = parseInt(match[2], 10);
+      }
+  }
+
+  // Lọc dữ liệu
+  let filteredRecords = containerRecords;
+  if (filterYear !== 'all') {
+    filteredRecords = filteredRecords.filter(r => {
+      const dt = getRecordMonthYear(r);
+      return dt.year === filterYear && (filterMonth === 'all' || dt.month === filterMonth);
+    });
+  }
+
+  // Tính KPI
+  let totalCo2e = 0, containerCo2e = 0, shipCo2e = 0;
+  filteredRecords.forEach(r => {
+    const type = getRecordVehicleType(r);
+    const emission = getRecordEmission(r);
+    totalCo2e += emission;
+    if (type === 'truck') containerCo2e += emission;
+    else if (type === 'container-ship') shipCo2e += emission;
+  });
+
+  // Cập nhật DOM
+  const elTotal = document.getElementById('kpi-total');
+  if(elTotal) elTotal.innerHTML = `${totalCo2e.toLocaleString('vi-VN', { maximumFractionDigits: 1 })}<span class="kpi-unit"> tCO₂e</span>`;
+  const elCont = document.getElementById('kpi-container');
+  if(elCont) elCont.innerHTML = `${containerCo2e.toLocaleString('vi-VN', { maximumFractionDigits: 1 })}<span class="kpi-unit"> t</span>`;
+  const elShip = document.getElementById('kpi-ship');
+  if(elShip) elShip.innerHTML = `${shipCo2e.toLocaleString('vi-VN', { maximumFractionDigits: 1 })}<span class="kpi-unit"> t</span>`;
+  const elTrips = document.getElementById('kpi-trips');
+  if(elTrips) elTrips.innerText = filteredRecords.length;
+
+  // Vẽ biểu đồ Bar
+  if (vehicleBarChartRef) vehicleBarChartRef.destroy();
+  const ctxBar = document.getElementById('vehicleBar');
+  if (ctxBar) {
+    vehicleBarChartRef = new Chart(ctxBar.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: ['Xe Container', 'Tàu Biển'],
+        datasets: [{ data: [containerCo2e, shipCo2e], backgroundColor: ['#0ea5e9', '#0d1f3c'], borderRadius: 6 }]
+      },
+      options: { plugins: { legend: { display: false } }, maintainAspectRatio: false }
+    });
+  }
+
+  // Vẽ biểu đồ Line
+  if (trendLineChartRef) trendLineChartRef.destroy();
+  const ctxLine = document.getElementById('trendLine');
+  if (ctxLine) {
+    const mData = { truck: Array(12).fill(0), ship: Array(12).fill(0) };
+    const yearToTrend = filterYear !== 'all' ? filterYear : new Date().getFullYear();
+    
+    containerRecords.forEach(r => {
+      const dt = getRecordMonthYear(r);
+      if (dt.year === yearToTrend && dt.month >= 1 && dt.month <= 12) {
+        const type = getRecordVehicleType(r);
+        if (type === 'truck') mData.truck[dt.month - 1] += getRecordEmission(r);
+        else if (type === 'container-ship') mData.ship[dt.month - 1] += getRecordEmission(r);
+      }
+    });
+
+    trendLineChartRef = new Chart(ctxLine.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'],
+        datasets: [
+          { label: 'Xe Container', data: mData.truck, borderColor: '#0ea5e9', borderWidth: 2, tension: 0.4 },
+          { label: 'Tàu Biển', data: mData.ship, borderColor: '#0d1f3c', borderWidth: 2, tension: 0.4 }
+        ]
+      },
+      options: { plugins: { legend: { position: 'bottom'} }, maintainAspectRatio: false }
+    });
+  }
+}
+
 async function init() {
   setEditMode(false);
   setRecordsTimeFilter();
   await loadAllRecords();
 }
+
+
 init();
+
+
 </script>
 </body>
 </html>
