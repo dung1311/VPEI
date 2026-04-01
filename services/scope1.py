@@ -9,7 +9,7 @@ from sqlalchemy import func
 from models.device import DeviceCategory, ActivityData, RecordStatusEnum
 from core.constants import STATIC_EF
 
-from schemas.scope1 import (
+from schemas.device import (
     DeviceCategoryCreate,
     DeviceCategoryUpdate,
     ActivityDataCreate,

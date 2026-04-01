@@ -8,7 +8,7 @@ from datetime import datetime
 from core.database import get_db
 from core.security import decode_token
 from services import scope1 as scope1_services
-from schemas.scope1 import DeviceCategoryCreate, DeviceCategoryUpdate, ActivityDataCreate, ActivityDataUpdate
+from schemas.device import DeviceCategoryCreate, DeviceCategoryUpdate, ActivityDataCreate, ActivityDataUpdate
 from models.device import RecordStatusEnum, DeviceTypeEnum, FuelTypeEnum
 
 router = APIRouter()

@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VPEI – Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0d1f3c; --navy-mid: #152850; --navy-light: #1e3a6e;
+    --accent: #2e7df7; --accent-light: #5a9bff; --white: #ffffff;
+    --gray-soft: #f4f6fb; --gray-border: #dde3ef; --text-muted: #7a8aab;
+    --sidebar-width: 220px; --green: #22c55e; --red: #ef4444;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--gray-soft); color: var(--navy); display: flex; height: 100vh; overflow: hidden; }
+
+  /* SIDEBAR */
+  .sidebar { width: var(--sidebar-width); background: var(--white); border-right: 1px solid var(--gray-border); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+  .sidebar-logo { padding: 20px 24px; border-bottom: 1px solid var(--gray-border); display: flex; align-items: center; gap: 10px; }
+  .logo-box { background: linear-gradient(135deg, var(--navy), var(--navy-light)); border-radius: 10px; padding: 7px 12px; font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.1rem; color: white; letter-spacing: -0.5px; }
+  .nav-items { padding: 16px 0; flex: 1; }
+  .nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 20px; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: #4a5a7b; transition: all 0.2s; text-decoration: none; border-left: 3px solid transparent; }
+  .nav-item:hover { background: var(--gray-soft); color: var(--navy); }
+  .nav-item.active { background: rgba(46,125,247,0.08); color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
+  .nav-section { padding: 6px 20px 4px; font-size: 0.68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .nav-bottom { padding: 16px 0; border-top: 1px solid var(--gray-border); }
+
+  /* MAIN & TOPBAR */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .topbar { background: var(--white); border-bottom: 1px solid var(--gray-border); padding: 0 28px; height: 60px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .topbar-title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1rem; color: var(--navy); }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .period-btn { padding: 6px 13px; border-radius: 6px; border: 1.5px solid var(--gray-border); background: white; font-size: 0.82rem; font-weight: 500; color: #4a5a7b; cursor: pointer; transition: all 0.2s; }
+  .period-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .period-btn.active { background: var(--navy); color: white; border-color: var(--navy); }
+  .year-select { padding: 6px 13px; border-radius: 6px; border: 1.5px solid var(--gray-border); font-size: 0.82rem; font-weight: 600; color: var(--navy); cursor: pointer; background: white; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--navy-light)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 0.85rem; cursor: pointer; text-transform: uppercase;}
+
+  /* CONTENT & CARDS */
+  .content { flex: 1; overflow-y: auto; padding: 24px 28px; }
+  .kpi-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .kpi-card { background: white; border-radius: 14px; padding: 20px 24px; border: 1px solid var(--gray-border); box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+  .kpi-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; margin-bottom: 8px; }
+  .kpi-value { font-family: 'Sora', sans-serif; font-size: 1.9rem; font-weight: 800; color: var(--navy); display: flex; align-items: baseline; gap: 6px; line-height: 1; }
+  .kpi-unit { font-size: 0.85rem; font-weight: 500; color: var(--text-muted); }
+
+  /* CHARTS */
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .chart-card { background: white; border-radius: 14px; padding: 20px; border: 1px solid var(--gray-border); }
+  .chart-title { font-size: 0.88rem; font-weight: 600; color: var(--navy); margin-bottom: 14px; }
+  
+  /* SHAP & Bottom */
+  .shap-card { background: white; border-radius: 14px; padding: 20px; border: 1px solid var(--gray-border); }
+  .shap-row { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+  .shap-label { font-size: 0.6rem; color: #4a5a7b; width: 220px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .shap-bar-wrap { flex: 1; display: flex; align-items: center; position: relative; height: 14px; }
+  .shap-bar { height: 10px; border-radius: 3px; }
+  .shap-bar.pos { background: var(--red); margin-left: 1px; }
+  .shap-bar.neg { background: var(--green); margin-right: 1px; margin-left: auto; }
+  .ai-insight { background: #f0f5ff; border: 1px solid #c5d8ff; border-radius: 10px; padding: 14px 18px; font-size: 0.82rem; color: #2a3a6b; line-height: 1.6; margin-top: 12px; }
+  .ai-insight strong { color: var(--accent); }
+  .bottom-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-box">VPEI</div>
+  </div>
+  <nav class="nav-items">
+    <div class="nav-section">Menu chính</div>
+    <a href="/dashboard" class="nav-item active"><i class="fa-solid fa-chart-pie" style="width:16px;color:var(--accent)"></i> Dashboard</a>
+    <a href="/scope1" class="nav-item"><i class="fa-solid fa-industry" style="width:16px;color:var(--text-muted)"></i> Scope 1</a>
+    <a href="/scope2" class="nav-item"><i class="fa-solid fa-bolt" style="width:16px;color:var(--text-muted)"></i> Scope 2</a>
+    <a href="/scope3" class="nav-item"><i class="fa-solid fa-ship" style="width:16px;color:var(--text-muted)"></i> Scope 3</a>
+    <div class="nav-section" style="margin-top:10px">Báo cáo</div>
+    <a href="/reports" class="nav-item"><i class="fa-solid fa-file-lines" style="width:16px;color:var(--text-muted)"></i> Reports</a>
+  </nav>
+  <div class="nav-bottom">
+    <a href="/settings" class="nav-item"><i class="fa-solid fa-gear" style="width:16px;color:var(--text-muted)"></i> Settings</a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title">VPEI – Vietnam Port Emission Inventory</div>
+    <div class="topbar-right">
+      <button class="period-btn active">Năm</button>
+      <button class="period-btn">Tháng</button>
+      <select class="year-select" onchange="window.location.href='/dashboard?year='+this.value">
+          <option value="{{ data.current_year }}">{{ data.current_year }} ▾</option>
+          <option value="2026">2026</option>
+          <option value="2025">2025</option>
+          <option value="2024">2024</option>
+      </select>
+      <div class="avatar">{{ user.sub[0] if user else 'U' }}</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Tổng Phát thải CO<sub>2</sub>e</div>
+        <div class="kpi-value">{{ "{:,.1f}".format(data.total_emissions) }} <span class="kpi-unit">tCO<sub>2</sub>e</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Scope 1</div>
+        <div class="kpi-value" style="font-size:1.6rem">{{ "{:,.1f}".format(data.scope1_total) }}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Scope 2</div>
+        <div class="kpi-value" style="font-size:1.6rem">{{ "{:,.1f}".format(data.scope2_total) }}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Scope 3</div>
+        <div class="kpi-value" style="font-size:1.6rem">{{ "{:,.1f}".format(data.scope3_total) }}</div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title" style="display: flex; justify-content: space-between; align-items: center;">
+          <span>Xu hướng phát thải hàng tháng – {{ data.current_year }}</span>
+          <div style="font-weight:500; font-size:0.75rem; color:#4a5a7b; display:flex; gap:14px; align-items:center;">
+            <span style="display:flex; align-items:center; gap:4px;"><span style="color:#0d1f3c; font-size:1.2rem; line-height:0;">•</span> Scope 1</span>
+            <span style="display:flex; align-items:center; gap:4px;"><span style="color:#2e7df7; font-size:1.2rem; line-height:0;">•</span> Scope 2</span>
+            <span style="display:flex; align-items:center; gap:4px;"><span style="color:#94a3b8; font-size:1.2rem; line-height:0;">•</span> Scope 3</span>
+          </div>
+        </div>
+        <div style="position: relative; height: 240px; width: 100%;">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+
+      <div class="shap-card">
+        <div class="chart-title">Động lực phát thải Scope 3 (Phân tích nội suy AI)</div>
+        <div id="shapRows"></div>
+        <div class="ai-insight">
+          <strong>AI Insight:</strong> {{ data.ai_insight | safe }}
+        </div>
+      </div>
+    </div> <div class="bottom-row">
+      <div class="chart-card">
+        <div class="chart-title">Cấu trúc Phát thải theo Quý (tCO₂e)</div>
+        <div style="position: relative; height: 200px; width: 100%;">
+          <canvas id="scopeBar"></canvas>
+        </div>
+      </div>
+      
+      <div class="chart-card">
+        <div class="chart-title">Top Phân bổ Nguồn phát thải</div>
+        <div style="position: relative; height: 200px; width: 100%;">
+          <canvas id="equipDoughnut"></canvas>
+        </div>
+      </div>
+      
+      <div class="chart-card" style="display:flex;flex-direction:column;justify-content:space-between;">
+        <div>
+          <div class="chart-title">Tóm tắt Hoạt động Cảng</div>
+          <div style="font-size:0.82rem;color:var(--navy);line-height:1.8;font-weight:500; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display:flex; justify-content:space-between; border-bottom:1px dashed #e2e8f0; padding-bottom:4px;">
+                <span>🚢 Số chuyến tàu/xe (S3):</span>
+                <strong style="color:var(--accent)">{{ "{:,.0f}".format(data.total_trips) }} lượt</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px dashed #e2e8f0; padding-bottom:4px;">
+                <span>⚡ Từ Điện năng (S2):</span>
+                <strong>{{ "{:,.1f}".format(data.scope2_total) }} tCO₂e</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px dashed #e2e8f0; padding-bottom:4px;">
+                <span>🏭 Hoạt động Trực tiếp (S1):</span>
+                <strong>{{ "{:,.1f}".format(data.scope1_total) }} tCO₂e</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding-bottom:4px;">
+                <span>📅 Kỳ báo cáo:</span>
+                <strong>Năm {{ data.current_year }}</strong>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:16px;padding:12px;background:var(--gray-soft);border-radius:10px;font-size:0.75rem;color:var(--text-muted); text-align:center;">
+          <i class="fa-solid fa-clock-rotate-left"></i> Cập nhật lần cuối: {{ data.last_updated }}
+        </div>
+      </div>
+    </div> </div> </div> <script>
+// --- INJECT DỮ LIỆU TỪ PYTHON VÀO JAVASCRIPT ---
+const dbData = {{ data | tojson }};
+
+// 1. BIỂU ĐỒ XU HƯỚNG THEO THÁNG (Trend Line Chart)
+const trendCtx = document.getElementById('trendChart').getContext('2d');
+new Chart(trendCtx, {
+  type: 'line',
+  data: {
+    labels: dbData.trend.months,
+    datasets: [
+      { 
+          label: 'Scope 1', 
+          data: dbData.trend.scope1, 
+          borderColor: '#0d1f3c', // Deep Navy
+          borderWidth: 2, 
+          pointRadius: 3, 
+          pointBackgroundColor: '#0d1f3c',
+          fill: false, 
+          tension: 0.4 
+      },
+      { 
+          label: 'Scope 2', 
+          data: dbData.trend.scope2, 
+          borderColor: '#2e7df7', // Ocean Blue
+          borderWidth: 2, 
+          pointRadius: 3, 
+          pointBackgroundColor: '#2e7df7',
+          fill: false, 
+          tension: 0.4 
+      },
+      { 
+          label: 'Scope 3', 
+          data: dbData.trend.scope3, 
+          borderColor: '#94a3b8', // Gray
+          borderWidth: 2, 
+          pointRadius: 3, 
+          pointBackgroundColor: '#94a3b8',
+          fill: false, 
+          tension: 0.4, 
+          borderDash: [4,3] // Đường đứt nét tinh tế
+      }
+    ]
+  },
+  options: { 
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+          mode: 'index', // Hover vào 1 cột sẽ hiện tooltip của cả 3 đường
+          intersect: false,
+      },
+      plugins: {
+          legend: { display: false }, // Đã dùng Legend HTML ở trên nên ẩn cái mặc định
+          tooltip: {
+              backgroundColor: 'rgba(13, 31, 60, 0.85)', // Nền tooltip màu navy trong suốt
+              titleFont: { family: 'DM Sans', size: 12, weight: 'bold' },
+              bodyFont: { family: 'DM Sans', size: 11 },
+              padding: 10,
+              cornerRadius: 8,
+              boxPadding: 4,
+              callbacks: {
+                  label: function(context) {
+                      let val = context.parsed.y || 0;
+                      return ` ${context.dataset.label}: ${val.toLocaleString('vi-VN', {maximumFractionDigits: 1})} tCO₂e`;
+                  }
+              }
+          }
+      }, 
+      scales: { 
+          x: {
+              grid: { display: false, drawBorder: false }, // Bỏ kẻ dọc
+              ticks: { font: { size: 10, family: 'DM Sans' }, color: '#7a8aab' }
+          }, 
+          y: {
+              grid: { color: '#f0f2f8', drawBorder: false, lineWidth: 1 }, // Lưới ngang siêu mỏng, tinh tế
+              ticks: { font: { size: 10, family: 'DM Sans' }, color: '#7a8aab', padding: 8 }, 
+              beginAtZero: true
+          } 
+      }
+  }
+});
+// 2. BIỂU ĐỒ CẤU TRÚC THEO QUÝ (Stacked Bar Chart)
+const scopeCtx = document.getElementById('scopeBar').getContext('2d');
+new Chart(scopeCtx, {
+  type: 'bar',
+  data: {
+    labels: dbData.quarterly.labels,
+    datasets: [
+      { label:'Scope 1', data: dbData.quarterly.scope1, backgroundColor:'#0d1f3c', stack:'s' },
+      { label:'Scope 2', data: dbData.quarterly.scope2, backgroundColor:'#2e7df7', stack:'s' },
+      { label:'Scope 3', data: dbData.quarterly.scope3, backgroundColor:'#94a3b8', stack:'s' }
+    ]
+  },
+  options: { 
+      plugins:{legend:{position:'bottom', labels:{font:{size:10, family:'DM Sans'},boxWidth:12,padding:10}}}, 
+      scales:{ 
+          x:{grid:{display:false}, stacked:true, ticks:{font:{size:10, family:'DM Sans'}}}, 
+          y:{stacked:true, ticks:{font:{size:10, family:'DM Sans'}}} 
+      },
+      maintainAspectRatio: false
+  }
+});
+
+// 3. BIỂU ĐỒ TOP NGUỒN PHÁT THẢI ĐÃ ĐƯỢC CHIA NHỎ (Doughnut Chart)
+const colors = ['#0d1f3c', '#152850', '#1e3a6e', '#2e7df7', '#5a9bff', '#8bb4f6', '#dbeafe']; // Đủ 7 màu cho Top 6 + 1 Khác
+const doughCtx = document.getElementById('equipDoughnut').getContext('2d');
+new Chart(doughCtx, {
+  type: 'doughnut',
+  data: {
+    labels: dbData.top_equipment.labels,
+    datasets:[{ 
+        data: dbData.top_equipment.values, 
+        backgroundColor: colors.slice(0, dbData.top_equipment.labels.length), 
+        borderWidth: 2, borderColor: '#fff' 
+    }]
+  },
+  options: { 
+      plugins:{
+          legend:{position:'right', labels:{font:{size:10, family:'DM Sans'}, boxWidth:12, padding:10}},
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                let value = context.raw || 0;
+                return ' ' + value.toLocaleString('vi-VN', {maximumFractionDigits: 1}) + ' tCO₂e';
+              }
+            }
+          }
+      }, 
+      cutout:'65%',
+      maintainAspectRatio: false
+  }
+});
+
+// 4. SHAP Analysis (Dữ liệu THỰC TẾ bóc tách từ Python)
+const shapData = dbData.shap_data;
+const shapContainer = document.getElementById('shapRows');
+
+if (!shapData || shapData.length === 0 || shapData[0].val === 0) {
+    shapContainer.innerHTML = '<div style="text-align:center; padding:20px; color:#7a8aab; font-size:0.8rem">Chưa có đủ dữ liệu hoạt động Scope 3 để AI phân tích.</div>';
+} else {
+    // Tìm giá trị lớn nhất để làm mốc quy đổi ra % chiều dài thanh Bar
+    const maxVal = Math.max(...shapData.map(d => Math.abs(d.val)));
+    
+    shapData.forEach(d => {
+      // Tính độ dài thanh Bar (Max = 85%)
+      const pct = maxVal > 0 ? (Math.abs(d.val) / maxVal) * 85 : 0;
+      const isPos = d.val > 0;
+      
+      shapContainer.innerHTML += `
+        <div class="shap-row">
+          <div class="shap-label" title="${d.label}">${d.label}</div>
+          <div class="shap-bar-wrap">
+            ${isPos
+              ? `<div class="shap-bar pos" style="width:${pct}%"></div>`
+              : `<div class="shap-bar neg" style="width:${pct}%"></div>`
+            }
+          </div>
+        </div>`;
+    });
+}
+// Nút chọn kỳ báo cáo
+document.querySelectorAll('.period-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+</script>
+</body>
+</html>

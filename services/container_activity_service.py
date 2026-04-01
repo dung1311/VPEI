@@ -16,11 +16,11 @@ def _normalize_detail_dates(detail: str) -> str:
     def _replace(match: re.Match[str]) -> str:
         raw = match.group(0)
         try:
-            return datetime.strptime(raw, "%Y-%m-%d").strftime("%d/%m/%Y")
+            return datetime.strptime(raw, "%Y-%m-%dT%H:%M").strftime("%d/%m/%Y %H:%M")
         except ValueError:
             return raw
 
-    return re.sub(r"\b\d{4}-\d{2}-\d{2}\b", _replace, text)
+    return re.sub(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}", _replace, text)
 
 
 def _activity_type(action: str) -> str:
@@ -48,7 +48,7 @@ def record_activity(
         action=action,
         description=description,
         month_year=now.strftime("%m/%Y"),
-        scope="scope2",
+        scope="scope3",
     )
     db.add(audit)
     db.commit()
@@ -56,12 +56,12 @@ def record_activity(
     return audit
 
 
-def get_scope2_activity_history(
+def get_scope3_activity_history(
     db: Session,
     year: Optional[int] = None,
     month: Optional[int] = None,
 ) -> Dict[str, Any]:
-    query = db.query(AuditLog).filter(AuditLog.scope == "scope2")
+    query = db.query(AuditLog).filter(AuditLog.scope == "scope3")
 
     if year and month:
         query = query.filter(AuditLog.month_year == f"{month:02d}/{year}")
@@ -72,7 +72,7 @@ def get_scope2_activity_history(
     month_year_values = [
         row[0]
         for row in db.query(AuditLog.month_year)
-        .filter(AuditLog.scope == "scope2")
+        .filter(AuditLog.scope == "scope3")
         .distinct()
         .all()
         if row[0]
@@ -117,8 +117,8 @@ def get_scope2_activity_history(
     }
 
 
-def delete_scope2_activity(db: Session, activity_id: int) -> Dict[str, Any]:
-    target = db.query(AuditLog).filter(AuditLog.id == activity_id, AuditLog.scope == "scope2").first()
+def delete_scope3_activity(db: Session, activity_id: int) -> Dict[str, Any]:
+    target = db.query(AuditLog).filter(AuditLog.id == activity_id, AuditLog.scope == "scope3").first()
     if not target:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

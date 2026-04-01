@@ -121,20 +121,6 @@ tr:hover td { background:#f8f9fd; }
 .type-badge { display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:6px; font-weight:700; font-size:.73rem; }
 .rank-badge { width:22px; height:22px; border-radius:50%; background:var(--navy); color:white; font-size:.68rem; font-weight:800; display:inline-flex; align-items:center; justify-content:center; }
 
-/* ─── SHAP / ANALYSIS PANEL ─── */
-.shap-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-.shap-card { background:white; border-radius:13px; padding:18px; border:1px solid var(--gray-border); }
-.shap-bar-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
-.shap-label { font-size:.75rem; font-weight:600; color:var(--navy); width:140px; flex-shrink:0; }
-.shap-bar-wrap { flex:1; height:10px; background:var(--gray-soft); border-radius:5px; overflow:hidden; }
-.shap-bar { height:100%; border-radius:5px; transition:width .6s ease; }
-.shap-val { font-size:.72rem; font-weight:700; color:var(--navy); width:48px; text-align:right; flex-shrink:0; }
-.insight-item { display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px solid #f0f2f8; }
-.insight-item:last-child { border-bottom:none; }
-.insight-dot { width:10px; height:10px; border-radius:50%; margin-top:3px; flex-shrink:0; }
-.insight-text { font-size:.78rem; color:#3a4a6b; font-weight:500; line-height:1.5; }
-.insight-val { font-size:.72rem; font-weight:700; color:var(--accent); margin-top:2px; }
-
 /* ─── DATA MGMT ─── */
 .data-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
 .form-group { margin-bottom:12px; }
@@ -234,9 +220,6 @@ tr:hover td { background:#f8f9fd; }
     </div>
     <div class="subnav-tab" id="tab-btn-manage" onclick="setMainTab('manage')">
       <i class="fa-solid fa-table"></i> Quản lý dữ liệu hoạt động
-    </div>
-    <div class="subnav-tab" id="tab-btn-shap" onclick="setMainTab('shap')">
-      <i class="fa-solid fa-flask"></i> Phân tích &amp; SHAP
     </div>
     <div class="subnav-tab" id="tab-btn-equipment" onclick="setMainTab('equipment')">
       <i class="fa-solid fa-truck-moving"></i> Thêm thiết bị
@@ -448,43 +431,6 @@ tr:hover td { background:#f8f9fd; }
         </div>
       </div>
     </div><!-- /page-manage -->
-
-    <!-- ══════════ SHAP TAB ══════════ -->
-    <div id="page-shap" class="hidden">
-      <div class="shap-grid">
-        <div class="shap-card">
-          <div class="chart-title">
-            <div class="chart-title-left"><i class="fa-solid fa-ranking-star" style="color:var(--amber);font-size:.75rem"></i> Mức độ ảnh hưởng (SHAP Feature Importance)</div>
-          </div>
-          <div id="shapBars" style="margin-top:8px"></div>
-        </div>
-        <div class="shap-card">
-          <div class="chart-title">
-            <div class="chart-title-left"><i class="fa-solid fa-chart-area" style="color:var(--purple);font-size:.75rem"></i> Hồ sơ phát thải theo phương tiện</div>
-          </div>
-          <canvas id="radarChart" height="220"></canvas>
-        </div>
-        <div class="shap-card">
-          <div class="chart-title">
-            <div class="chart-title-left"><i class="fa-solid fa-circle-dot" style="color:var(--teal);font-size:.75rem"></i> Tiêu thụ nhiên liệu vs Phát thải</div>
-          </div>
-          <canvas id="scatterChart" height="200"></canvas>
-        </div>
-        <div class="shap-card">
-          <div class="chart-title">
-            <div class="chart-title-left"><i class="fa-solid fa-lightbulb" style="color:var(--amber);font-size:.75rem"></i> Phân tích &amp; Đề xuất tối ưu</div>
-          </div>
-          <div id="insightList"></div>
-        </div>
-      </div>
-
-      <div class="chart-card">
-        <div class="chart-title">
-          <div class="chart-title-left"><i class="fa-solid fa-layer-group" style="color:var(--accent);font-size:.75rem"></i> Phân rã phát thải theo nhân tố (Stacked Analysis)</div>
-        </div>
-        <canvas id="stackedBar" height="120"></canvas>
-      </div>
-    </div><!-- /page-shap -->
 
     <!-- ══════════ EQUIPMENT TAB ══════════ -->
     <div id="page-equipment" class="hidden">
@@ -728,25 +674,18 @@ let kpiDetailRef = null;
 let barChartRef = null;
 let trendChartRef = null;
 let mgmtDonutRef = null;
-let radarChartRef = null;
-let scatterChartRef = null;
-let stackedBarRef = null;
 let statusList = ['draft','submitted','locked'];
 let statusIdx = 1;
 
 // ─── TAB SWITCHING ────────────────────────────────────────
 function setMainTab(tabName) {
-  const tabs = ['overview','manage','shap','equipment'];
+  const tabs = ['overview','manage','equipment'];
   tabs.forEach(t => {
     document.getElementById('page-' + t).classList.add('hidden');
     document.getElementById('tab-btn-' + t).classList.remove('active');
   });
   document.getElementById('page-' + tabName).classList.remove('hidden');
   document.getElementById('tab-btn-' + tabName).classList.add('active');
-
-  if (tabName === 'shap' && !radarChartRef) {
-    buildShap();
-  }
 }
 
 // ─── COMPUTED ─────────────────────────────────────────────
@@ -1097,86 +1036,6 @@ function updateFleetCounts() {
     if (el) el.textContent = counts[k];
   });
   document.getElementById('eq-count-total').textContent = equipmentList.length;
-}
-
-// ─── SHAP TAB ─────────────────────────────────────────────
-function buildShap() {
-  // SHAP bars
-  const shapData = [
-    { label:'Tàu container',  value:38.4, color:'#2e7df7' },
-    { label:'Xe container',   value:24.1, color:'#0ea5e9' },
-    { label:'Xà lan',         value:18.7, color:'#22c55e' },
-    { label:'Tàu lai dắt',    value:11.2, color:'#f59e0b' },
-    { label:'PT nội bộ cảng', value:7.6,  color:'#8b5cf6' },
-  ];
-  document.getElementById('shapBars').innerHTML = shapData.map(s => `
-    <div class="shap-bar-row">
-      <div class="shap-label">${s.label}</div>
-      <div class="shap-bar-wrap"><div class="shap-bar" style="width:${s.value * 2}%;background:${s.color}"></div></div>
-      <div class="shap-val" style="color:${s.color}">${s.value}%</div>
-    </div>`).join('');
-
-  // RADAR
-  radarChartRef = new Chart(document.getElementById('radarChart').getContext('2d'), {
-    type: 'radar',
-    data: {
-      labels: ['CO₂e','Lượt vận hành','Tiêu thụ NL','Tần suất','Quãng đường'],
-      datasets: VHCL.map(v => ({
-        label: v.label,
-        data: [getCO2(v)/100, v.trips/100, v.consumption/1000, Math.random()*8+2, Math.random()*10+3].map(x => +x.toFixed(1)),
-        borderColor: v.color, backgroundColor: v.color + '22', borderWidth: 2, pointBackgroundColor: v.color, pointRadius: 4
-      }))
-    },
-    options: {
-      plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 8, family: 'Montserrat' }, boxWidth: 8, padding: 6 } } },
-      scales: { r: { ticks: { font: { size: 8 } }, grid: { color: '#f0f0f0' } } }
-    }
-  });
-
-  // SCATTER
-  scatterChartRef = new Chart(document.getElementById('scatterChart').getContext('2d'), {
-    type: 'scatter',
-    data: { datasets: VHCL.map(v => ({ label: v.label, data: [{ x: v.consumption/1000, y: getCO2(v) }], backgroundColor: v.color, pointRadius: 8, pointHoverRadius: 10 })) },
-    options: {
-      plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 8, family: 'Montserrat' }, boxWidth: 8, padding: 6 } } },
-      scales: {
-        x: { title: { display: true, text: 'Tiêu thụ nhiên liệu (nghìn đơn vị)', font: { size: 9, family: 'Montserrat' } }, grid: { color: '#f0f0f0' }, ticks: { font: { size: 8 } } },
-        y: { title: { display: true, text: 'Phát thải (tCO₂e)', font: { size: 9, family: 'Montserrat' } }, grid: { color: '#f0f0f0' }, ticks: { font: { size: 8 } } }
-      }
-    }
-  });
-
-  // STACKED BAR
-  stackedBarRef = new Chart(document.getElementById('stackedBar').getContext('2d'), {
-    type: 'bar',
-    data: {
-      labels: MONTHS,
-      datasets: VHCL.map(v => ({ label: v.label, data: TREND_DATA[v.key], backgroundColor: v.color + 'cc', stack: 's' }))
-    },
-    options: {
-      plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 8, family: 'Montserrat' }, boxWidth: 10, padding: 6 } } },
-      scales: {
-        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 8, family: 'Montserrat' } } },
-        y: { stacked: true, grid: { color: '#f0f0f0' }, ticks: { font: { size: 8, family: 'Montserrat' } } }
-      }
-    }
-  });
-
-  // INSIGHTS
-  const insights = [
-    { color:'#ef4444', text:'Tàu container chiếm 38.4% tổng phát thải Scope 3 – ưu tiên chuyển đổi LNG/LPG', val:'→ Tiềm năng giảm 15-22% nếu chuyển sang LNG' },
-    { color:'#f59e0b', text:'Xe container: mật độ lượt cao (1,240 lượt/tháng) nhưng EF thấp', val:'→ Tối ưu lộ trình có thể giảm 8-12% tiêu thụ' },
-    { color:'#22c55e', text:'Xà lan có EF cao nhất (3.206 tCO₂/tấn MGO) – cân nhắc thay MGO bằng Biodiesel', val:'→ Giảm 5-8% phát thải tổng thể' },
-    { color:'#8b5cf6', text:'PT nội bộ cảng: cơ hội điện hóa cao – tỷ trọng thấp, ảnh hưởng dài hạn tốt', val:'→ Điện hóa 50% đội PT nội bộ giảm 3.8%' },
-  ];
-  document.getElementById('insightList').innerHTML = insights.map(ins => `
-    <div class="insight-item">
-      <div class="insight-dot" style="background:${ins.color}"></div>
-      <div>
-        <div class="insight-text">${ins.text}</div>
-        <div class="insight-val">${ins.val}</div>
-      </div>
-    </div>`).join('');
 }
 
 // ─── HELPERS ──────────────────────────────────────────────
