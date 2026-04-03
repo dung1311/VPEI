@@ -168,14 +168,11 @@ function syncFilterFromUrl(data) {
         document.getElementById("select-month").value = mo;
         setPeriodMode('month', false);
     } else {
-        // Nêu không chọn tháng hay quý trên URL, nhưng API có default
-        if(!qr && !mo && data && data.default_month) {
-            mo = data.default_month;
-            if(document.getElementById("select-month")) document.getElementById("select-month").value = mo;
-            setPeriodMode('month', false);
-        } else {
-            setPeriodMode('year', false);
+        // URL chỉ có năm (hoặc không có tháng/quý): chế độ Năm — không ép mặc định sang Tháng
+        if(document.getElementById("select-month") && data && data.default_month) {
+            document.getElementById("select-month").value = data.default_month;
         }
+        setPeriodMode('year', false);
     }
 
     if (typeof window.onGlobalFilterChange === 'function') {

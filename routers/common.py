@@ -1,3 +1,5 @@
+import re
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import extract
@@ -8,6 +10,7 @@ from models.audit_log import AuditLog
 from models.device import ActivityData
 from models.ship import Ship
 from models.container import Container
+from models.electrical_item import ElectricalItem
 
 router = APIRouter()
 
@@ -47,7 +50,26 @@ def get_common_periods(db: Session = Depends(get_db)):
         conts_y = db.query(extract('year', Container.start_time)).distinct().all()
         for y in conts_y:
             if y[0]: years.add(int(y[0]))
-            
+
+        # Scope 2 — electrical_items.period_value (vd: 2025-06-15, 15/06/2025, "Tháng 06 - 2025")
+        s2_vals = db.query(ElectricalItem.period_value).distinct().all()
+        for row in s2_vals:
+            pv = (row[0] or "").strip()
+            if not pv:
+                continue
+            parsed = None
+            for fmt in ("%Y-%m-%d", "%d/%m/%Y"):
+                try:
+                    parsed = datetime.strptime(pv, fmt)
+                    break
+                except ValueError:
+                    continue
+            if parsed:
+                years.add(parsed.year)
+            else:
+                for m in re.finditer(r"\b(19|20)\d{2}\b", pv):
+                    years.add(int(m.group(0)))
+
     except Exception as e:
         print("Lỗi khi fetch period years:", e)
 

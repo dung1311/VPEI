@@ -147,9 +147,12 @@ async def export_electrical_items_pdf(
 async def manager_audit_log(
     year: int | None = Query(default=None),
     month: int | None = Query(default=None),
+    quarter: int | None = Query(default=None),
     db: Session = Depends(get_db),
 ):
-    history = scope2_activity_service.get_scope2_activity_history(db, year=year, month=month)
+    history = scope2_activity_service.get_scope2_activity_history(
+        db, year=year, month=month, quarter=quarter
+    )
     return history
 
 

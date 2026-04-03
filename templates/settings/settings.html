@@ -192,10 +192,6 @@ tr:hover td{background:#f8f9fd;}
         <div class="smenu-icon" style="background:rgba(34,197,94,.1)"><i class="fa-solid fa-users" style="color:var(--green)"></i></div>
         Người dùng &amp; Phân quyền
       </div>
-      <div class="smenu-item" onclick="switchSection('report-fmt',this)">
-        <div class="smenu-icon" style="background:rgba(139,92,246,.1)"><i class="fa-solid fa-file-invoice" style="color:var(--purple)"></i></div>
-        Định dạng báo cáo
-      </div>
     </div>
 
     <!-- ─── SETTINGS CONTENT ─── -->
@@ -354,73 +350,6 @@ tr:hover td{background:#f8f9fd;}
         </div>
       </div>
 
-      <!-- ══════ 3. REPORT FORMAT ══════ -->
-      <div id="sec-report-fmt" class="hidden">
-        <div class="s-card">
-          <div class="s-card-header"><div class="s-card-title"><i class="fa-solid fa-file-invoice" style="color:var(--purple)"></i> Cấu hình định dạng báo cáo</div></div>
-          <div class="s-card-body">
-            <div class="form-grid">
-              <div class="form-group">
-                <label class="form-label">Chuẩn báo cáo</label>
-                <select class="form-select" disabled>
-                  <option>Nội bộ doanh nghiệp</option>
-                  <option>ESG Reporting (GRI / SASB)</option>
-                  <option>Gửi cơ quan nhà nước (MONRE)</option>
-                  <option>Carbon Disclosure Project (CDP)</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Đơn vị số thập phân</label>
-                <select class="form-select" disabled><option>2 chữ số (VD: 1,285.45)</option><option>3 chữ số (VD: 1,285.456)</option><option>Làm tròn (VD: 1,285)</option></select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Đơn vị phát thải hiển thị</label>
-                <select class="form-select" disabled><option>tCO₂e (tấn)</option><option>kgCO₂e (kg)</option></select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Ngôn ngữ báo cáo</label>
-                <select class="form-select" disabled><option>Tiếng Việt</option><option>English</option><option>Song ngữ (VI / EN)</option></select>
-              </div>
-            </div>
-            <div style="margin-top:16px">
-              <div class="form-label" style="margin-bottom:10px">Chữ ký số &amp; Người duyệt</div>
-              <div class="form-grid">
-                <div class="form-group">
-                  <label class="form-label" style="font-size:.65rem">Người duyệt mặc định</label>
-                  <select class="form-select" disabled>
-                    <option>Nguyễn Văn A – Giám đốc Môi trường</option>
-                    <option>Trần Thị B – Phó Giám đốc</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="form-label" style="font-size:.65rem">Chức danh hiển thị</label>
-                  <input class="form-input" value="Giám đốc Kiểm kê Phát thải" disabled>
-                </div>
-              </div>
-            </div>
-            <div style="margin-top:16px">
-              <div class="form-label" style="margin-bottom:8px">Tùy chọn hiển thị trong báo cáo</div>
-              <div class="toggle-wrap">
-                <div class="toggle-info"><div class="toggle-label">Hiển thị logo trên trang bìa</div><div class="toggle-desc">Logo doanh nghiệp sẽ xuất hiện ở góc trên báo cáo</div></div>
-                <label class="toggle-sw" style="cursor:not-allowed"><input type="checkbox" checked disabled><span class="slider" style="pointer-events:none"></span></label>
-              </div>
-              <div class="toggle-wrap">
-                <div class="toggle-info"><div class="toggle-label">Đánh số trang tự động</div><div class="toggle-desc">Tự động thêm số trang vào footer</div></div>
-                <label class="toggle-sw" style="cursor:not-allowed"><input type="checkbox" checked disabled><span class="slider" style="pointer-events:none"></span></label>
-              </div>
-              <div class="toggle-wrap">
-                <div class="toggle-info"><div class="toggle-label">Watermark "Bản nháp" khi chưa phê duyệt</div><div class="toggle-desc">Tự động thêm dấu DRAFT khi báo cáo chưa Approved</div></div>
-                <label class="toggle-sw" style="cursor:not-allowed"><input type="checkbox" checked disabled><span class="slider" style="pointer-events:none"></span></label>
-              </div>
-              <div class="toggle-wrap">
-                <div class="toggle-info"><div class="toggle-label">Bao gồm phụ lục hệ số phát thải</div><div class="toggle-desc">Tự động đính kèm bảng hệ số EF sử dụng trong báo cáo</div></div>
-                <label class="toggle-sw" style="cursor:not-allowed"><input type="checkbox" disabled><span class="slider" style="pointer-events:none"></span></label>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
     </div><!-- /settings-content -->
   </div><!-- /body-layout -->
 </div><!-- /main -->
@@ -430,7 +359,7 @@ tr:hover td{background:#f8f9fd;}
 
 // ─── SECTION SWITCH ────────────────────────────────────────
 function switchSection(id, el) {
-  ['general','users','report-fmt'].forEach(s => {
+  ['general','users'].forEach(s => {
     const el2 = document.getElementById('sec-'+s);
     if(el2) el2.classList.toggle('hidden', s!==id);
   });

@@ -4,6 +4,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import datetime
+from typing import List, Optional
 
 from core.database import get_db
 from core.security import decode_token
@@ -14,31 +15,64 @@ from models.device import RecordStatusEnum, DeviceTypeEnum, FuelTypeEnum
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
+
+def _resolve_scope1_months(month: Optional[int], quarter: Optional[int]) -> List[int]:
+    if month is not None:
+        return [month]
+    if quarter is not None:
+        q = int(quarter)
+        return list(range((q - 1) * 3 + 1, q * 3 + 1))
+    return list(range(1, 13))
+
+
+def _scope1_period_ctx(y: int, month: Optional[int], quarter: Optional[int], months: List[int]) -> dict:
+    return {
+        "year": y,
+        "month": month,
+        "quarter": quarter,
+        "activity_month": min(months),
+    }
+
+
 # --- UI PAGES ---
 @router.get("/scope1", response_class=HTMLResponse)
-async def scope1_dashboard_page(request: Request, year: int = Query(None), month: int = Query(None), db: Session = Depends(get_db)):
+async def scope1_dashboard_page(
+    request: Request,
+    year: int = Query(None),
+    month: int = Query(None),
+    quarter: int = Query(None),
+    db: Session = Depends(get_db),
+):
     now = datetime.utcnow()
     y = year or now.year
-    m = month or now.month
-
-    dashboard = scope1_services.DashboardService.get_dashboard_data(db, y, m)
+    months = _resolve_scope1_months(month, quarter)
+    dashboard = scope1_services.DashboardService.get_dashboard_data_for_months(db, y, months)
 
     return templates.TemplateResponse("scope/scope_01.html", {
         "request": request,
         "dashboard_json": dashboard,
         "current_year": y,
-        "current_month": m,
+        "current_month": month if month is not None else min(months),
+        "period_ctx": _scope1_period_ctx(y, month, quarter, months),
     })
 
 
 @router.get("/scope1/emission-source", response_class=HTMLResponse)
-async def scope1_emission_source_page(request: Request, year: int = Query(None), month: int = Query(None), db: Session = Depends(get_db)):
+async def scope1_emission_source_page(
+    request: Request,
+    year: int = Query(None),
+    month: int = Query(None),
+    quarter: int = Query(None),
+    db: Session = Depends(get_db),
+):
     now = datetime.utcnow()
     y = year or now.year
-    m = month or now.month
+    months = _resolve_scope1_months(month, quarter)
 
     cats = scope1_services.DeviceCategoryService.get_all(db)
-    activities = scope1_services.ActivityDataService.get_by_period(db, y, m)
+    activities = []
+    for mo in months:
+        activities.extend(scope1_services.ActivityDataService.get_by_period(db, y, mo))
 
     categories_for_ui = []
     for c in cats:
@@ -55,10 +89,13 @@ async def scope1_emission_source_page(request: Request, year: int = Query(None),
         "hours": a.operating_hours, "lf": a.load_factor, "total_co": a.total_co2e,
     } for a in activities]
 
-    summary = scope1_services.DashboardService.get_dashboard_data(db, y, m)
-    
+    summary = scope1_services.DashboardService.get_dashboard_data_for_months(db, y, months)
+
     # [FIXED] Trích xuất status an toàn hơn
     status_str = summary["kpis"]["status"] if "status" in summary.get("kpis", {}) else "Draft"
+
+    act_m = min(months)
+    period_ctx = {**_scope1_period_ctx(y, month, quarter, months), "status": status_str}
 
     return templates.TemplateResponse("scope/scope_01_emission_source.html", {
         "request": request,
@@ -67,10 +104,11 @@ async def scope1_emission_source_page(request: Request, year: int = Query(None),
         "device_types": [d.value for d in DeviceTypeEnum],
         "fuel_types": [f.value for f in FuelTypeEnum],
         "current_year": y,
-        "current_month": m,
+        "current_month": act_m,
+        "period_ctx": period_ctx,
         "status": status_str,
         "total_scope1_co2": summary["kpis"]["total_co2e"],
-        "trend_data": summary["line_chart"]  
+        "trend_data": summary["line_chart"]
     })
 
 
@@ -112,10 +150,22 @@ async def update_period_status(year: int = Query(...), month: int = Query(...), 
     return scope1_services.ActivityDataService.update_period_status(db, year, month, enum_status)
 
 @router.get("/api/scope1/dashboard/export-excel")
-async def api_export_dashboard(year: int = Query(...), month: int = Query(...), db: Session = Depends(get_db)):
-    payload = scope1_services.DashboardService.export_excel(db, year, month)
+async def api_export_dashboard(
+    year: int = Query(...),
+    month: int = Query(None),
+    quarter: int = Query(None),
+    db: Session = Depends(get_db),
+):
+    months = _resolve_scope1_months(month, quarter)
+    payload = scope1_services.DashboardService.export_excel(db, year, months)
+    if len(months) == 1:
+        tag = months[0]
+    elif len(months) == 3:
+        tag = f"Q{((months[0] - 1) // 3) + 1}"
+    else:
+        tag = "Y"
     return StreamingResponse(
-        iter([payload.getvalue()]), 
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
-        headers={"Content-Disposition": f"attachment; filename=scope1_dashboard_{month}_{year}.xlsx"}
+        iter([payload.getvalue()]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=scope1_dashboard_{tag}_{year}.xlsx"}
     )

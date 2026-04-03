@@ -116,8 +116,6 @@
 
 <div class="main">
   {% set topbar_title = 'Scope 1 – Emission Source Management' %}
-  {% set hide_period_btn_year = True %}
-  {% set hide_period_btn_quarter = True %}
   {% include 'components/topbar.html' %}
 
   <div class="content">
@@ -376,7 +374,7 @@
 
 <script id="categories-data" type="application/json">{{ categories | default([]) | tojson | safe }}</script>
 <script id="trend-data" type="application/json">{{ trend_data | default({"labels":[], "values":[]}) | tojson | safe }}</script>
-<script id="current-ctx" type="application/json">{"year": {{ current_year }}, "month": {{ current_month }}, "status": "{{ status }}"}</script>
+<script id="current-ctx" type="application/json">{{ period_ctx | tojson | safe }}</script>
 
 <script>
 function toggleMenu(id){
@@ -435,16 +433,11 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
-function applyFilter() {
-  const y = document.getElementById('filterYear').value;
-  const m = document.getElementById('filterMonth').value;
-  window.location.href = `/scope1/emission-source?year=${y}&month=${m}`;
-}
-
 async function updatePeriodStatus(newStatus) {
-    if (!confirm(`Bạn có chắc chắn muốn chuyển trạng thái tháng ${ctx.month}/${ctx.year} thành ${newStatus}?`)) return;
+    const am = ctx.activity_month ?? ctx.month;
+    if (!confirm(`Bạn có chắc chắn muốn chuyển trạng thái tháng ${am}/${ctx.year} thành ${newStatus}?`)) return;
     try {
-        const res = await fetch(`/scope1/activities/update-period-status?year=${ctx.year}&month=${ctx.month}&status=${newStatus}`, { method: 'POST' });
+        const res = await fetch(`/scope1/activities/update-period-status?year=${ctx.year}&month=${am}&status=${newStatus}`, { method: 'POST' });
         if (res.ok) window.location.reload();
         else alert("Lỗi cập nhật trạng thái.");
     } catch (err) { alert("Lỗi kết nối."); }
@@ -520,7 +513,7 @@ function updatePowerInput() {
 async function submitActivity() {
   const payload = {
     period_year: ctx.year,
-    period_month: ctx.month,
+    period_month: ctx.activity_month ?? ctx.month,
     category_id: parseInt(document.getElementById('actCatId').value),
     quantity: parseInt(document.getElementById('actQty').value) || 1,
     recorded_power: parseFloat(document.getElementById('actPower').value) || 0,
@@ -578,7 +571,8 @@ async function submitImportExcel() {
     formData.append("file", file);
 
     try {
-        const res = await fetch(`/scope1/activities/import?period_year=${ctx.year}&period_month=${ctx.month}`, { method: 'POST', body: formData });
+        const pm = ctx.activity_month ?? ctx.month;
+        const res = await fetch(`/scope1/activities/import?period_year=${ctx.year}&period_month=${pm}`, { method: 'POST', body: formData });
         if (res.ok) window.location.reload();
         else { const err = await res.json(); alert("Lỗi Import: " + (err.detail || "Định dạng sai.")); }
     } catch (err) { alert("Lỗi kết nối."); } 

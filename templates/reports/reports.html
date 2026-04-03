@@ -174,14 +174,44 @@ body{font-family:'Montserrat',sans-serif;background:var(--gray-soft);color:var(-
 
   <!-- TOPBAR -->
   {% set topbar_title = '<i class="fa-solid fa-file-lines" style="color:var(--accent);margin-right:7px;font-size:1rem"></i> Reports – Báo cáo phát thải' %}
+  {% set hide_period_filter = True %}
   {% set extra_right_html = '
-    <button class="btn-create" onclick="generateReport()"><i class="fa-solid fa-wand-magic-sparkles"></i> Tạo báo cáo</button>
-    <button class="btn-create" id="btn-download-docx" style="background:#16a34a; margin-left:8px;" onclick="downloadDocx()"><i class="fa-solid fa-file-word"></i> Xuất DOCX</button>
+    <button class="btn-create" style="background:#16a34a; margin-left:8px;" onclick="exportExcel()"><i class="fa-solid fa-file-excel"></i> Xuất Excel</button>
+    <div style="position: relative; display: inline-block;" class="docx-hover-wrap">
+      <button class="btn-create" id="btn-download-docx" style="background:#2e7df7; margin-left:8px;"><i class="fa-solid fa-file-word"></i> Xuất DOCX <i class="fa-solid fa-chevron-down" style="font-size:0.7em;margin-left:4px"></i></button>
+      <div class="docx-hover-menu" style="display:none; position:absolute; right:0; top:100%; padding-top:6px; z-index:100; min-width:200px;">
+        <div style="background:white; border:1px solid var(--gray-border); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); padding:4px 0; overflow:hidden;">
+          <div class="docx-hover-item" style="padding:10px 16px; cursor:pointer; font-size:0.8rem; font-weight:600; color:var(--navy); transition:background 0.2s;" onclick="downloadDocx(true)"><i class="fa-solid fa-paperclip" style="margin-right:8px;color:var(--text-muted)"></i> Bao gồm phụ lục</div>
+          <div class="docx-hover-item" style="padding:10px 16px; cursor:pointer; font-size:0.8rem; font-weight:600; color:var(--navy); transition:background 0.2s;" onclick="downloadDocx(false)"><i class="fa-solid fa-file-lines" style="margin-right:8px;color:var(--text-muted)"></i> Không bao gồm phụ lục</div>
+        </div>
+      </div>
+    </div>
+    <style>
+      .docx-hover-wrap:hover .docx-hover-menu { display: block !important; }
+      .docx-hover-item:hover { background: var(--gray-soft); }
+    </style>
   ' %}
   {% include 'components/topbar.html' %}
 
   <!-- CONTENT -->
-  <div class="content" style="justify-content: center;">
+  <div class="content" style="justify-content: center; flex-direction: column; align-items: center;">
+
+    <div id="reportDateRangeCard" style="width:100%;max-width:900px;margin-bottom:14px;padding:14px 18px;background:var(--white);border-radius:13px;border:1px solid var(--gray-border);display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;">
+      <div>
+        <div style="font-size:.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;">Khoảng thời gian báo cáo</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+          <label style="font-size:.78rem;font-weight:600;color:#2a3a6b;">Từ ngày
+            <input type="date" id="reportDateStart" style="display:block;margin-top:4px;padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-border);font-size:.82rem;font-family:'Montserrat',sans-serif;color:var(--navy);">
+          </label>
+          <label style="font-size:.78rem;font-weight:600;color:#2a3a6b;">Đến ngày
+            <input type="date" id="reportDateEnd" style="display:block;margin-top:4px;padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-border);font-size:.82rem;font-family:'Montserrat',sans-serif;color:var(--navy);">
+          </label>
+        </div>
+      </div>
+      <button type="button" class="btn-create" style="padding:9px 16px;font-size:.78rem;" onclick="applyReportDateRange()"><i class="fa-solid fa-filter"></i> Áp dụng khoảng thời gian</button>
+      <button type="button" class="btn-secondary" style="padding:9px 14px;font-size:.78rem;" onclick="clearReportDateRange()">Xóa khoảng ngày</button>
+      <!-- <p style="font-size:.68rem;color:var(--text-muted);line-height:1.45;flex:1;min-width:200px;margin:0;"><strong>Xem trước</strong> chỉ hiện sau khi chọn đủ hai ngày và bấm Áp dụng. Xuất DOCX vẫn có thể dùng năm/quý/tháng trên thanh trên nếu chưa chọn khoảng ngày.</p> -->
+    </div>
 
     <!-- PREVIEW AREA -->
     <div class="preview-wrap" style="max-width: 900px; width: 100%;">
@@ -234,8 +264,90 @@ window.onGlobalFilterChange = function(mode, urlParams) {
     refreshPreview();
 };
 
-async function downloadDocx() {
-    const params = new URLSearchParams(window.location.search);
+function getReportParams() {
+    const p = new URLSearchParams(window.location.search);
+    const sEl = document.getElementById('reportDateStart');
+    const eEl = document.getElementById('reportDateEnd');
+    const ds = sEl && sEl.value.trim();
+    const de = eEl && eEl.value.trim();
+    if (ds && de) {
+        p.set('date_start', ds);
+        p.set('date_end', de);
+    } else {
+        p.delete('date_start');
+        p.delete('date_end');
+    }
+    if (!p.get('year')) p.set('year', String(new Date().getFullYear()));
+    return p;
+}
+
+function syncReportDatesFromUrl() {
+    const p = new URLSearchParams(window.location.search);
+    const s = document.getElementById('reportDateStart');
+    const e = document.getElementById('reportDateEnd');
+    if (s && p.get('date_start')) s.value = p.get('date_start');
+    if (e && p.get('date_end')) e.value = p.get('date_end');
+}
+
+function hasReportDateRange() {
+    const p = new URLSearchParams(window.location.search);
+    if (p.get('date_start') && p.get('date_end')) return true;
+    const sEl = document.getElementById('reportDateStart');
+    const eEl = document.getElementById('reportDateEnd');
+    return !!(sEl && eEl && sEl.value.trim() && eEl.value.trim());
+}
+
+function renderReportPreviewPlaceholder() {
+    return `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:280px;padding:32px 24px;text-align:center;">
+        <div style="width:64px;height:64px;border-radius:16px;background:rgba(46,125,247,.12);display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+          <i class="fa-solid fa-calendar-days" style="font-size:1.75rem;color:var(--accent);"></i>
+        </div>
+        <div style="font-size:1rem;font-weight:800;color:var(--navy);margin-bottom:8px;letter-spacing:.02em;">Chọn khoảng thời gian để xem mẫu báo cáo</div>
+        <div style="font-size:.82rem;color:var(--text-muted);line-height:1.55;max-width:360px;margin-bottom:20px;">
+          Vui lòng chọn <strong>Từ ngày</strong> và <strong>Đến ngày</strong> phía trên, sau đó bấm <strong>Áp dụng khoảng thời gian</strong>. Bản xem trước Word sẽ hiển thị tại đây.
+        </div>
+      </div>
+    `;
+}
+
+function applyReportDateRange() {
+    const ds = document.getElementById('reportDateStart').value.trim();
+    const de = document.getElementById('reportDateEnd').value.trim();
+    if (!ds || !de) {
+        showToast('Chọn đủ ngày bắt đầu và ngày kết thúc', 'warn');
+        return;
+    }
+    if (ds > de) {
+        showToast('Ngày bắt đầu phải trước hoặc bằng ngày kết thúc', 'warn');
+        return;
+    }
+    const u = new URL(window.location.href);
+    u.searchParams.set('date_start', ds);
+    u.searchParams.set('date_end', de);
+    history.pushState({}, '', u);
+    previewLoaded = false;
+    refreshPreview();
+}
+
+function clearReportDateRange() {
+    document.getElementById('reportDateStart').value = '';
+    document.getElementById('reportDateEnd').value = '';
+    const u = new URL(window.location.href);
+    u.searchParams.delete('date_start');
+    u.searchParams.delete('date_end');
+    history.pushState({}, '', u);
+    previewLoaded = false;
+    refreshPreview();
+}
+
+async function downloadDocx(includeAppendix = true) {
+    if (!hasReportDateRange()) {
+        showToast('Vui lòng chọn và áp dụng khoảng thời gian trước khi xuất báo cáo!', 'error');
+        return;
+    }
+
+    const params = getReportParams();
     const year = params.get('year') || new Date().getFullYear();
     
     const btn = document.getElementById('btn-download-docx');
@@ -248,7 +360,9 @@ async function downloadDocx() {
     showToast('Đang tạo và tải báo cáo, vui lòng chờ...', 'success');
 
     try {
-        const response = await fetch(`/reports/download?year=${year}`);
+        params.set('year', String(year));
+        params.set('include_appendix', String(includeAppendix));
+        const response = await fetch(`/reports/download?${params.toString()}`);
         if (!response.ok) throw new Error('Không thể xuất báo cáo');
 
         const disposition = response.headers.get('Content-Disposition');
@@ -276,7 +390,7 @@ async function downloadDocx() {
         showToast('Đã xảy ra lỗi khi tạo tải xuống báo cáo!', 'error');
     } finally {
         if (btn) {
-            btn.innerHTML = '<i class="fa-solid fa-file-word"></i> Xuất DOCX';
+            btn.innerHTML = '<i class="fa-solid fa-file-word"></i> Xuất DOCX <i class="fa-solid fa-chevron-down" style="font-size:0.7em;margin-left:4px"></i>';
             btn.disabled = false;
             btn.style.opacity = '1';
             btn.style.cursor = 'pointer';
@@ -284,7 +398,12 @@ async function downloadDocx() {
     }
 }
 
+function exportExcel() {
+    showToast('Tính năng xuất Excel đang được phát triển...', 'warn');
+}
+
 function init() {
+  syncReportDatesFromUrl();
   refreshPreview();
 }
 
@@ -296,15 +415,19 @@ function refreshPreview() {
 async function loadDocxPreview() {
   if (previewLoaded) return;
   const container = document.getElementById('previewPage');
+  if (!hasReportDateRange()) {
+    container.innerHTML = renderReportPreviewPlaceholder();
+    previewLoaded = true;
+    return;
+  }
+
   container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-weight:600;font-size:0.8rem">
     <i class="fa-solid fa-circle-notch fa-spin" style="margin-right:8px;font-size:1.2rem;color:var(--accent)"></i> Đang tải dữ liệu báo cáo...
   </div>`;
   
   try {
-    const params = new URLSearchParams(window.location.search);
-    const year = params.get('year') || new Date().getFullYear();
-    
-    const response = await fetch(`/reports/download?year=${year}`);
+    const params = getReportParams();
+    const response = await fetch(`/reports/download?${params.toString()}`);
     if (!response.ok) throw new Error('Không thể tải file báo cáo từ máy chủ');
     
     const arrayBuffer = await response.arrayBuffer();
@@ -324,15 +447,17 @@ async function loadDocxPreview() {
       <i class="fa-solid fa-triangle-exclamation" style="font-size:1.5rem;margin-bottom:10px;display:block"></i>
       Lỗi hiển thị báo cáo:<br><span style="font-weight:400;color:var(--text-muted)">${error.message}</span>
     </div>`;
+    previewLoaded = true;
   }
 }
 
 function generateReport() {
-  showToast('Đang tổng hợp dữ liệu...');
-  setTimeout(()=>{
-    refreshPreview(); 
-    showToast('Đã tải báo cáo mới nhất!','success'); 
-  }, 1000);
+  refreshPreview();
+  if (hasReportDateRange()) {
+    showToast('Đang tải xem trước báo cáo...', 'success');
+  } else {
+    showToast('Chọn khoảng ngày (Từ / Đến) rồi bấm Áp dụng để xem mẫu.', 'warn');
+  }
 }
 
 function showToast(msg, type='success') {

@@ -158,10 +158,12 @@ const canDelete = document.getElementById('page-config').dataset.canDelete === '
 
 let filterYear = null;
 let filterMonth = null;
+let filterQuarter = null;
 
 window.onGlobalFilterChange = function(mode, searchParams) {
   filterYear = searchParams.get('year');
   filterMonth = searchParams.get('month');
+  filterQuarter = searchParams.get('quarter');
   loadAuditHistory();
 };
 
@@ -169,11 +171,13 @@ window.onGlobalFilterChange = function(mode, searchParams) {
 async function loadAuditHistory() {
   const year = filterYear || '';
   const month = filterMonth || '';
-  
+  const quarter = filterQuarter || '';
+
   let url = '/api/scope3/manager/audit';
   const params = new URLSearchParams();
   if (year) params.append('year', year);
   if (month) params.append('month', month);
+  if (quarter) params.append('quarter', quarter);
   if (params.toString()) url += '?' + params.toString();
   
   try {

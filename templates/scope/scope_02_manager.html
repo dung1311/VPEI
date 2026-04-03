@@ -330,21 +330,23 @@ async function deleteActivity(id){
 
 let filterYear = null;
 let filterMonth = null;
+let filterQuarter = null;
 
 window.onGlobalFilterChange = function(mode, searchParams) {
   filterYear = searchParams.get('year');
   filterMonth = searchParams.get('month');
-  // For Scope 2 manager, if mode is quarter, we don't have quarter filter, but we do have month.
-  // We can just ignore quarter, but let's at least reload.
+  filterQuarter = searchParams.get('quarter');
   loadHistory();
 };
 
 async function loadHistory(){
   const year = filterYear || '';
   const month = filterMonth || '';
+  const quarter = filterQuarter || '';
   const params = new URLSearchParams();
   if(year) params.append('year', year);
   if(month) params.append('month', month);
+  if(quarter) params.append('quarter', quarter);
 
   const res = await fetch(`/api/scope2/manager/audit?${params.toString()}`);
   if(!res.ok){
