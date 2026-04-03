@@ -227,16 +227,8 @@ td {
 </style>
 </head>
 <body>
-<div class="sidebar">
-  <div class="sidebar-logo"><div class="logo-box">VPEI</div></div>
-  <nav class="nav-items">
-    <div class="nav-section">Menu chính</div>
-    <a href="/dashboard" class="nav-item"><i class="fa-solid fa-chart-pie" style="width:16px;color:var(--text-muted)"></i> Dashboard</a>
-    <a href="/scope1" class="nav-item"><i class="fa-solid fa-industry" style="width:16px;color:var(--text-muted)"></i> Scope 1</a>
-    <a href="/scope2" class="nav-item active"><i class="fa-solid fa-bolt" style="width:16px;color:var(--accent)"></i> Scope 2</a>
-    <a href="/scope3" class="nav-item"><i class="fa-solid fa-ship" style="width:16px;color:var(--text-muted)"></i> Scope 3</a>
-  </nav>
-</div>
+{% set active_page = 'scope2' %}
+{% include 'components/sidebar.html' %}
 
 <div class="main">
   <div class="topbar">

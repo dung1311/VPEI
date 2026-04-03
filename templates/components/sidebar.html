@@ -1,0 +1,117 @@
+<style>
+  .submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+  .submenu.open { max-height: 150px; }
+  .nav-item.sub { padding-left: 44px; font-size: 0.83rem; }
+  .nav-item.sub.active { background: rgba(46,125,247,0.06); color: var(--accent); font-weight: 600; }
+  .nav-expand { font-size: 0.7rem; margin-left: auto; transition: transform 0.3s ease; }
+</style>
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-box">VPEI</div>
+  </div>
+  <nav class="nav-items">
+    <div class="nav-section">Menu chính</div>
+    <a href="/dashboard" class="nav-item"><i class="fa-solid fa-chart-pie" style="width:16px;color:var(--text-muted)"></i> Dashboard</a>
+
+    <a href="/scope1" class="nav-item">
+      <i class="fa-solid fa-industry" style="width:16px;color:var(--text-muted)"></i>
+      Scope 1
+      <i class="fa-solid fa-chevron-down nav-expand" onclick="event.preventDefault(); event.stopPropagation(); toggleSidebarMenu('scope1Menu')"></i>
+    </a>
+    <div id="scope1Menu" class="submenu">
+      <a href="/scope1/emission-source" class="nav-item sub">Quản lý nguồn phát thải</a>
+    </div>
+
+    <a href="/scope2" class="nav-item">
+      <i class="fa-solid fa-bolt" style="width:16px;color:var(--text-muted)"></i>
+      Scope 2
+      <i class="fa-solid fa-chevron-down nav-expand" onclick="event.preventDefault(); event.stopPropagation(); toggleSidebarMenu('scope2Menu')"></i>
+    </a>
+    <div id="scope2Menu" class="submenu">
+      <a href="/scope2/manager" class="nav-item sub">Lịch sử hoạt động</a>
+    </div>
+
+    <a href="/scope3" class="nav-item">
+      <i class="fa-solid fa-ship" style="width:16px;color:var(--text-muted)"></i>
+      Scope 3
+      <i class="fa-solid fa-chevron-down nav-expand" onclick="event.preventDefault(); event.stopPropagation(); toggleSidebarMenu('scope3Menu')"></i>
+    </a>
+    <div id="scope3Menu" class="submenu">
+      <a href="/scope3/manager" class="nav-item sub">Lịch sử hoạt động</a>
+    </div>
+
+    <div class="nav-section" style="margin-top:10px">Báo cáo</div>
+    <a href="/reports" class="nav-item"><i class="fa-solid fa-file-lines" style="width:16px;color:var(--text-muted)"></i> Reports</a>
+  </nav>
+  <div class="nav-bottom">
+    <a href="/settings" class="nav-item"><i class="fa-solid fa-gear" style="width:16px;color:var(--text-muted)"></i> Settings</a>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const path = window.location.pathname;
+    const links = document.querySelectorAll('.sidebar a.nav-item');
+
+    links.forEach(function(link) {
+      link.classList.remove('active');
+      const icon = link.querySelector('i');
+      if (icon) {
+        icon.style.color = 'var(--text-muted)';
+      }
+    });
+
+    // Keep all sub-links consistently styled
+    document.querySelectorAll('#scope1Menu a, #scope2Menu a, #scope3Menu a').forEach(function(link) {
+      link.classList.add('sub');
+    });
+
+    const byId = {
+      '/scope1': 'scope1Menu',
+      '/scope1/emission-source': 'scope1Menu',
+      '/scope2': 'scope2Menu',
+      '/scope2/manager': 'scope2Menu',
+      '/scope3': 'scope3Menu',
+      '/scope3/manager': 'scope3Menu'
+    };
+
+    links.forEach(function(link) {
+      const href = link.getAttribute('href');
+      if (href === path) {
+        link.classList.add('active');
+        const icon = link.querySelector('i');
+        if (icon) {
+          icon.style.color = 'var(--accent)';
+        }
+      }
+    });
+
+    const openMenuId = byId[path];
+    if (openMenuId) {
+      const submenu = document.getElementById(openMenuId);
+      if (submenu) {
+        submenu.classList.add('open');
+        const parentItem = submenu.previousElementSibling;
+        if (parentItem && parentItem.classList.contains('nav-item')) {
+          // Note: we purposely do NOT add 'active' to the parent 
+          // because the user requested only the EXACT active tab to be highlighted.
+          const expandIcon = parentItem.querySelector('.nav-expand');
+          if (expandIcon) {
+            expandIcon.style.transform = 'rotate(180deg)';
+          }
+        }
+      }
+    }
+  });
+
+  function toggleSidebarMenu(id) {
+    const menu = document.getElementById(id);
+    if (menu) {
+      menu.classList.toggle('open');
+      const expandIcon = menu.previousElementSibling.querySelector('.nav-expand');
+      if (expandIcon) {
+        expandIcon.style.transform = menu.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)';
+      }
+    }
+  }
+</script>

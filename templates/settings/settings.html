@@ -165,21 +165,8 @@ tr:hover td{background:#f8f9fd;}
 <body>
 
 <!-- ─── SIDEBAR ─── -->
-<div class="sidebar">
-  <div class="sidebar-logo"><div class="logo-box">VPEI</div></div>
-  <nav class="nav-items">
-    <div class="nav-section">Menu chính</div>
-    <a href="/dashboard" class="nav-item"><i class="fa-solid fa-chart-pie" style="width:16px;color:var(--text-muted)"></i> Dashboard</a>
-    <a href="/scope1" class="nav-item"><i class="fa-solid fa-industry" style="width:16px;color:var(--text-muted)"></i> Scope 1</a>
-    <a href="/scope2" class="nav-item"><i class="fa-solid fa-bolt" style="width:16px;color:var(--text-muted)"></i> Scope 2</a>
-    <a href="/scope3" class="nav-item"><i class="fa-solid fa-ship" style="width:16px;color:var(--text-muted)"></i> Scope 3</a>
-    <div class="nav-section" style="margin-top:10px">Báo cáo</div>
-    <a href="/reports" class="nav-item"><i class="fa-solid fa-file-lines" style="width:16px;color:var(--text-muted)"></i> Reports</a>
-  </nav>
-  <div class="nav-bottom">
-    <a href="/settings" class="nav-item active"><i class="fa-solid fa-gear" style="width:16px;color:var(--accent)"></i> Settings</a>
-  </div>
-</div>
+{% set active_page = 'settings' %}
+{% include 'components/sidebar.html' %}
 
 <!-- ─── MAIN ─── -->
 <div class="main">
@@ -330,8 +317,8 @@ tr:hover td{background:#f8f9fd;}
                       <td style="font-size:.78rem;color:var(--text-muted)">
                         {% if u.last_login %}{{ u.last_login.strftime('%d/%m/%Y %H:%M') }}{% else %}Chưa đăng nhập{% endif %}
                       </td>
-                      <td style="text-align:center">
-                        <div style="display:flex;gap:6px;justify-content:center">
+                      <td>
+                        <div style="display:flex;gap:6px;justify-content:flex-start">
                           {% if u.username != super_admin_username or is_super_admin %}
                           <a href="#" onclick="openResetModal({{ u.id }}, '{{ u.username }}'); return false;" class="tbl-action-btn" title="Reset Mật khẩu"><i class="fa-solid fa-key" style="color:var(--amber)"></i></a>
                           {% endif %}
