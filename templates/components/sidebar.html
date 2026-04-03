@@ -44,7 +44,18 @@
     <a href="/reports" class="nav-item"><i class="fa-solid fa-file-lines" style="width:16px;color:var(--text-muted)"></i> Reports</a>
   </nav>
   <div class="nav-bottom">
+    {% set is_admin = false %}
+    {% if admin is defined and admin and (admin.is_admin or admin.get("is_admin")) %}
+        {% set is_admin = true %}
+    {% elif user is defined and user and (user.is_admin or (user.get and user.get("is_admin"))) %}
+        {% set is_admin = true %}
+    {% elif request is defined and request.state.user and request.state.user.get("is_admin") %}
+        {% set is_admin = true %}
+    {% endif %}
+
+    {% if is_admin %}
     <a href="/settings" class="nav-item"><i class="fa-solid fa-gear" style="width:16px;color:var(--text-muted)"></i> Settings</a>
+    {% endif %}
   </div>
 </div>
 

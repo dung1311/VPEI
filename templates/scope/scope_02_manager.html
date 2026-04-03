@@ -231,12 +231,9 @@ td {
 {% include 'components/sidebar.html' %}
 
 <div class="main">
-  <div class="topbar">
-    <div class="topbar-title"><i class="fa-solid fa-clock-rotate-left" style="color:var(--accent);margin-right:7px"></i>Lịch sử hoạt động Scope 2</div>
-    <a href="/scope2" style="text-decoration:none;color:var(--accent);font-size:.8rem;font-weight:700">
-      <i class="fa-solid fa-arrow-left"></i> Quay lại Scope 2
-    </a>
-  </div>
+  {% set topbar_title = '<a href="/scope2/v2" style="color:var(--text-muted); margin-right:8px;"><i class="fa-solid fa-arrow-left"></i></a> Scope 2 – Điện năng' %}
+  {% set extra_right_html = '' %}
+  {% include 'components/topbar.html' %}
 
   <div class="content">
     <div class="card">

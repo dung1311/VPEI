@@ -89,28 +89,9 @@
 {% include 'components/sidebar.html' %}
 
 <div class="main">
-  <div class="topbar">
-    <div class="topbar-title">Scope 1 – Direct Emissions</div>
-    <div class="topbar-right">
-      <select class="select-pill" id="filterYear" onchange="applyFilter()">
-        {% for y in range(2023, 2031) %}<option value="{{ y }}" {% if current_year == y %}selected{% endif %}>Năm: {{ y }}</option>{% endfor %}
-      </select>
-      <select class="select-pill" id="filterMonth" onchange="applyFilter()">
-        {% for m in range(1, 13) %}<option value="{{ m }}" {% if current_month == m %}selected{% endif %}>Tháng: {{ "{:02d}".format(m) }}</option>{% endfor %}
-      </select>
-      
-      {% set status_val = dashboard_json.kpis.status if dashboard_json.kpis.status else 'Draft' %}
-      {% if status_val == 'Draft' %}
-        <span class="badge-status status-draft">● Draft</span>
-      {% elif status_val == 'Submitted' %}
-        <span class="badge-status status-submitted">● Submitted</span>
-      {% elif status_val == 'Locked' %}
-        <span class="badge-status status-locked">🔒 Locked</span>
-      {% else %}
-        <span class="badge-status status-draft">● Draft</span>
-      {% endif %}
-    </div>
-  </div>
+  {% set topbar_title = 'Scope 1 – Direct Emissions' %}
+  {% set status_val = dashboard_json.kpis.status if dashboard_json.kpis.status else 'Draft' %}
+  {% include 'components/topbar.html' %}
 
   <div class="content">
     <div class="kpi-row">

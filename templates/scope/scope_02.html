@@ -215,30 +215,9 @@ tr:hover td { background:#f8f9fd; }
 <!-- ─── MAIN ─── -->
 <div class="main">
   <!-- TOPBAR -->
-  <div class="topbar">
-    <div class="topbar-left">
-      <div class="topbar-title"><i class="fa-solid fa-bolt" style="color:var(--accent);margin-right:6px;font-size:0.9rem"></i>Scope 2 – Điện năng</div>
-      <div class="topbar-sub">Hiển thị dữ liệu tiêu thụ điện theo thời gian đã chọn</div>
-    </div>
-    <div class="topbar-right">
-      <div class="time-tabs">
-        <button class="time-tab" onclick="setTimeMode('day',this)">Ngày</button>
-        <button class="time-tab active" onclick="setTimeMode('month',this)">Tháng</button>
-        <button class="time-tab" onclick="setTimeMode('quarter',this)">Quý</button>
-        <button class="time-tab" onclick="setTimeMode('year',this)">Năm</button>
-      </div>
-      <select class="select-pill" id="timeSelect" onchange="onPeriodChange()">
-        <option>Tháng 06 – 2026</option>
-        <option>Tháng 05 – 2026</option>
-        <option>Tháng 04 – 2026</option>
-        <option>Tháng 03 – 2026</option>
-        <option>Tháng 02 – 2026</option>
-        <option>Tháng 01 – 2026</option>
-      </select>
-      <button class="btn-outline" onclick="refreshData()"><i class="fa-solid fa-arrows-rotate"></i> Làm mới</button>
-      <span class="badge-open"><i class="fa-solid fa-circle" style="font-size:0.5rem"></i> Open</span>
-    </div>
-  </div>
+  {% set topbar_title = '<i class="fa-solid fa-bolt" style="color:var(--accent);margin-right:6px;font-size:0.9rem"></i>Scope 2 – Điện năng' %}
+  {% set extra_right_html = '<button class="btn-outline" onclick="refreshData()"><i class="fa-solid fa-arrows-rotate"></i> Làm mới</button><span class="badge-open" style="margin-left:10px;padding: 5px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase;"><i class="fa-solid fa-circle" style="font-size:0.5rem"></i> Open</span>' %}
+  {% include 'components/topbar.html' %}
 
   <!-- CONTENT -->
   <div class="content">
@@ -456,6 +435,9 @@ tr:hover td { background:#f8f9fd; }
 const COLORS = ['#2e7df7','#0ea5e9','#22c55e','#f59e0b','#a855f7','#ef4444','#14b8a6','#f97316'];
 const GRID_EF = 0.6235; // kgCO2e / kWh (demo)
 
+let currentGlobalMode = "year";
+let currentGlobalBucket = null;
+
 let categories = {{ categories_json | default([]) | tojson }};
 let selected = new Set(categories.map(c => c.id));
 let editingItemId = null;
@@ -508,13 +490,7 @@ function normalizeRows() {
 }
 
 function getMode() {
-  const active = document.querySelector('.time-tab.active');
-  if (!active) return 'month';
-  const txt = active.innerText.trim();
-  if (txt === 'Ngày') return 'day';
-  if (txt === 'Tháng') return 'month';
-  if (txt === 'Quý') return 'quarter';
-  return 'year';
+  return currentGlobalMode;
 }
 
 function getBucketInfo(row, mode) {
@@ -537,8 +513,28 @@ function getBucketsForMode(mode) {
 }
 
 function getCurrentBucketValue() {
-  return document.getElementById('timeSelect').value;
+  if (currentGlobalBucket) return currentGlobalBucket;
+  const buckets = getBucketsForMode(getMode());
+  if (buckets.length > 0) return buckets[0].value;
+  return new Date().getFullYear().toString();
 }
+
+window.onGlobalFilterChange = function(mode, searchParams) {
+    let year = searchParams.get('year') || new Date().getFullYear().toString();
+    let qr = searchParams.get('quarter');
+    let mo = searchParams.get('month');
+    
+    let newBucket = year;
+    if(mode === 'month') {
+        newBucket = `${year}-${String(mo||1).padStart(2, '0')}`;
+    } else if(mode === 'quarter') {
+        newBucket = `${year}-Q${qr||1}`;
+    }
+    
+    window.currentGlobalBucket = newBucket;
+    window.currentGlobalMode = mode;
+    onPeriodChange();
+};
 
 function getSelectedRows() {
   const mode = getMode();

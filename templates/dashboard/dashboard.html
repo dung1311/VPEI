@@ -63,20 +63,8 @@
 {% include 'components/sidebar.html' %}
 
 <div class="main">
-  <div class="topbar">
-    <div class="topbar-title">VPEI – Vietnam Port Emission Inventory</div>
-    <div class="topbar-right">
-      <button class="period-btn active">Năm</button>
-      <button class="period-btn">Tháng</button>
-      <select class="year-select" onchange="window.location.href='/dashboard?year='+this.value">
-          <option value="{{ data.current_year }}">{{ data.current_year }} ▾</option>
-          <option value="2026">2026</option>
-          <option value="2025">2025</option>
-          <option value="2024">2024</option>
-      </select>
-      <div class="avatar">{{ user.sub[0] if user else 'U' }}</div>
-    </div>
-  </div>
+  {% set topbar_title = 'VPEI – Vietnam Port Emission Inventory' %}
+  {% include 'components/topbar.html' %}
 
   <div class="content">
     <div class="kpi-row">

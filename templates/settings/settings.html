@@ -172,15 +172,11 @@ tr:hover td{background:#f8f9fd;}
 <div class="main">
 
   <!-- TOPBAR -->
-  <div class="topbar">
-    <div class="topbar-left">
-      <div class="topbar-title"><i class="fa-solid fa-gear" style="color:var(--accent);margin-right:7px;font-size:.9rem"></i>Settings – Cấu hình hệ thống</div>
-      <div class="topbar-sub">Quản trị nền tảng · Phân quyền · Hệ số phát thải · Bảo mật</div>
-    </div>
-    <div class="topbar-right">
-      <div class="admin-badge"><i class="fa-solid fa-shield-halved"></i> {% if is_super_admin %}Super Admin{% else %}Admin{% endif %}</div>
-    </div>
-  </div>
+    <!-- {% set topbar_title = '<i class="fa-solid fa-gear" style="color:var(--accent);margin-right:7px;font-size:.9rem"></i>Settings – Cấu hình hệ thống <span style="font-size:0.8rem; font-weight:400; color:#7a8aab; margin-left:14px; border-left:1px solid #dde3ef; padding-left:14px;">Quản trị nền tảng · Phân quyền · Hệ số phát thải · Bảo mật</span>' %} -->
+  {% set topbar_title = '<i class="fa-solid fa-gear" style="color:var(--accent);margin-right:7px;font-size:.9rem"></i>Settings – Cấu hình hệ thống' %}
+  {% set hide_period_filter = True %}
+  {% set extra_right_html = '<div class="admin-badge"><i class="fa-solid fa-shield-halved"></i> Admin</div>' %}
+  {% include 'components/topbar.html' %}
 
   <!-- BODY -->
   <div class="body-layout">

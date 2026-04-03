@@ -1,0 +1,201 @@
+<style>
+  .topbar { background: var(--white); border-bottom: 1px solid var(--gray-border); padding: 0 28px; height: 60px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .topbar-title { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.05rem; color: var(--navy); letter-spacing: .3px; }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .period-btn { padding: 6px 13px; border-radius: 6px; border: 1.5px solid var(--gray-border); background: white; font-size: 0.82rem; font-weight: 600; color: #4a5a7b; cursor: pointer; transition: all 0.2s; font-family: 'Montserrat', sans-serif; }
+  .period-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .period-btn.active { background: var(--navy); color: white; border-color: var(--navy); }
+  .period-select { padding: 6px 13px; border-radius: 6px; border: 1.5px solid var(--gray-border); font-size: 0.82rem; font-weight: 700; color: var(--navy); cursor: pointer; background: white; outline: none; font-family: 'Montserrat', sans-serif; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--navy-light)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 0.9rem; cursor: pointer; text-transform: uppercase; margin-left: 5px; }
+  .badge-status { padding: 5px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; margin-right: 10px; }
+  .status-draft { background: #fef9c3; color: #b45309; border: 1px solid #fde047; }
+  .status-submitted { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+  .status-locked { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+</style>
+
+<div class="topbar">
+  <!-- Customize title if defined, otherwise default -->
+  <div class="topbar-title">
+    {% if topbar_title %}
+      {{ topbar_title|safe }}
+    {% else %}
+      VPEI – Vietnam Port Emission Inventory
+    {% endif %}
+  </div>
+
+  <div class="topbar-right">
+    {% if status_val is defined and status_val %}
+      {% if status_val == 'Draft' %}
+        <span class="badge-status status-draft">● Draft</span>
+      {% elif status_val == 'Submitted' %}
+        <span class="badge-status status-submitted">● Submitted</span>
+      {% elif status_val == 'Locked' %}
+        <span class="badge-status status-locked">🔒 Locked</span>
+      {% else %}
+        <span class="badge-status status-draft">● Draft</span>
+      {% endif %}
+    {% endif %}
+
+    {% if not hide_period_filter %}
+    <!-- Nút chọn kiểu lọc -->
+    <button class="period-btn" id="btn-year" onclick="setPeriodMode('year')">Năm</button>
+    <button class="period-btn" id="btn-quarter" onclick="setPeriodMode('quarter')">Quý</button>
+    <button class="period-btn" id="btn-month" onclick="setPeriodMode('month')">Tháng</button>
+
+    <!-- Các Dropdown -->
+    <select class="period-select" id="select-year" onchange="applyPeriodFilter()"></select>
+    
+    <select class="period-select" id="select-quarter" style="display: none;" onchange="applyPeriodFilter()"></select>
+    
+    <select class="period-select" id="select-month" style="display: none;" onchange="applyPeriodFilter()"></select>
+    {% endif %}
+
+    {% if extra_right_html %}
+        {{ extra_right_html | safe }}
+    {% endif %}
+
+    <!-- Avatar -->
+    {% set first_char = 'U' %}
+    {% if user is defined and user and user.sub %}
+      {% set first_char = user.sub[0] %}
+    {% elif request is defined and request.state.user and request.state.user.sub %}
+      {% set first_char = request.state.user.sub[0] %}
+    {% endif %}
+    <div class="avatar" title="Người dùng hiện tại">{{ first_char | upper }}</div>
+  </div>
+</div>
+
+{% if not hide_period_filter %}
+<script>
+document.addEventListener("DOMContentLoaded", async function() {
+    const defaultData = {
+        years: [new Date().getFullYear(), new Date().getFullYear()-1],
+        quarters: [
+            {id:1, name:'Quý 1'},{id:2, name:'Quý 2'},{id:3, name:'Quý 3'},{id:4, name:'Quý 4'}
+        ],
+        months: Array.from({length:12}, (_, i) => ({id: i+1, name: `Tháng ${i+1}`})),
+        default_year: new Date().getFullYear(),
+        default_month: new Date().getMonth() + 1,
+        default_quarter: Math.floor(new Date().getMonth() / 3) + 1
+    };
+
+    let data = defaultData; window.defaultData = data;
+    try {
+        const res = await fetch('/api/common/periods');
+        if(res.ok) { data = await res.json(); window.defaultData = data; }
+    } catch(e) { console.error("Could not fetch API common periods", e); }
+
+    // Render Years
+    const selYear = document.getElementById("select-year");
+    if(selYear) {
+        selYear.innerHTML = data.years.map(y => `<option value="${y}">${y}</option>`).join('');
+    }
+
+    // Render Quarters
+    const selQuarter = document.getElementById("select-quarter");
+    if(selQuarter) {
+        selQuarter.innerHTML = data.quarters.map(q => `<option value="${q.id}">${q.name}</option>`).join('');
+    }
+
+    // Render Months
+    const selMonth = document.getElementById("select-month");
+    if(selMonth) {
+        selMonth.innerHTML = data.months.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+    }
+
+    syncFilterFromUrl(data);
+});
+
+function syncFilterFromUrl(data) {
+    const params = new URLSearchParams(window.location.search);
+    let yr = params.get('year');
+    let qr = params.get('quarter');
+    let mo = params.get('month');
+    
+    // Nếu URL không có params, dùng default từ database (API fallback defaultData có set cứng cho default_year ...)
+    if(!yr && data && data.default_year) {
+        yr = data.default_year;
+    }
+    
+    if(yr && document.getElementById("select-year")) {
+        document.getElementById("select-year").value = yr;
+    }
+    
+    if(qr && document.getElementById("select-quarter")) {
+        document.getElementById("select-quarter").value = qr;
+        setPeriodMode('quarter', false);
+    } else if (mo && document.getElementById("select-month")) {
+        document.getElementById("select-month").value = mo;
+        setPeriodMode('month', false);
+    } else {
+        // Nêu không chọn tháng hay quý trên URL, nhưng API có default
+        if(!qr && !mo && data && data.default_month) {
+            mo = data.default_month;
+            if(document.getElementById("select-month")) document.getElementById("select-month").value = mo;
+            setPeriodMode('month', false);
+        } else {
+            setPeriodMode('year', false);
+        }
+    }
+}
+
+function setPeriodMode(mode, executeRedirect=false) {
+    // Reset active buttons
+    ['year', 'quarter', 'month'].forEach(m => {
+        const btn = document.getElementById('btn-' + m);
+        if(btn) btn.classList.remove('active');
+    });
+    const activeBtn = document.getElementById('btn-' + mode);
+    if(activeBtn) activeBtn.classList.add('active');
+
+    // Show/hide selectors
+    const selQ = document.getElementById('select-quarter');
+    const selM = document.getElementById('select-month');
+    
+    if(selQ) selQ.style.display = mode === 'quarter' ? 'inline-block' : 'none';
+    if(selM) selM.style.display = mode === 'month' ? 'inline-block' : 'none';
+
+    // Xoá param phụ nếu đổi chế độ (nếu auto execute)
+    if(executeRedirect) {
+        applyPeriodFilter(mode);
+    }
+}
+
+function applyPeriodFilter(forceMode=null) {
+    const ySel = document.getElementById("select-year");
+    if(!ySel) return;
+    
+    const year = ySel.value;
+    const url = new URL(window.location.href);
+    url.searchParams.set('year', year);
+
+    // Xác định mode hiện tại
+    let mode = forceMode;
+    if(!mode) {
+        if(document.getElementById('btn-quarter').classList.contains('active')) mode = 'quarter';
+        else if(document.getElementById('btn-month').classList.contains('active')) mode = 'month';
+        else mode = 'year';
+    }
+
+    if(mode === 'year') {
+        url.searchParams.delete('quarter');
+        url.searchParams.delete('month');
+    } else if(mode === 'quarter') {
+        const qSel = document.getElementById("select-quarter");
+        if(qSel) url.searchParams.set('quarter', qSel.value);
+        url.searchParams.delete('month');
+    } else if(mode === 'month') {
+        const mSel = document.getElementById("select-month");
+        if(mSel) url.searchParams.set('month', mSel.value);
+        url.searchParams.delete('quarter');
+    }
+    
+    if (typeof window.onGlobalFilterChange === 'function') {
+        window.history.pushState({}, '', url);
+        window.onGlobalFilterChange(mode, url.searchParams);
+    } else {
+        window.location.href = url.toString();
+    }
+}
+</script>
+{% endif %}

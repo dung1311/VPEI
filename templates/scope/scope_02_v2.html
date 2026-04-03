@@ -191,23 +191,10 @@ function toggleMenu(id){
 
 <!-- MAIN -->
 <div class="main">
-  <div class="topbar">
-    <div class="topbar-left">
-      <div class="topbar-title"><i class="fa-solid fa-bolt" style="color:var(--accent);margin-right:6px;font-size:0.9rem"></i>Scope 2 – Điện năng</div>
-      <div class="topbar-sub">Hiển thị dữ liệu tiêu thụ điện theo thời gian đã chọn</div>
-    </div>
-    <div class="topbar-right">
-      <div class="time-tabs">
-        <button class="time-tab" onclick="setTimeMode('day',this)">Ngày</button>
-        <button class="time-tab active" onclick="setTimeMode('month',this)">Tháng</button>
-        <button class="time-tab" onclick="setTimeMode('quarter',this)">Quý</button>
-        <button class="time-tab" onclick="setTimeMode('year',this)">Năm</button>
-      </div>
-      <select class="select-pill" id="timeSelect" onchange="onPeriodChange()"></select>
-      <button class="btn-outline" onclick="refreshData()"><i class="fa-solid fa-arrows-rotate"></i> Làm mới</button>
-      <span class="badge-open"><i class="fa-solid fa-circle" style="font-size:0.5rem"></i> Open</span>
-    </div>
-  </div>
+  <!-- {% set topbar_title = '<i class="fa-solid fa-bolt" style="color:var(--accent);margin-right:6px;font-size:0.9rem"></i>Scope 2 – Điện năng <span style="font-size:0.8rem; font-weight:400; color:#7a8aab; margin-left:14px; border-left:1px solid #dde3ef; padding-left:14px;">Hiển thị dữ liệu tiêu thụ điện theo thời gian đã chọn</span>' %} -->
+  {% set topbar_title = '<i class="fa-solid fa-bolt" style="color:var(--accent);margin-right:6px;font-size:0.9rem"></i>Scope 2 – Điện năng' %}
+  {% set extra_right_html = '<button class="btn-outline" onclick="refreshData()"><i class="fa-solid fa-arrows-rotate"></i> Làm mới</button>' %}
+  {% include 'components/topbar.html' %}
 
   <div class="content">
     <div class="two-col">
@@ -414,6 +401,9 @@ function calcEmissions(kwh) {
   return kwh * GRID_EF_KG / 1000;
 }
 
+let currentGlobalMode = "year";
+let currentGlobalBucket = null;
+
 let categories = {{ categories_json | default([]) | tojson }};
 let selected = new Set(categories.map(c => c.id));
 let editingItemId = null;
@@ -451,15 +441,7 @@ function normalizeRows() {
   }).filter(Boolean);
 }
 
-function getMode() {
-  const a = document.querySelector('.time-tab.active');
-  if (!a) return 'month';
-  const t = a.innerText.trim();
-  if (t==='Ngày') return 'day';
-  if (t==='Tháng') return 'month';
-  if (t==='Quý') return 'quarter';
-  return 'year';
-}
+
 function getBucketInfo(r, mode) {
   if (mode==='day')     return {key:r.dayKey,     label:r.dayLabel};
   if (mode==='month')   return {key:r.monthKey,   label:r.monthLabel};
@@ -471,7 +453,34 @@ function getBucketsForMode(mode) {
   normalizeRows().forEach(r => { const b=getBucketInfo(r,mode); if(!map.has(b.key)) map.set(b.key,b.label); });
   return Array.from(map.entries()).map(([value,label])=>({value,label})).sort((a,b)=>a.value>b.value?-1:1);
 }
-function getCurrentBucketValue() { return document.getElementById('timeSelect').value; }
+function getMode() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.has('quarter')) return 'quarter';
+  if (params.has('month')) return 'month';
+  return 'year';
+}
+function getCurrentBucketValue() {
+  const params = new URLSearchParams(window.location.search);
+  const m = getMode();
+  let y = params.get('year') || (window.defaultData ? window.defaultData.default_year : new Date().getFullYear());
+  y = String(y);
+  
+  if (m === 'day') {
+    return params.get('day') || "all";
+  }
+  if (m === 'quarter') {
+    const q = params.get('quarter') || "1";
+    return `${y}-Q${q}`;
+  }
+  if (m === 'month') {
+    const mo = String(params.get('month') || "1").padStart(2, '0');
+    return `${y}-${mo}`;
+  }
+  return y;
+}
+
+window.onGlobalFilterChange = function(mode, params) { updateAll(); buildCatList(); };
+
 function getSelectedRows() {
   const mode=getMode(), bucket=getCurrentBucketValue();
   return normalizeRows().filter(r => selected.has(r.id) && getBucketInfo(r,mode).key===bucket);
