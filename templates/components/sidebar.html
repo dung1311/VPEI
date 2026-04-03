@@ -1,9 +1,20 @@
 <style>
-  .submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
-  .submenu.open { max-height: 150px; }
-  .nav-item.sub { padding-left: 44px; font-size: 0.83rem; }
-  .nav-item.sub.active { background: rgba(46,125,247,0.06); color: var(--accent); font-weight: 600; }
-  .nav-expand { font-size: 0.7rem; margin-left: auto; transition: transform 0.3s ease; }
+  /* Scope trong .sidebar để không bị CSS .nav-expand / .submenu trùng tên từ <head> các trang Scope (vd: scope3) ghi đè */
+  .sidebar .submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+  .sidebar .submenu.open { max-height: 180px; }
+  .sidebar .nav-item.sub { padding-left: 44px; font-size: 0.83rem; }
+  .sidebar .nav-item.sub.active { background: rgba(46,125,247,0.06); color: var(--accent); font-weight: 600; }
+  .sidebar .nav-expand {
+    font-size: 0.7rem;
+    margin-left: auto;
+    flex-shrink: 0;
+    display: inline-block;
+    transition: transform 0.3s ease;
+    transform: rotate(0deg);
+  }
+  .sidebar .nav-expand.nav-expand--open {
+    transform: rotate(180deg);
+  }
 </style>
 <div class="sidebar">
   <div class="sidebar-logo">
@@ -66,7 +77,7 @@
 
     links.forEach(function(link) {
       link.classList.remove('active');
-      const icon = link.querySelector('i');
+      const icon = link.querySelector('i:not(.nav-expand)');
       if (icon) {
         icon.style.color = 'var(--text-muted)';
       }
@@ -90,7 +101,7 @@
       const href = link.getAttribute('href');
       if (href === path) {
         link.classList.add('active');
-        const icon = link.querySelector('i');
+        const icon = link.querySelector('i:not(.nav-expand)');
         if (icon) {
           icon.style.color = 'var(--accent)';
         }
@@ -108,8 +119,13 @@
           // because the user requested only the EXACT active tab to be highlighted.
           const expandIcon = parentItem.querySelector('.nav-expand');
           if (expandIcon) {
-            expandIcon.style.transform = 'rotate(180deg)';
+            expandIcon.classList.add('nav-expand--open');
           }
+          // #region agent log
+          if (openMenuId === 'scope3Menu') {
+            fetch('http://127.0.0.1:7421/ingest/06293622-fe7d-46c9-938d-6bb69b1d75f5',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'fb11ac'},body:JSON.stringify({sessionId:'fb11ac',runId:'verify-scope3-chevron',hypothesisId:'H1',location:'sidebar.html:DOMContentLoaded',message:'auto-open submenu',data:{path,openMenuId,submenuOpen:submenu.classList.contains('open'),expandHasOpen:!!(expandIcon&&expandIcon.classList.contains('nav-expand--open')),cs:expandIcon?getComputedStyle(expandIcon).transition:''},timestamp:Date.now()})}).catch(function(){});
+          }
+          // #endregion
         }
       }
     }
@@ -119,10 +135,16 @@
     const menu = document.getElementById(id);
     if (menu) {
       menu.classList.toggle('open');
-      const expandIcon = menu.previousElementSibling.querySelector('.nav-expand');
+      const prev = menu.previousElementSibling;
+      const expandIcon = prev && prev.querySelector ? prev.querySelector('.nav-expand') : null;
       if (expandIcon) {
-        expandIcon.style.transform = menu.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)';
+        expandIcon.classList.toggle('nav-expand--open', menu.classList.contains('open'));
       }
+      // #region agent log
+      if (id === 'scope3Menu') {
+        fetch('http://127.0.0.1:7421/ingest/06293622-fe7d-46c9-938d-6bb69b1d75f5',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'fb11ac'},body:JSON.stringify({sessionId:'fb11ac',runId:'verify-scope3-chevron',hypothesisId:'H2',location:'sidebar.html:toggleSidebarMenu',message:'scope3 toggle',data:{id,menuOpen:menu.classList.contains('open'),prevTag:prev?prev.tagName:null,hasExpand:!!expandIcon,expandOpen:!!(expandIcon&&expandIcon.classList.contains('nav-expand--open')),cs:expandIcon?getComputedStyle(expandIcon).transition:''},timestamp:Date.now()})}).catch(function(){});
+      }
+      // #endregion
     }
   }
 </script>
