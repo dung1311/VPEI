@@ -25,7 +25,7 @@
 
   /* SIDEBAR */
   .sidebar { width:220px; background:var(--white); border-right:1px solid var(--gray-border); display:flex; flex-direction:column; flex-shrink:0; overflow-y:auto; }
-  .sidebar-logo { padding:20px 24px; border-bottom:1px solid var(--gray-border); display:flex; align-items:center; gap:10px; }
+  .sidebar-logo { height: 60px; padding: 0 24px; display: flex; align-items: center; border-bottom: 1px solid var(--gray-border); gap: 10px; flex-shrink: 0; }
   .logo-box { background:linear-gradient(135deg,var(--navy),var(--navy-light)); border-radius:10px; padding:7px 12px; font-family:'Sora',sans-serif; font-weight:800; font-size:1.1rem; color:white; }
   .nav-items { padding:16px 0; flex:1; }
   .nav-item { display:flex; align-items:center; gap:12px; padding:10px 20px; cursor:pointer; font-size:0.88rem; font-weight:500; color:#4a5a7b; transition:all 0.2s; text-decoration:none; border-left:3px solid transparent; }
@@ -47,7 +47,7 @@
   .select-pill { padding:6px 14px; border-radius:8px; border:1.5px solid var(--gray-border); font-size:0.83rem; font-weight:600; color:var(--navy); background:white; cursor:pointer; }
   
   .badge-status { padding:5px 14px; border-radius:20px; font-size:0.8rem; font-weight:600; text-transform: uppercase; }
-  .status-draft { background:#fef9c3; color:#b45309; border: 1px solid #fde047; }
+  /* .status-draft { background:#fef9c3; color:#b45309; border: 1px solid #fde047; } */
   .status-submitted { background:#dcfce7; color:#15803d; border: 1px solid #bbf7d0; }
   .status-locked { background:#fee2e2; color:#b91c1c; border: 1px solid #fecaca; }
 
@@ -90,7 +90,7 @@
 
 <div class="main">
   {% set topbar_title = 'Scope 1 – Direct Emissions' %}
-  {% set status_val = dashboard_json.kpis.status if dashboard_json.kpis.status else 'Draft' %}
+  <!-- {% set status_val = dashboard_json.kpis.status if dashboard_json.kpis.status else 'Draft' %} -->
   {% include 'components/topbar.html' %}
 
   <div class="content">

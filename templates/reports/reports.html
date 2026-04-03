@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VPEI – Reports: Báo cáo kiểm kê phát thải</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
+<script src="https://unpkg.com/docx-preview/dist/docx-preview.min.js"></script>
+<style>
+:root {
+  --navy:#0d1f3c; --navy-mid:#152850; --navy-light:#1e3a6e;
+  --accent:#2e7df7; --accent-light:#5a9bff;
+  --white:#ffffff; --gray-soft:#f4f6fb; --gray-border:#dde3ef;
+  --text-muted:#7a8aab; --green:#22c55e; --red:#ef4444;
+  --teal:#0ea5e9; --amber:#f59e0b; --purple:#8b5cf6;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Montserrat',sans-serif;background:var(--gray-soft);color:var(--navy);display:flex;height:100vh;overflow:hidden;}
+
+/* SIDEBAR */
+.sidebar{width:220px;background:var(--white);border-right:1px solid var(--gray-border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
+.sidebar-logo { height: 60px; padding: 0 24px; display: flex; align-items: center; border-bottom: 1px solid var(--gray-border); gap: 10px; flex-shrink: 0; }
+.logo-box{background:linear-gradient(135deg,var(--navy),var(--navy-light));border-radius:10px;padding:7px 12px;font-weight:800;font-size:1.1rem;color:white;letter-spacing:1px;}
+.nav-items{padding:16px 0;flex:1;}
+.nav-item{display:flex;align-items:center;gap:12px;padding:10px 20px;cursor:pointer;font-size:.82rem;font-weight:500;color:#4a5a7b;transition:all .2s;text-decoration:none;border-left:3px solid transparent;}
+.nav-item:hover{background:var(--gray-soft);color:var(--navy);}
+.nav-item.active{background:rgba(46,125,247,.08);color:var(--accent);border-left-color:var(--accent);font-weight:600;}
+.nav-item.sub{padding-left:36px;font-size:.77rem;}
+.nav-section{padding:6px 20px 4px;font-size:.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;}
+.nav-expand{font-size:.65rem;margin-left:auto;color:var(--text-muted);}
+.nav-bottom{padding:16px 0;border-top:1px solid var(--gray-border);}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{background:var(--white);border-bottom:1px solid var(--gray-border);padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.topbar-left{display:flex;flex-direction:column;gap:1px;}
+.topbar-title{font-weight:800;font-size:1.05rem;color:var(--navy);letter-spacing:.3px;}
+.topbar-sub{font-size:.7rem;color:var(--text-muted);font-weight:500;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.select-pill{padding:6px 12px;border-radius:8px;border:1.5px solid var(--gray-border);font-size:.78rem;font-weight:600;color:var(--navy);background:white;cursor:pointer;font-family:'Montserrat',sans-serif;}
+.btn-create{padding:8px 20px;border-radius:9px;font-size:.8rem;font-weight:700;cursor:pointer;border:none;background:var(--navy);color:white;font-family:'Montserrat',sans-serif;transition:all .2s;display:flex;align-items:center;gap:7px;}
+.btn-create:hover{background:var(--navy-light);box-shadow:0 4px 14px rgba(13,31,60,.2);}
+.approved-note{font-size:.7rem;color:var(--green);font-weight:600;display:flex;align-items:center;gap:5px;padding:5px 11px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:20px 28px;display:flex;gap:18px;}
+.left-panel{width:340px;flex-shrink:0;display:flex;flex-direction:column;gap:14px;}
+.right-panel{flex:1;display:flex;flex-direction:column;gap:14px;min-width:0;}
+
+/* CARDS */
+.card{background:white;border-radius:13px;border:1px solid var(--gray-border);}
+.card-header{padding:13px 18px;border-bottom:1px solid var(--gray-border);display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-size:.75rem;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.07em;display:flex;align-items:center;gap:8px;}
+.card-body{padding:16px 18px;}
+
+/* REPORT TYPE GRID */
+.report-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.rtype-card{border:2px solid var(--gray-border);border-radius:10px;padding:12px;cursor:pointer;transition:all .2s;background:white;position:relative;}
+.rtype-card:hover{border-color:var(--accent);background:rgba(46,125,247,.03);}
+.rtype-card.selected{border-color:var(--accent);background:rgba(46,125,247,.06);}
+.rtype-card.selected::after{content:'\f00c';font-family:'Font Awesome 6 Free';font-weight:900;position:absolute;top:8px;right:10px;font-size:.65rem;color:var(--accent);}
+.rtype-icon{font-size:1.3rem;margin-bottom:6px;}
+.rtype-name{font-size:.75rem;font-weight:700;color:var(--navy);}
+.rtype-desc{font-size:.65rem;color:var(--text-muted);margin-top:2px;}
+
+/* CONFIG CHECKBOXES */
+.chk-item{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid #f0f2f8;cursor:pointer;}
+.chk-item:last-child{border-bottom:none;}
+.chk-item input[type=checkbox]{width:14px;height:14px;accent-color:var(--accent);cursor:pointer;}
+.chk-label{font-size:.8rem;font-weight:500;color:var(--navy);}
+.chk-sub{font-size:.68rem;color:var(--text-muted);}
+
+/* SCOPE ITEMS */
+.scope-item{display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;}
+.scope-item input{width:13px;height:13px;accent-color:var(--accent);cursor:pointer;}
+.scope-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.scope-lbl{font-size:.77rem;font-weight:600;color:#2a3a6b;}
+
+/* FORMAT RADIO */
+.fmt-row{display:flex;gap:8px;margin-top:4px;}
+.fmt-btn{flex:1;padding:8px;border-radius:8px;border:2px solid var(--gray-border);background:white;cursor:pointer;text-align:center;font-size:.75rem;font-weight:700;color:#4a5a7b;transition:all .2s;font-family:'Montserrat',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;}
+.fmt-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(46,125,247,.05);}
+.fmt-btn:hover:not(.active){border-color:var(--gray-border);background:var(--gray-soft);}
+
+/* PREVIEW */
+.preview-wrap{background:#e8ecf4;border-radius:13px;padding:16px;flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;}
+.preview-nav{display:flex;gap:6px;align-items:center;justify-content:center;}
+.pnav-btn{width:28px;height:28px;border-radius:6px;border:1.5px solid var(--gray-border);background:white;cursor:pointer;font-size:.7rem;display:flex;align-items:center;justify-content:center;transition:all .18s;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-indicator{font-size:.72rem;font-weight:700;color:var(--navy);padding:4px 12px;background:white;border-radius:6px;border:1px solid var(--gray-border);}
+.preview-page{background:white;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.08);flex:1;overflow-y:auto;padding:28px 32px;min-height:0;}
+
+/* PREVIEW CONTENT */
+.preview-cover{text-align:center;padding:20px 0;}
+.preview-cover-logo{width:52px;height:52px;background:linear-gradient(135deg,var(--navy),var(--navy-light));border-radius:12px;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:1rem;color:white;margin-bottom:16px;}
+.preview-cover-title{font-size:1.2rem;font-weight:800;color:var(--navy);margin-bottom:6px;}
+.preview-cover-sub{font-size:.82rem;color:var(--text-muted);margin-bottom:20px;}
+.preview-cover-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:300px;margin:0 auto;}
+.meta-item{background:var(--gray-soft);border-radius:8px;padding:10px;text-align:center;}
+.meta-label{font-size:.65rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;margin-bottom:2px;}
+.meta-value{font-size:.82rem;font-weight:700;color:var(--navy);}
+.preview-divider{height:1px;background:var(--gray-border);margin:16px 0;}
+.preview-section-title{font-size:.78rem;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;display:flex;align-items:center;gap:7px;}
+.kpi-mini-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+.kpi-mini{background:var(--gray-soft);border-radius:8px;padding:10px;text-align:center;}
+.kpi-mini-lbl{font-size:.63rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;}
+.kpi-mini-val{font-size:.95rem;font-weight:800;color:var(--navy);margin-top:2px;}
+.kpi-mini-unit{font-size:.6rem;color:var(--text-muted);}
+.scope-summary-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.scope-summary-card{border-radius:9px;padding:12px;text-align:center;}
+.preview-table{width:100%;border-collapse:collapse;font-size:.73rem;}
+.preview-table th{padding:7px 10px;background:#fafbfd;border-bottom:1.5px solid var(--gray-border);font-size:.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;text-align:left;}
+.preview-table td{padding:7px 10px;border-bottom:1px solid #f0f2f8;color:#2a3a6b;font-weight:500;}
+.preview-table tr:last-child td{border-bottom:none;}
+
+/* ACTION BAR */
+.action-bar{background:white;border-radius:13px;border:1px solid var(--gray-border);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.action-left{display:flex;align-items:center;gap:8px;}
+.action-right{display:flex;align-items:center;gap:8px;}
+.status-flow{display:flex;align-items:center;gap:6px;}
+.sf-step{display:flex;align-items:center;gap:5px;font-size:.7rem;font-weight:700;}
+.sf-dot{width:8px;height:8px;border-radius:50%;}
+.sf-arrow{font-size:.6rem;color:var(--text-muted);}
+.btn-action{padding:8px 16px;border-radius:9px;font-size:.78rem;font-weight:700;cursor:pointer;font-family:'Montserrat',sans-serif;transition:all .2s;display:flex;align-items:center;gap:7px;}
+.btn-draft{border:2px solid var(--gray-border);background:white;color:var(--navy);}
+.btn-draft:hover{border-color:var(--navy);background:var(--gray-soft);}
+.btn-export{border:none;background:var(--accent);color:white;}
+.btn-export:hover{background:var(--accent-light);box-shadow:0 4px 14px rgba(46,125,247,.3);}
+.btn-submit{border:none;background:var(--green);color:white;}
+.btn-submit:hover{background:#16a34a;}
+
+/* HISTORY LIST */
+.hist-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid #f0f2f8;}
+.hist-item:last-child{border-bottom:none;}
+.hist-icon{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;}
+.hist-info{flex:1;}
+.hist-name{font-size:.78rem;font-weight:700;color:var(--navy);}
+.hist-meta{font-size:.68rem;color:var(--text-muted);margin-top:1px;}
+.hist-badge{font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap;}
+
+/* VERSION TAG */
+.ver-tag{font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:4px;background:rgba(46,125,247,.1);color:var(--accent);}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:white;padding:11px 18px;border-radius:12px;font-size:.8rem;font-weight:600;display:flex;align-items:center;gap:9px;box-shadow:0 8px 30px rgba(0,0,0,.18);z-index:9999;transform:translateY(70px);opacity:0;transition:all .32s cubic-bezier(.34,1.56,.64,1);}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.success{background:#16a34a;}
+.toast.warn{background:#d97706;}
+.toast.error{background:var(--red);}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(13,31,60,.45);z-index:999;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
+.modal-overlay.show{display:flex;}
+.modal{background:white;border-radius:16px;padding:26px;width:460px;max-width:95vw;box-shadow:0 24px 80px rgba(0,0,0,.2);animation:mIn .25s ease;}
+@keyframes mIn{from{opacity:0;transform:scale(.94) translateY(10px)}to{opacity:1;transform:none}}
+.modal-footer{display:flex;gap:10px;margin-top:18px;}
+.btn-secondary{padding:9px 18px;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;border:1.5px solid var(--gray-border);background:white;color:var(--navy);font-family:'Montserrat',sans-serif;}
+
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--gray-border);border-radius:10px;}
+.hidden{display:none!important;}
+</style>
+</head>
+<body>
+
+{% include 'components/sidebar.html' %}
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  {% set topbar_title = '<i class="fa-solid fa-file-lines" style="color:var(--accent);margin-right:7px;font-size:1rem"></i> Reports – Báo cáo phát thải' %}
+  {% set extra_right_html = '
+    <button class="btn-create" onclick="generateReport()"><i class="fa-solid fa-wand-magic-sparkles"></i> Tạo báo cáo</button>
+    <button class="btn-create" id="btn-download-docx" style="background:#16a34a; margin-left:8px;" onclick="downloadDocx()"><i class="fa-solid fa-file-word"></i> Xuất DOCX</button>
+  ' %}
+  {% include 'components/topbar.html' %}
+
+  <!-- CONTENT -->
+  <div class="content" style="justify-content: center;">
+
+    <!-- PREVIEW AREA -->
+    <div class="preview-wrap" style="max-width: 900px; width: 100%;">
+      <!-- Nav -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div style="font-size:.72rem;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.07em;display:flex;align-items:center;gap:7px">
+            <i class="fa-solid fa-eye" style="color:var(--accent)"></i> Xem trước báo cáo
+          </div>
+          <div class="preview-nav">
+            <span style="font-size:.72rem;color:var(--text-muted)">
+              <i class="fa-solid fa-file-word"></i> Xem trước trực tiếp tài liệu Word
+            </span>
+          </div>
+        </div>
+
+        <!-- Page content -->
+        <div class="preview-page" id="previewPage" style="border: 1px solid var(--gray-border);"></div>
+      </div>
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- FULL PREVIEW MODAL -->
+<div class="modal-overlay" id="fullPreviewModal" onclick="closeFullPreview(event)">
+  <div style="background:white;border-radius:18px;width:700px;max-width:96vw;max-height:90vh;overflow:hidden;box-shadow:0 32px 100px rgba(0,0,0,.25);display:flex;flex-direction:column;animation:mIn .25s ease">
+    <div style="padding:14px 20px;border-bottom:1px solid var(--gray-border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div style="font-size:.88rem;font-weight:800;color:var(--navy);display:flex;align-items:center;gap:8px"><i class="fa-solid fa-file-lines" style="color:var(--accent)"></i> Xem trước toàn màn hình</div>
+      <button onclick="document.getElementById('fullPreviewModal').classList.remove('show')" style="border:none;background:var(--gray-soft);padding:6px 12px;border-radius:7px;cursor:pointer;font-size:.75rem;font-weight:600;font-family:'Montserrat',sans-serif"><i class="fa-solid fa-xmark"></i> Đóng</button>
+    </div>
+    <div style="padding:24px;overflow-y:auto;flex:1" id="fullPreviewContent"></div>
+  </div>
+</div>
+
+<!-- HISTORY MODAL -->
+<div class="modal-overlay" id="historyModal" onclick="closeHistModal(event)">
+  <div class="modal" style="width:540px">
+    <div style="font-size:.95rem;font-weight:800;color:var(--navy);margin-bottom:14px;display:flex;align-items:center;gap:8px"><i class="fa-solid fa-clock-rotate-left" style="color:var(--amber)"></i> Toàn bộ lịch sử báo cáo</div>
+    <div id="histFull" style="max-height:420px;overflow-y:auto"></div>
+    <div class="modal-footer"><button class="btn-secondary" onclick="document.getElementById('historyModal').classList.remove('show')">Đóng</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STATE & INIT ──────────────────────────────────────────
+let previewLoaded = false;
+let toastTimer;
+
+window.onGlobalFilterChange = function(mode, urlParams) {
+    refreshPreview();
+};
+
+async function downloadDocx() {
+    const params = new URLSearchParams(window.location.search);
+    const year = params.get('year') || new Date().getFullYear();
+    
+    const btn = document.getElementById('btn-download-docx');
+    if (btn) {
+        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Đang xuất...';
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+        btn.style.cursor = 'wait';
+    }
+    showToast('Đang tạo và tải báo cáo, vui lòng chờ...', 'success');
+
+    try {
+        const response = await fetch(`/reports/download?year=${year}`);
+        if (!response.ok) throw new Error('Không thể xuất báo cáo');
+
+        const disposition = response.headers.get('Content-Disposition');
+        let filename = `VPEI_Report_${year}.docx`;
+        if (disposition && disposition.includes('filename=')) {
+            const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
+            if (matches != null && matches[1]) {
+                filename = matches[1].replace(/['"]/g, '');
+            }
+        }
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        
+        showToast('Xuất nội dung DOCX thành công!', 'success');
+    } catch(err) {
+        console.error(err);
+        showToast('Đã xảy ra lỗi khi tạo tải xuống báo cáo!', 'error');
+    } finally {
+        if (btn) {
+            btn.innerHTML = '<i class="fa-solid fa-file-word"></i> Xuất DOCX';
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+        }
+    }
+}
+
+function init() {
+  refreshPreview();
+}
+
+function refreshPreview() {
+  previewLoaded = false;
+  loadDocxPreview();
+}
+
+async function loadDocxPreview() {
+  if (previewLoaded) return;
+  const container = document.getElementById('previewPage');
+  container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-weight:600;font-size:0.8rem">
+    <i class="fa-solid fa-circle-notch fa-spin" style="margin-right:8px;font-size:1.2rem;color:var(--accent)"></i> Đang tải dữ liệu báo cáo...
+  </div>`;
+  
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const year = params.get('year') || new Date().getFullYear();
+    
+    const response = await fetch(`/reports/download?year=${year}`);
+    if (!response.ok) throw new Error('Không thể tải file báo cáo từ máy chủ');
+    
+    const arrayBuffer = await response.arrayBuffer();
+    container.innerHTML = '';
+    
+    await window.docx.renderAsync(arrayBuffer, container, null, {
+        inWrapper: false,
+        ignoreHeight: false,
+        ignoreWidth: false,
+        ignoreFonts: false,
+        breakPages: true,
+        useBase64URL: true
+    });
+    previewLoaded = true;
+  } catch (error) {
+    container.innerHTML = `<div style="padding:20px;text-align:center;color:var(--red);font-weight:600;font-size:0.8rem">
+      <i class="fa-solid fa-triangle-exclamation" style="font-size:1.5rem;margin-bottom:10px;display:block"></i>
+      Lỗi hiển thị báo cáo:<br><span style="font-weight:400;color:var(--text-muted)">${error.message}</span>
+    </div>`;
+  }
+}
+
+function generateReport() {
+  showToast('Đang tổng hợp dữ liệu...');
+  setTimeout(()=>{
+    refreshPreview(); 
+    showToast('Đã tải báo cáo mới nhất!','success'); 
+  }, 1000);
+}
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  if(!t) return;
+  const icons = {success:'fa-circle-check',warn:'fa-triangle-exclamation',error:'fa-circle-xmark'};
+  t.className = `toast ${type} show`;
+  t.innerHTML = `<i class="fa-solid ${icons[type] || icons.success}"></i><span>${msg}</span>`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.classList.remove('show'), 3500);
+}
+
+init();
+</script>
+</body>
+</html>

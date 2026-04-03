@@ -25,7 +25,7 @@
 
   /* SIDEBAR */
   .sidebar{width:220px;background:var(--white);border-right:1px solid var(--gray-border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
-  .sidebar-logo{padding:20px 24px;border-bottom:1px solid var(--gray-border);display:flex;align-items:center;gap:10px;}
+  .sidebar-logo { height: 60px; padding: 0 24px; display: flex; align-items: center; border-bottom: 1px solid var(--gray-border); gap: 10px; flex-shrink: 0; }
   .logo-box{background:linear-gradient(135deg,var(--navy),var(--navy-light));border-radius:10px;padding:7px 12px;font-family:'Sora',sans-serif;font-weight:800;font-size:1.1rem;color:white;}
   .nav-items{padding:16px 0;flex:1;}
   .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:0.88rem;font-weight:500;color:#4a5a7b;transition:all 0.2s;text-decoration:none;border-left:3px solid transparent;}
@@ -116,7 +116,6 @@
 
 <div class="main">
   {% set topbar_title = 'Scope 1 – Emission Source Management' %}
-  {% set status_val = status if status else 'Draft' %}
   {% include 'components/topbar.html' %}
 
   <div class="content">
@@ -210,12 +209,6 @@
         <canvas id="miniTrend" height="100"></canvas>
       </div>
     </div>
-  </div>
-
-  <div class="footer-actions">
-    <button class="btn-save" id="btnSubmitDraft" onclick="updatePeriodStatus('Submitted')" style="display:none;">[ Lưu dữ liệu ]</button>
-    <button class="btn-submit" id="btnSendReview" onclick="updatePeriodStatus('Submitted')" style="display:none;">[ Gửi rà soát ]</button>
-    <button class="btn-lock" id="btnLockPeriod" onclick="updatePeriodStatus('Locked')" style="display:none;">[ Khóa kỳ kiểm kê ]</button>
   </div>
 </div>
 
@@ -406,18 +399,10 @@ window.onclick = function(event) {
 const ctx = JSON.parse(document.getElementById('current-ctx').textContent);
 
 document.addEventListener("DOMContentLoaded", function() {
-    const btnSubmitDraft = document.getElementById('btnSubmitDraft');
-    const btnSendReview = document.getElementById('btnSendReview');
-    const btnLockPeriod = document.getElementById('btnLockPeriod');
     const actionButtons = document.querySelectorAll('.action-require-edit');
 
-    if (ctx.status === 'Draft') {
-        btnSubmitDraft.style.display = 'block';
-        btnSendReview.style.display = 'block';
-    } 
-    else if (ctx.status === 'Submitted') {
+    if (ctx.status === 'Submitted') {
         actionButtons.forEach(btn => btn.disabled = true);
-        btnLockPeriod.style.display = 'block';
     } 
     else if (ctx.status === 'Locked') {
         actionButtons.forEach(btn => btn.disabled = true);
