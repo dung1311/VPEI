@@ -205,7 +205,10 @@ tr:hover td { background:#f8f9fd; }
     <a href="/reports" class="nav-item"><i class="fa-solid fa-file-lines" style="width:16px;color:var(--text-muted)"></i> Reports</a>
   </nav>
   <div class="nav-bottom">
+    {% set _u = admin if admin is defined else user %}
+    {% if _u and (_u.is_admin or (_u.get and _u.get("is_admin"))) %}
     <a href="/settings" class="nav-item active"><i class="fa-solid fa-gear" style="width:16px;color:var(--accent)"></i> Settings</a>
+    {% endif %}
   </div>
 </div>
 

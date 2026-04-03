@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VPEI – Settings: Cấu hình hệ thống</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+:root {
+  --navy:#0d1f3c; --navy-mid:#152850; --navy-light:#1e3a6e;
+  --accent:#2e7df7; --accent-light:#5a9bff;
+  --white:#ffffff; --gray-soft:#f4f6fb; --gray-border:#dde3ef;
+  --text-muted:#7a8aab; --green:#22c55e; --red:#ef4444;
+  --teal:#0ea5e9; --amber:#f59e0b; --purple:#8b5cf6;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Montserrat',sans-serif;background:var(--gray-soft);color:var(--navy);display:flex;height:100vh;overflow:hidden;}
+
+/* ─── SIDEBAR ─── */
+.sidebar{width:220px;background:var(--white);border-right:1px solid var(--gray-border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
+.sidebar-logo{padding:20px 24px;border-bottom:1px solid var(--gray-border);display:flex;align-items:center;gap:10px;}
+.logo-box{background:linear-gradient(135deg,var(--navy),var(--navy-light));border-radius:10px;padding:7px 12px;font-weight:800;font-size:1.1rem;color:white;letter-spacing:1px;}
+.nav-items{padding:16px 0;flex:1;}
+.nav-item{display:flex;align-items:center;gap:12px;padding:10px 20px;cursor:pointer;font-size:.82rem;font-weight:500;color:#4a5a7b;transition:all .2s;text-decoration:none;border-left:3px solid transparent;}
+.nav-item:hover{background:var(--gray-soft);color:var(--navy);}
+.nav-item.active{background:rgba(46,125,247,.08);color:var(--accent);border-left-color:var(--accent);font-weight:600;}
+.nav-section{padding:6px 20px 4px;font-size:.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;}
+.nav-expand{font-size:.65rem;margin-left:auto;color:var(--text-muted);}
+.nav-bottom{padding:16px 0;border-top:1px solid var(--gray-border);}
+
+/* ─── MAIN ─── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{background:var(--white);border-bottom:1px solid var(--gray-border);padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.topbar-left{display:flex;flex-direction:column;gap:1px;}
+.topbar-title{font-weight:800;font-size:1.05rem;color:var(--navy);letter-spacing:.3px;}
+.topbar-sub{font-size:.7rem;color:var(--text-muted);font-weight:500;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.admin-badge{padding:5px 12px;border-radius:20px;background:rgba(46,125,247,.1);color:var(--accent);font-size:.72rem;font-weight:700;display:flex;align-items:center;gap:5px;}
+
+/* ─── BODY LAYOUT ─── */
+.body-layout{flex:1;display:flex;overflow:hidden;}
+
+/* ─── SETTINGS MENU ─── */
+.settings-menu{width:220px;background:var(--white);border-right:1px solid var(--gray-border);flex-shrink:0;overflow-y:auto;padding:16px 0;}
+.smenu-section{padding:5px 18px 3px;font-size:.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;}
+.smenu-item{display:flex;align-items:center;gap:10px;padding:9px 18px;cursor:pointer;font-size:.8rem;font-weight:500;color:#4a5a7b;transition:all .18s;border-left:3px solid transparent;}
+.smenu-item:hover{background:var(--gray-soft);color:var(--navy);}
+.smenu-item.active{background:rgba(46,125,247,.07);color:var(--accent);border-left-color:var(--accent);font-weight:700;}
+.smenu-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.78rem;flex-shrink:0;}
+
+/* ─── SETTINGS CONTENT ─── */
+.settings-content{flex:1;overflow-y:auto;padding:24px 28px;display:flex;flex-direction:column;gap:16px;}
+
+/* ─── CARDS ─── */
+.s-card{background:white;border-radius:13px;border:1px solid var(--gray-border);overflow:hidden;}
+.s-card-header{padding:14px 20px;border-bottom:1px solid var(--gray-border);display:flex;align-items:center;justify-content:space-between;}
+.s-card-title{font-size:.78rem;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.07em;display:flex;align-items:center;gap:9px;}
+.s-card-body{padding:20px;}
+
+/* ─── FORM ─── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-label{font-size:.7rem;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.05em;}
+.form-input{padding:9px 12px;border:1.5px solid var(--gray-border);border-radius:8px;font-size:.8rem;font-family:'Montserrat',sans-serif;color:var(--navy);outline:none;transition:border-color .2s;}
+.form-input:focus{border-color:var(--accent);}
+.form-select{padding:9px 12px;border:1.5px solid var(--gray-border);border-radius:8px;font-size:.8rem;font-family:'Montserrat',sans-serif;color:var(--navy);outline:none;appearance:none;background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%237a8aab' d='M5 6L0 0h10z'/%3E%3C/svg%3E") no-repeat right 10px center;}
+.form-input:disabled,.form-select:disabled{background:var(--gray-soft);color:var(--text-muted);cursor:not-allowed;}
+.form-hint{font-size:.65rem;color:var(--text-muted);font-style:italic;}
+.required{color:var(--red);margin-left:2px;}
+
+/* ─── UPLOAD LOGO ─── */
+.logo-upload{border:2.5px dashed var(--gray-border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:white;}
+.logo-upload:hover{border-color:var(--accent);background:rgba(46,125,247,.03);}
+.logo-preview{width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,var(--navy),var(--navy-light));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1rem;color:white;margin:0 auto 8px;}
+
+/* ─── BUTTONS ─── */
+.btn-save{padding:9px 22px;border-radius:9px;font-size:.8rem;font-weight:700;cursor:pointer;border:none;background:var(--navy);color:white;font-family:'Montserrat',sans-serif;transition:all .2s;display:inline-flex;align-items:center;gap:7px;}
+.btn-save:hover{background:var(--navy-light);box-shadow:0 4px 14px rgba(13,31,60,.2);}
+.btn-outline{padding:8px 16px;border-radius:9px;font-size:.78rem;font-weight:700;cursor:pointer;border:1.5px solid var(--gray-border);background:white;color:var(--navy);font-family:'Montserrat',sans-serif;transition:all .2s;display:inline-flex;align-items:center;gap:7px;}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+.btn-danger{padding:8px 16px;border-radius:9px;font-size:.78rem;font-weight:700;cursor:pointer;border:none;background:rgba(239,68,68,.1);color:var(--red);font-family:'Montserrat',sans-serif;transition:all .2s;display:inline-flex;align-items:center;gap:7px;}
+.btn-danger:hover{background:var(--red);color:white;}
+.btn-green{padding:7px 14px;border-radius:8px;font-size:.75rem;font-weight:700;cursor:pointer;border:none;background:rgba(34,197,94,.1);color:var(--green);font-family:'Montserrat',sans-serif;display:inline-flex;align-items:center;gap:6px;transition:all .2s;}
+.btn-green:hover{background:var(--green);color:white;}
+
+/* ─── TABLE ─── */
+.s-table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th{padding:9px 14px;text-align:left;font-size:.67rem;font-weight:700;color:var(--text-muted);background:#fafbfd;border-bottom:1.5px solid var(--gray-border);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;}
+td{padding:10px 14px;font-size:.78rem;color:#2a3a6b;border-bottom:1px solid #f0f2f8;font-weight:500;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#f8f9fd;}
+.tbl-action-btn{width:28px;height:28px;border-radius:6px;border:1.5px solid var(--gray-border);background:white;cursor:pointer;font-size:.72rem;transition:all .18s;display:inline-flex;align-items:center;justify-content:center;}
+.tbl-action-btn.edit:hover{border-color:var(--accent);color:var(--accent);}
+.tbl-action-btn.del:hover{border-color:var(--red);color:var(--red);}
+.tbl-action-btn.lock:hover{border-color:var(--amber);color:var(--amber);}
+
+/* ─── BADGES ─── */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:5px;font-size:.68rem;font-weight:700;white-space:nowrap;}
+.badge-active{background:#dcfce7;color:#16a34a;}
+.badge-inactive{background:#fee2e2;color:#dc2626;}
+.badge-locked{background:#fef9c3;color:#a16207;}
+.badge-pending{background:#dbeafe;color:#1d4ed8;}
+.role-super{background:rgba(139,92,246,.1);color:var(--purple);}
+.role-admin{background:rgba(46,125,247,.1);color:var(--accent);}
+.role-entry{background:rgba(14,165,233,.1);color:var(--teal);}
+.role-viewer{background:rgba(122,138,171,.1);color:var(--text-muted);}
+.role-reviewer{background:rgba(245,158,11,.1);color:var(--amber);}
+
+/* ─── SCOPE CONFIG ─── */
+.scope-config-tabs{display:flex;gap:6px;margin-bottom:16px;}
+.sctab{padding:7px 18px;border-radius:25px;font-size:.75rem;font-weight:700;cursor:pointer;border:2px solid var(--gray-border);background:white;color:#4a5a7b;font-family:'Montserrat',sans-serif;transition:all .2s;}
+.sctab.active{background:var(--navy);color:white;border-color:var(--navy);}
+.sctab:hover:not(.active){border-color:var(--accent);color:var(--accent);}
+
+/* ─── EF TABLE ─── */
+.ef-scope-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:5px;font-size:.68rem;font-weight:700;}
+
+/* ─── TOGGLE SWITCH ─── */
+.toggle-wrap{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f2f8;}
+.toggle-wrap:last-child{border-bottom:none;}
+.toggle-info{flex:1;}
+.toggle-label{font-size:.8rem;font-weight:600;color:var(--navy);}
+.toggle-desc{font-size:.68rem;color:var(--text-muted);margin-top:2px;}
+.toggle-sw{position:relative;width:40px;height:22px;flex-shrink:0;}
+.toggle-sw input{opacity:0;width:0;height:0;}
+.toggle-sw .slider{position:absolute;inset:0;background:var(--gray-border);border-radius:22px;cursor:pointer;transition:.3s;}
+.toggle-sw .slider:before{content:'';position:absolute;width:16px;height:16px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s;box-shadow:0 1px 4px rgba(0,0,0,.15);}
+.toggle-sw input:checked + .slider{background:var(--accent);}
+.toggle-sw input:checked + .slider:before{transform:translateX(18px);}
+
+/* ─── LOG ITEMS ─── */
+.log-item{display:flex;align-items:flex-start;gap:11px;padding:10px 0;border-bottom:1px solid #f0f2f8;}
+.log-item:last-child{border-bottom:none;}
+.log-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.78rem;flex-shrink:0;}
+.log-body{flex:1;}
+.log-action{font-size:.78rem;font-weight:700;color:var(--navy);}
+.log-detail{font-size:.68rem;color:var(--text-muted);margin-top:2px;}
+.log-time{font-size:.65rem;color:var(--text-muted);white-space:nowrap;}
+
+/* ─── MODAL ─── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(13,31,60,.45);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
+.modal-overlay.show{display:flex;}
+.modal{background:white;border-radius:16px;padding:26px;width:480px;max-width:96vw;box-shadow:0 24px 80px rgba(0,0,0,.2);animation:mIn .25s ease;}
+@keyframes mIn{from{opacity:0;transform:scale(.94) translateY(10px)}to{opacity:1;transform:none}}
+.modal-title{font-size:.95rem;font-weight:800;color:var(--navy);margin-bottom:16px;display:flex;align-items:center;gap:9px;}
+.modal-footer{display:flex;gap:10px;margin-top:18px;}
+.btn-secondary{padding:9px 18px;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;border:1.5px solid var(--gray-border);background:white;color:var(--navy);font-family:'Montserrat',sans-serif;}
+
+/* ─── TOAST ─── */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:white;padding:11px 18px;border-radius:12px;font-size:.8rem;font-weight:600;display:flex;align-items:center;gap:9px;box-shadow:0 8px 30px rgba(0,0,0,.18);z-index:10000;transform:translateY(70px);opacity:0;transition:all .32s cubic-bezier(.34,1.56,.64,1);max-width:320px;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.success{background:#16a34a;}
+.toast.warn{background:#d97706;}
+.toast.error{background:var(--red);}
+
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--gray-border);border-radius:10px;}
+.hidden{display:none!important;}
+</style>
+</head>
+<body>
+
+<!-- ─── SIDEBAR ─── -->
+<div class="sidebar">
+  <div class="sidebar-logo"><div class="logo-box">VPEI</div></div>
+  <nav class="nav-items">
+    <div class="nav-section">Menu chính</div>
+    <a href="/dashboard" class="nav-item"><i class="fa-solid fa-chart-pie" style="width:16px;color:var(--text-muted)"></i> Dashboard</a>
+    <a href="/scope1" class="nav-item"><i class="fa-solid fa-industry" style="width:16px;color:var(--text-muted)"></i> Scope 1</a>
+    <a href="/scope2" class="nav-item"><i class="fa-solid fa-bolt" style="width:16px;color:var(--text-muted)"></i> Scope 2</a>
+    <a href="/scope3" class="nav-item"><i class="fa-solid fa-ship" style="width:16px;color:var(--text-muted)"></i> Scope 3</a>
+    <div class="nav-section" style="margin-top:10px">Báo cáo</div>
+    <a href="/reports" class="nav-item"><i class="fa-solid fa-file-lines" style="width:16px;color:var(--text-muted)"></i> Reports</a>
+  </nav>
+  <div class="nav-bottom">
+    <a href="/settings" class="nav-item active"><i class="fa-solid fa-gear" style="width:16px;color:var(--accent)"></i> Settings</a>
+  </div>
+</div>
+
+<!-- ─── MAIN ─── -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title"><i class="fa-solid fa-gear" style="color:var(--accent);margin-right:7px;font-size:.9rem"></i>Settings – Cấu hình hệ thống</div>
+      <div class="topbar-sub">Quản trị nền tảng · Phân quyền · Hệ số phát thải · Bảo mật</div>
+    </div>
+    <div class="topbar-right">
+      <div class="admin-badge"><i class="fa-solid fa-shield-halved"></i> {% if is_super_admin %}Super Admin{% else %}Admin{% endif %}</div>
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div class="body-layout">
+
+    <!-- ─── SETTINGS MENU ─── -->
+    <div class="settings-menu">
+      <div class="smenu-section">Cấu hình</div>
+      <div class="smenu-item active" onclick="switchSection('general',this)">
+        <div class="smenu-icon" style="background:rgba(46,125,247,.1)"><i class="fa-solid fa-sliders" style="color:var(--accent)"></i></div>
+        Cài đặt chung
+      </div>
+      <div class="smenu-item" onclick="switchSection('users',this)">
+        <div class="smenu-icon" style="background:rgba(34,197,94,.1)"><i class="fa-solid fa-users" style="color:var(--green)"></i></div>
+        Người dùng &amp; Phân quyền
+      </div>
+      <div class="smenu-item" onclick="switchSection('report-fmt',this)">
+        <div class="smenu-icon" style="background:rgba(139,92,246,.1)"><i class="fa-solid fa-file-invoice" style="color:var(--purple)"></i></div>
+        Định dạng báo cáo
+      </div>
+    </div>
+
+    <!-- ─── SETTINGS CONTENT ─── -->
+    <div class="settings-content">
+
+      <!-- Flash (global, from query params) -->
+      {% if flash is defined and flash %}
+      <div style="margin-bottom: 20px; font-size: 0.9rem; font-weight: 500; display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 10px; background: {% if flash_type == 'error' %}var(--danger-light){% else %}var(--success-light){% endif %}; border: 1px solid {% if flash_type == 'error' %}#feb2b2{% else %}#9ae6b4{% endif %}; color: {% if flash_type == 'error' %}var(--red){% else %}var(--green){% endif %};">
+        {% if flash_type == 'success' %}✅{% elif flash_type == 'error' %}⚠{% else %}ℹ{% endif %}
+        {{ flash }}
+      </div>
+      {% endif %}
+
+      <!-- ══════ 1. GENERAL ══════ -->
+      <div id="sec-general">
+        <div class="s-card">
+          <div class="s-card-header">
+            <div class="s-card-title"><i class="fa-solid fa-building" style="color:var(--accent)"></i> Thông tin doanh nghiệp</div>
+          </div>
+          <div class="s-card-body">
+            <div style="display:grid;grid-template-columns:120px 1fr;gap:20px;align-items:start">
+              <div>
+                <div class="form-label" style="margin-bottom:8px">Logo</div>
+                <div class="logo-upload" style="cursor:not-allowed" onclick="return false">
+                  <div class="logo-preview">VPEI</div>
+                  <div style="font-size:.68rem;color:var(--text-muted)">Không thể thay đổi</div>
+                </div>
+              </div>
+              <div class="form-grid" style="gap:12px">
+                <div class="form-group">
+                  <label class="form-label">Tên doanh nghiệp <span class="required">*</span></label>
+                  <input class="form-input" value="Cảng VPEI – Việt Nam Port &amp; Energy Infrastructure" disabled>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Mã số thuế</label>
+                  <input class="form-input" value="0314852369" disabled>
+                </div>
+                <div class="form-group" style="grid-column:1/-1">
+                  <label class="form-label">Địa chỉ</label>
+                  <input class="form-input" value="Số 1 Đường Cảng Biển, Khu kinh tế, TP. Hồ Chí Minh" disabled>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="s-card">
+          <div class="s-card-header">
+            <div class="s-card-title"><i class="fa-solid fa-cog" style="color:var(--teal)"></i> Cài đặt vận hành</div>
+          </div>
+          <div class="s-card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Năm tài chính mặc định</label>
+                <select class="form-select" disabled><option>2026</option></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Ngôn ngữ hiển thị</label>
+                <select class="form-select" disabled><option>Tiếng Việt</option></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Đơn vị phát thải mặc định</label>
+                <select class="form-select" disabled><option>tCO₂e (tấn)</option></select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════ 2. USERS ══════ -->
+      <div id="sec-users" class="hidden">
+        <div class="s-card">
+          <div class="s-card-header">
+            <div class="s-card-title"><i class="fa-solid fa-users" style="color:var(--green)"></i> Danh sách người dùng</div>
+            <a href="#" onclick="openCreateUserModal(); return false;" class="btn-green" style="text-decoration:none"><i class="fa-solid fa-user-plus"></i> Thêm người dùng</a>
+          </div>
+          <div class="s-card-body" style="padding:0">
+            <div class="s-table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Người dùng</th><th>Email</th><th>Vai trò</th><th>Trạng thái</th><th>Đăng nhập lần cuối</th><th style="text-align:center">Hành động</th></tr>
+                </thead>
+                <tbody id="usersTableBody">
+                  {% if users %}
+                    {% for u in users %}
+                    <tr>
+                      <td>
+                        <div style="display:flex;align-items:center;gap:10px">
+                          <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--navy-light),var(--accent));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:.85rem;flex-shrink:0;">
+                            {{ u.username[0] | upper }}
+                          </div>
+                          <div>
+                            <div style="font-weight:600;font-size:.9rem;color:var(--navy)">{{ u.full_name or u.username }}</div>
+                            <div style="font-size:.78rem;color:var(--text-muted)">@{{ u.username }}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style="color:var(--text-muted)">{{ u.email }}</td>
+                      <td>
+                        {% if u.username == super_admin_username %}
+                          <span style="font-size:.70rem;font-weight:700;color:#d69e2e;background:#fffff0;border:1px solid #f6e05e;padding:4px 8px;border-radius:6px;display:inline-flex;align-items:center;gap:4px;"><i class="fa-solid fa-crown" style="font-size:.65rem"></i> Super Admin</span>
+                        {% elif u.is_admin %}
+                          <span class="badge role-admin">Admin</span>
+                        {% else %}
+                          <span class="badge role-viewer">User</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        {% if u.is_active %}
+                          <span class="badge badge-active">Hoạt động</span>
+                        {% else %}
+                          <span class="badge badge-inactive">Bị khoá</span>
+                        {% endif %}
+                      </td>
+                      <td style="font-size:.78rem;color:var(--text-muted)">
+                        {% if u.last_login %}{{ u.last_login.strftime('%d/%m/%Y %H:%M') }}{% else %}Chưa đăng nhập{% endif %}
+                      </td>
+                      <td style="text-align:center">
+                        <div style="display:flex;gap:6px;justify-content:center">
+                          {% if u.username != super_admin_username or is_super_admin %}
+                          <a href="#" onclick="openResetModal({{ u.id }}, '{{ u.username }}'); return false;" class="tbl-action-btn" title="Reset Mật khẩu"><i class="fa-solid fa-key" style="color:var(--amber)"></i></a>
+                          {% endif %}
+
+                          {% set can_toggle = (u.username != admin.sub and u.username != super_admin_username and (not u.is_admin or is_super_admin)) %}
+                          {% if can_toggle %}
+                          <form method="POST" action="/admin/toggle/{{ u.id }}?next=/settings" style="display:inline">
+                            {% if u.is_active %}
+                              <button type="submit" class="tbl-action-btn lock" title="Khóa" onclick="return confirm('Khoá tài khoản @{{ u.username }}?')"><i class="fa-solid fa-lock"></i></button>
+                            {% else %}
+                              <button type="submit" class="tbl-action-btn" title="Mở khóa"><i class="fa-solid fa-lock-open" style="color:var(--green)"></i></button>
+                            {% endif %}
+                          </form>
+                          {% endif %}
+
+                          {% set can_delete = (u.username != admin.sub and u.username != super_admin_username and (not u.is_admin or is_super_admin)) %}
+                          {% if can_delete %}
+                          <form method="POST" action="/admin/delete/{{ u.id }}?next=/settings" style="display:inline">
+                            <button type="submit" class="tbl-action-btn del" title="Xóa" onclick="return confirm('Xóa @{{ u.username }}? Không thể hoàn tác.')"><i class="fa-solid fa-trash"></i></button>
+                          </form>
+                          {% endif %}
+                          
+                          {% if u.is_admin and not is_super_admin and u.username != admin.sub %}
+                            <span style="font-size:.70rem;color:var(--text-muted);padding:5px">🔒 No Access</span>
+                          {% endif %}
+                        </div>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  {% else %}
+                    <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted)">Chưa có người dùng nào</td></tr>
+                  {% endif %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════ 3. REPORT FORMAT ══════ -->
+      <div id="sec-report-fmt" class="hidden">
+        <div class="s-card">
+          <div class="s-card-header"><div class="s-card-title"><i class="fa-solid fa-file-invoice" style="color:var(--purple)"></i> Cấu hình định dạng báo cáo</div></div>
+          <div class="s-card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Chuẩn báo cáo</label>
+                <select class="form-select" disabled>
+                  <option>Nội bộ doanh nghiệp</option>
+                  <option>ESG Reporting (GRI / SASB)</option>
+                  <option>Gửi cơ quan nhà nước (MONRE)</option>
+                  <option>Carbon Disclosure Project (CDP)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Đơn vị số thập phân</label>
+                <select class="form-select" disabled><option>2 chữ số (VD: 1,285.45)</option><option>3 chữ số (VD: 1,285.456)</option><option>Làm tròn (VD: 1,285)</option></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Đơn vị phát thải hiển thị</label>
+                <select class="form-select" disabled><option>tCO₂e (tấn)</option><option>kgCO₂e (kg)</option></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Ngôn ngữ báo cáo</label>
+                <select class="form-select" disabled><option>Tiếng Việt</option><option>English</option><option>Song ngữ (VI / EN)</option></select>
+              </div>
+            </div>
+            <div style="margin-top:16px">
+              <div class="form-label" style="margin-bottom:10px">Chữ ký số &amp; Người duyệt</div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label" style="font-size:.65rem">Người duyệt mặc định</label>
+                  <select class="form-select" disabled>
+                    <option>Nguyễn Văn A – Giám đốc Môi trường</option>
+                    <option>Trần Thị B – Phó Giám đốc</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" style="font-size:.65rem">Chức danh hiển thị</label>
+                  <input class="form-input" value="Giám đốc Kiểm kê Phát thải" disabled>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:16px">
+              <div class="form-label" style="margin-bottom:8px">Tùy chọn hiển thị trong báo cáo</div>
+              <div class="toggle-wrap">
+                <div class="toggle-info"><div class="toggle-label">Hiển thị logo trên trang bìa</div><div class="toggle-desc">Logo doanh nghiệp sẽ xuất hiện ở góc trên báo cáo</div></div>
+                <label class="toggle-sw" style="cursor:not-allowed"><input type="checkbox" checked disabled><span class="slider" style="pointer-events:none"></span></label>
+              </div>
+              <div class="toggle-wrap">
+                <div class="toggle-info"><div class="toggle-label">Đánh số trang tự động</div><div class="toggle-desc">Tự động thêm số trang vào footer</div></div>
+                <label class="toggle-sw" style="cursor:not-allowed"><input type="checkbox" checked disabled><span class="slider" style="pointer-events:none"></span></label>
+              </div>
+              <div class="toggle-wrap">
+                <div class="toggle-info"><div class="toggle-label">Watermark "Bản nháp" khi chưa phê duyệt</div><div class="toggle-desc">Tự động thêm dấu DRAFT khi báo cáo chưa Approved</div></div>
+                <label class="toggle-sw" style="cursor:not-allowed"><input type="checkbox" checked disabled><span class="slider" style="pointer-events:none"></span></label>
+              </div>
+              <div class="toggle-wrap">
+                <div class="toggle-info"><div class="toggle-label">Bao gồm phụ lục hệ số phát thải</div><div class="toggle-desc">Tự động đính kèm bảng hệ số EF sử dụng trong báo cáo</div></div>
+                <label class="toggle-sw" style="cursor:not-allowed"><input type="checkbox" disabled><span class="slider" style="pointer-events:none"></span></label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /settings-content -->
+  </div><!-- /body-layout -->
+</div><!-- /main -->
+
+<script>
+
+
+// ─── SECTION SWITCH ────────────────────────────────────────
+function switchSection(id, el) {
+  ['general','users','report-fmt'].forEach(s => {
+    const el2 = document.getElementById('sec-'+s);
+    if(el2) el2.classList.toggle('hidden', s!==id);
+  });
+  document.querySelectorAll('.smenu-item').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+
+
+
+// ─── TOAST ─────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg,type='success') {
+  const t=document.getElementById('toast');
+  if(!t) return;
+  const icons={success:'fa-circle-check',warn:'fa-triangle-exclamation',error:'fa-circle-xmark'};
+  t.className=`toast ${type} show`;
+  t.innerHTML=`<i class="fa-solid ${icons[type]}"></i><span>${msg}</span>`;
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+</script>
+<!-- ─── MODALS ─── -->
+<style>
+/* Modal Base */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(13, 31, 60, 0.5); backdrop-filter: blur(3px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.25s;
+}
+.modal-overlay.active { opacity: 1; pointer-events: auto; }
+.modal-box {
+  background: white; border-radius: 12px; width: 100%; max-width: 480px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15); transform: translateY(-20px);
+  transition: transform 0.25s; overflow: hidden; display: flex; flex-direction: column;
+}
+.modal-overlay.active .modal-box { transform: translateY(0); }
+.modal-header {
+  padding: 16px 24px; border-bottom: 1px solid var(--gray-border);
+  display: flex; justify-content: space-between; align-items: center;
+  font-weight: 700; font-family: 'Montserrat', sans-serif;
+}
+.modal-close {
+  cursor: pointer; color: var(--text-muted); padding: 5px;
+  border-radius: 5px; transition: 0.2s;
+}
+.modal-close:hover { background: var(--gray-soft); color: var(--danger); }
+.modal-body { padding: 24px; overflow-y: auto; max-height: calc(100vh - 120px); }
+.modal-footer {
+  padding: 16px 24px; border-top: 1px solid var(--gray-border);
+  background: var(--gray-soft); display: flex; justify-content: flex-end; gap: 10px;
+}
+.btn-outline {
+  padding: 8px 16px; border-radius: 6px; border: 1px solid var(--gray-border);
+  background: white; color: var(--navy); font-weight: 600; cursor: pointer;
+  font-size: 0.85rem; font-family: inherit; transition: 0.2s;
+}
+.btn-outline:hover { background: var(--gray-soft); }
+.btn-primary {
+  padding: 8px 16px; border-radius: 6px; border: none; background: var(--accent);
+  color: white; font-weight: 600; cursor: pointer; font-size: 0.85rem;
+  font-family: inherit; transition: 0.2s; display: flex; align-items: center; gap: 6px;
+}
+.btn-primary:hover { background: var(--accent-light); }
+.form-card input.form-input { width: 100%; }
+
+/* Custom elements inside Modal */
+.modal-info-box {
+  background: var(--success-light); border: 1px solid #9ae6b4;
+  color: var(--green); padding: 12px; border-radius: 8px; font-weight: 500;
+  font-size: 0.85rem; margin-bottom: 16px; display: none;
+}
+.modal-error-box {
+  background: var(--danger-light); border: 1px solid #feb2b2;
+  color: var(--red); padding: 12px; border-radius: 8px; font-weight: 500;
+  font-size: 0.85rem; margin-bottom: 16px; display: none;
+}
+.toggle-group {
+  display: flex; align-items: center; gap: 10px; padding: 12px 14px;
+  border: 1.5px solid var(--gray-border); border-radius: 9px;
+  background: var(--gray-soft); cursor: pointer; transition: border-color .2s;
+  margin-top: 8px;
+}
+.toggle-group:has(input:checked) {
+  border-color: var(--accent); background: #f0f6ff;
+}
+.toggle-group input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; cursor: pointer; }
+.toggle-label { font-size: .875rem; font-weight: 600; color: var(--navy); }
+.toggle-desc { font-size: .78rem; color: var(--text-muted); margin-top: 2px; }
+</style>
+
+<!-- Create User Modal -->
+<div id="modal-createUser" class="modal-overlay" onclick="if(event.target===this) closeModals()">
+  <div class="modal-box">
+    <div class="modal-header">
+      Tạo tài khoản mới
+      <i class="fa-solid fa-xmark modal-close" onclick="closeModals()"></i>
+    </div>
+    <div class="modal-body form-grid form-card">
+      <div id="create-error" class="modal-error-box"></div>
+      <div id="create-success" class="modal-info-box"></div>
+
+      <div class="form-group" style="grid-column:1/-1">
+        <label class="form-label">Username <span class="required">*</span></label>
+        <input type="text" id="cu-username" class="form-input" placeholder="nguyenvana">
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label class="form-label">Email <span class="required">*</span></label>
+        <input type="email" id="cu-email" class="form-input" placeholder="nguyenvana@company.com">
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label class="form-label">Họ và tên</label>
+        <input type="text" id="cu-fullname" class="form-input" placeholder="Nguyễn Văn A">
+      </div>
+
+      <div class="form-group" style="grid-column:1/-1">
+        <label class="toggle-group">
+          <input type="checkbox" id="cu-autogen" onchange="togglePasswordField('create', this.checked)">
+          <div style="flex:1">
+            <div class="toggle-label">Sinh mật khẩu tự động</div>
+            <div class="toggle-desc">Hệ thống sẽ tạo mật khẩu mạnh ngẫu nhiên</div>
+          </div>
+        </label>
+      </div>
+      
+      <div class="form-group" id="cu-pw-group" style="grid-column:1/-1">
+        <label class="form-label">Mật khẩu <span class="required">*</span></label>
+        <input type="password" id="cu-pw" class="form-input" placeholder="Tối thiểu 8 ký tự">
+      </div>
+
+      <div class="form-group" style="grid-column:1/-1">
+        <label class="toggle-group">
+          <input type="checkbox" id="cu-admin">
+          <div style="flex:1">
+            <div class="toggle-label">Là Admin</div>
+            <div class="toggle-desc">Tài khoản này có quyền quản trị hệ thống</div>
+          </div>
+        </label>
+      </div>
+
+      <div class="form-group" style="grid-column:1/-1">
+        <label class="toggle-group">
+          <input type="checkbox" id="cu-email-send" checked>
+          <div style="flex:1">
+            <div class="toggle-label">Gửi email thông báo</div>
+            <div class="toggle-desc">Gửi thông tin đăng nhập qua email</div>
+          </div>
+        </label>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="closeModals()">Hủy</button>
+      <button class="btn-primary" id="btn-submit-create" onclick="submitCreateUser()"><i class="fa-solid fa-check"></i> Tạo tài khoản</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div id="modal-resetPw" class="modal-overlay" onclick="if(event.target===this) closeModals()">
+  <div class="modal-box">
+    <div class="modal-header">
+      Reset mật khẩu: <span id="rp-target" style="margin-left: 6px; color: var(--accent)"></span>
+      <i class="fa-solid fa-xmark modal-close" onclick="closeModals()"></i>
+    </div>
+    <div class="modal-body form-grid form-card">
+      <div id="reset-error" class="modal-error-box"></div>
+      <div id="reset-success" class="modal-info-box"></div>
+
+      <input type="hidden" id="rp-userid">
+
+      <div class="form-group" style="grid-column:1/-1">
+        <label class="toggle-group">
+          <input type="checkbox" id="rp-autogen" onchange="togglePasswordField('reset', this.checked)">
+          <div style="flex:1">
+            <div class="toggle-label">Sinh mật khẩu tự động</div>
+            <div class="toggle-desc">Hệ thống sẽ tạo mật khẩu mới ngẫu nhiên mạnh</div>
+          </div>
+        </label>
+      </div>
+      
+      <div class="form-group" id="rp-pw-group" style="grid-column:1/-1">
+        <label class="form-label">Mật khẩu mới <span class="required">*</span></label>
+        <input type="password" id="rp-pw" class="form-input" placeholder="Tối thiểu 8 ký tự">
+      </div>
+
+      <div class="form-group" style="grid-column:1/-1">
+        <label class="toggle-group">
+          <input type="checkbox" id="rp-email-send" checked>
+          <div style="flex:1">
+            <div class="toggle-label">Gửi email cho người dùng</div>
+            <div class="toggle-desc">Mật khẩu mới sẽ được gởi vào email của người này.</div>
+          </div>
+        </label>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="closeModals()">Hủy</button>
+      <button class="btn-primary" id="btn-submit-reset" onclick="submitResetPassword()"><i class="fa-solid fa-key"></i> Xác nhận Reset</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function closeModals() {
+  if(document.getElementById('btn-submit-create').style.display === 'none' || document.getElementById('btn-submit-reset').style.display === 'none') { location.reload(); } else { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); }
+}
+function togglePasswordField(formType, autogen) {
+  const group = document.getElementById(formType === 'create' ? 'cu-pw-group' : 'rp-pw-group');
+  group.style.display = autogen ? 'none' : 'block';
+}
+
+function openCreateUserModal() {
+  document.getElementById('create-error').style.display = 'none';
+  document.getElementById('create-success').style.display = 'none';
+  document.getElementById('cu-username').value = '';
+  document.getElementById('cu-email').value = '';
+  document.getElementById('cu-fullname').value = '';
+  document.getElementById('cu-pw').value = '';
+  document.getElementById('cu-admin').checked = false;
+  document.getElementById('cu-autogen').checked = false;
+  document.getElementById('cu-email-send').checked = true;
+  togglePasswordField('create', false);
+  document.getElementById('btn-submit-create').style.display = 'flex';
+  document.getElementById('modal-createUser').classList.add('active');
+}
+
+function openResetModal(id, username) {
+  document.getElementById('reset-error').style.display = 'none';
+  document.getElementById('reset-success').style.display = 'none';
+  document.getElementById('rp-userid').value = id;
+  document.getElementById('rp-target').innerText = '@' + username;
+  document.getElementById('rp-pw').value = '';
+  document.getElementById('rp-autogen').checked = false;
+  document.getElementById('rp-email-send').checked = true;
+  togglePasswordField('reset', false);
+  document.getElementById('btn-submit-reset').style.display = 'flex';
+  document.getElementById('modal-resetPw').classList.add('active');
+}
+
+async function submitCreateUser() {
+  const btn = document.getElementById('btn-submit-create');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...';
+  const errBox = document.getElementById('create-error');
+  const succBox = document.getElementById('create-success');
+  errBox.style.display = 'none'; succBox.style.display = 'none';
+
+  const payload = {
+    username: document.getElementById('cu-username').value,
+    email: document.getElementById('cu-email').value,
+    full_name: document.getElementById('cu-fullname').value,
+    password: document.getElementById('cu-pw').value,
+    auto_password: document.getElementById('cu-autogen').checked,
+    is_admin: document.getElementById('cu-admin').checked,
+    send_email: document.getElementById('cu-email-send').checked
+  };
+
+  try {
+    const res = await fetch('/settings/api/users', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await window.jsonResponseOrThrow(res); // helper wrapper maybe? just parse json
+    if(data.status === 'error') throw new Error(data.message);
+    
+    succBox.style.display = 'block';
+    let msg = data.message;
+    if(data.password) msg += `<br><br>Mật khẩu được sinh ra là: <b style="font-size:1.1rem;background:white;padding:3px 6px;border-radius:4px;user-select:all">${data.password}</b><br>Hãy copy và gửi cho người dùng nếu cần!`;
+    succBox.innerHTML = msg;
+    btn.style.display = 'none'; // Hide submit button on success
+    showToast('Tạo người dùng thành công', 'success');
+    // Refresh page after a delay so they can copy PW
+    
+  } catch(e) {
+    errBox.innerHTML = '⚠ ' + (e.message || 'Lỗi không xác định');
+    errBox.style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> Tạo tài khoản';
+  }
+}
+
+async function submitResetPassword() {
+  const btn = document.getElementById('btn-submit-reset');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...';
+  const errBox = document.getElementById('reset-error');
+  const succBox = document.getElementById('reset-success');
+  errBox.style.display = 'none'; succBox.style.display = 'none';
+
+  const id = document.getElementById('rp-userid').value;
+  const payload = {
+    new_password: document.getElementById('rp-pw').value,
+    auto_password: document.getElementById('rp-autogen').checked,
+    send_email: document.getElementById('rp-email-send').checked
+  };
+
+  try {
+    const res = await fetch(`/settings/api/users/${id}/reset`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if(data.status === 'error') throw new Error(data.message);
+    
+    succBox.style.display = 'block';
+    let msg = data.message;
+    if(data.password) msg += `<br><br>Mật khẩu mới là: <b style="font-size:1.1rem;background:white;padding:3px 6px;border-radius:4px;user-select:all">${data.password}</b>`;
+    succBox.innerHTML = msg;
+    btn.style.display = 'none';
+    showToast('Cấp lại mật khẩu thành công', 'success');
+  } catch(e) {
+    errBox.innerHTML = '⚠ ' + (e.message || 'Lỗi mạng, kiểm tra lại.');
+    errBox.style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-key"></i> Xác nhận Reset';
+  }
+}
+
+window.jsonResponseOrThrow = async function(res) {
+    const txt = await res.text();
+    try { return JSON.parse(txt); }
+    catch(e) { throw new Error(txt || res.statusText); }
+};
+</script>
+
+</body>
+</html>
