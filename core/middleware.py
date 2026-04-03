@@ -36,6 +36,7 @@ class SessionValidationMiddleware(BaseHTTPMiddleware):
 
         try:
             payload = decode_token(token)
+            request.state.user = payload
         except Exception:
             resp = RedirectResponse(url="/login", status_code=302)
             resp.delete_cookie("access_token")

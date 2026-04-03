@@ -155,24 +155,10 @@ function toggleMenu(id) {
 </script>
 
 <div class="main">
-  <div class="topbar">
-    <div class="topbar-left">
-      <div class="topbar-title">Scope 3 – Phát thải gián tiếp</div>
-      <div class="topbar-sub">Quản lý dữ liệu vận chuyển & logistics</div>
-    </div>
-    <div class="topbar-right">
-      <a href="/scope3/manager" class="select-pill" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
-        <i class="fa-solid fa-clock-rotate-left"></i> Lịch sử hoạt động
-      </a>
-      <select class="select-pill">
-        <option>Tháng 06/2026</option>
-        <option>Tháng 05/2026</option>
-      </select>
-      <div id="statusBadge" class="badge-status badge-draft">
-        <span id="statusText">Draft</span>
-      </div>
-    </div>
-  </div>
+    <!-- {% set topbar_title = 'Scope 3 – Phát thải gián tiếp <span style="font-size:0.8rem; font-weight:400; color:#7a8aab; margin-left:14px; border-left:1px solid #dde3ef; padding-left:14px;">Quản lý dữ liệu vận chuyển &amp; logistics</span>' %} -->
+  {% set topbar_title = 'Scope 3 – Phát thải gián tiếp' %}
+  {% set extra_right_html = '' %}
+  {% include 'components/topbar.html' %}
 
   <div class="subnav">
     <div class="subnav-tab active" id="tab-btn-overview" onclick="setMainTab('overview')">
@@ -979,8 +965,7 @@ async function loadAllRecords() {
     containerRecords = [...cItems, ...sItems];
     refreshYearFilterOptions();
     renderRecordsTable();
-    populateTopbarMonths();
-    updateOverview();
+        updateOverview();
   } catch (err) { showToast('⚠️ Không thể tải dữ liệu', 'warn'); }
 }
 
@@ -997,31 +982,7 @@ function showToast(msg, type = 'success') {
 let vehicleBarChartRef = null;
 let trendLineChartRef = null;
 
-function populateTopbarMonths() {
-    const select = document.querySelector('.topbar-right select');
-    if (!select) return;
-    
-    // Gắn sự kiện để khi đổi select, tổng quan cập nhật theo
-    select.onchange = updateOverview;
 
-    const months = new Set();
-    containerRecords.forEach(r => {
-        const dt = getRecordMonthYear(r);
-        if (dt && dt.month && dt.year) {
-            const padM = String(dt.month).padStart(2, '0');
-            months.add(`Tháng ${padM}/${dt.year}`);
-        }
-    });
-
-    if (months.size > 0) {
-        const sorted = Array.from(months).sort().reverse();
-        select.innerHTML = '<option value="all">Tất cả thời gian</option>' +
-                           sorted.map(m => `<option value="${m}">${m}</option>`).join('');
-        select.value = 'all'; // Mặc định hiển thị Tất cả để số liệu luôn hiện
-    } else {
-        select.innerHTML = '<option value="all">Tất cả thời gian</option>';
-    }
-}
 
 function updateOverview() {
   const select = document.querySelector('.topbar-right select');

@@ -112,12 +112,9 @@ function toggleMenu(id) {
 </script>
 
 <div class="main">
-  <div class="topbar">
-    <div class="topbar-title">Lịch sử hoạt động – Scope 3 (Tất cả phương tiện)</div>
-    <div class="topbar-right">
-      <span style="font-size:.8rem; color:var(--text-muted); font-weight:600;">{{ user.sub if user else 'User' }}</span>
-    </div>
-  </div>
+    {% set topbar_title = '<a href="/scope3" style="color:var(--text-muted); margin-right:8px;"><i class="fa-solid fa-arrow-left"></i></a> Scope 3 – Phát thải gián tiếp <span style="font-size:0.8rem; font-weight:400; color:#7a8aab; margin-left:14px; border-left:1px solid #dde3ef; padding-left:14px;">Lịch sử hoạt động &amp; Báo cáo</span>' %}
+  {% set extra_right_html = '' %}
+  {% include 'components/topbar.html' %}
 
   <div class="content">
     <div class="filters-row">
