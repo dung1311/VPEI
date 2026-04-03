@@ -76,7 +76,7 @@ async def create_user(
             {"request": request, "error": err}, status_code=400)
 
     return RedirectResponse(
-        url=f"/admin?flash=Tạo tài khoản '{user.username}' thành công.&flash_type=success",
+        url=f"{request.query_params.get('next', '/admin')}?flash=Tạo tài khoản '{user.username}' thành công.&flash_type=success",
         status_code=302)
 
 
@@ -88,15 +88,15 @@ async def delete_user(user_id: int, request: Request, db: Session = Depends(get_
 
     target = UserService.get_by_id(db, user_id)
     if not target:
-        return RedirectResponse(url="/admin?flash=Không tìm thấy user.&flash_type=error",
+        return RedirectResponse(url=f"{request.query_params.get('next', '/admin')}?flash=Không tìm thấy user.&flash_type=error",
                                 status_code=302)
 
     err = UserService.delete(db, target, admin["sub"], is_super)
     if err:
-        return RedirectResponse(url=f"/admin?flash={err}&flash_type=error", status_code=302)
+        return RedirectResponse(url=f"{request.query_params.get('next', '/admin')}?flash={err}&flash_type=error", status_code=302)
 
     return RedirectResponse(
-        url=f"/admin?flash=Đã xóa tài khoản '{target.username}'.&flash_type=success",
+        url=f"{request.query_params.get('next', '/admin')}?flash=Đã xóa tài khoản '{target.username}'.&flash_type=success",
         status_code=302)
 
 
@@ -108,13 +108,13 @@ async def reset_form(user_id: int, request: Request, db: Session = Depends(get_d
 
     target = UserService.get_by_id(db, user_id)
     if not target:
-        return RedirectResponse(url="/admin?flash=Không tìm thấy user.&flash_type=error")
+        return RedirectResponse(url=f"{request.query_params.get('next', '/admin')}?flash=Không tìm thấy user.&flash_type=error")
 
     # Check permission before rendering the form
     from services.user_service import UserService as US
     err = US._guard(target, admin["sub"], is_super, "reset mật khẩu")
     if err:
-        return RedirectResponse(url=f"/admin?flash={err}&flash_type=error", status_code=302)
+        return RedirectResponse(url=f"{request.query_params.get('next', '/admin')}?flash={err}&flash_type=error", status_code=302)
 
     return templates.TemplateResponse("admin/reset_password.html",
         {"request": request, "user": target, "temp_password": None, "error": None})
@@ -135,7 +135,7 @@ async def reset_password(
 
     target = UserService.get_by_id(db, user_id)
     if not target:
-        return RedirectResponse(url="/admin?flash=Không tìm thấy user.&flash_type=error")
+        return RedirectResponse(url=f"{request.query_params.get('next', '/admin')}?flash=Không tìm thấy user.&flash_type=error")
 
     manual_pw = new_password.strip() if mode == "manual" else None
     if mode == "manual" and (not manual_pw or len(manual_pw) < 8):
@@ -180,14 +180,14 @@ async def toggle_user(user_id: int, request: Request, db: Session = Depends(get_
 
     target = UserService.get_by_id(db, user_id)
     if not target:
-        return RedirectResponse(url="/admin?flash=Không tìm thấy user.&flash_type=error",
+        return RedirectResponse(url=f"{request.query_params.get('next', '/admin')}?flash=Không tìm thấy user.&flash_type=error",
                                 status_code=302)
 
     user, err = UserService.toggle_active(db, target, admin["sub"], is_super)
     if err:
-        return RedirectResponse(url=f"/admin?flash={err}&flash_type=error", status_code=302)
+        return RedirectResponse(url=f"{request.query_params.get('next', '/admin')}?flash={err}&flash_type=error", status_code=302)
 
     label = "kích hoạt" if user.is_active else "khoá"
     return RedirectResponse(
-        url=f"/admin?flash=Đã {label} tài khoản '{user.username}'.&flash_type=success",
+        url=f"{request.query_params.get('next', '/admin')}?flash=Đã {label} tài khoản '{user.username}'.&flash_type=success",
         status_code=302)
