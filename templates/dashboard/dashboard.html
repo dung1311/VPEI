@@ -49,45 +49,18 @@
   .kpi-unit { font-size: 0.85rem; font-weight: 500; color: var(--text-muted); }
 
   /* CHARTS */
-  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .charts-row { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 16px; }
   .chart-card { background: white; border-radius: 14px; padding: 20px; border: 1px solid var(--gray-border); }
   .chart-title { font-size: 0.88rem; font-weight: 600; color: var(--navy); margin-bottom: 14px; }
   
-  /* SHAP & Bottom */
-  .shap-card { background: white; border-radius: 14px; padding: 20px; border: 1px solid var(--gray-border); }
-  .shap-row { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
-  .shap-label { font-size: 0.6rem; color: #4a5a7b; width: 220px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .shap-bar-wrap { flex: 1; display: flex; align-items: center; position: relative; height: 14px; }
-  .shap-bar { height: 10px; border-radius: 3px; }
-  .shap-bar.pos { background: var(--red); margin-left: 1px; }
-  .shap-bar.neg { background: var(--green); margin-right: 1px; margin-left: auto; }
-  .ai-insight { background: #f0f5ff; border: 1px solid #c5d8ff; border-radius: 10px; padding: 14px 18px; font-size: 0.82rem; color: #2a3a6b; line-height: 1.6; margin-top: 12px; }
-  .ai-insight strong { color: var(--accent); }
+  /* Bottom */
   .bottom-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 </style>
 </head>
 <body>
 
-<div class="sidebar">
-  <div class="sidebar-logo">
-    <div class="logo-box">VPEI</div>
-  </div>
-  <nav class="nav-items">
-    <div class="nav-section">Menu chính</div>
-    <a href="/dashboard" class="nav-item active"><i class="fa-solid fa-chart-pie" style="width:16px;color:var(--accent)"></i> Dashboard</a>
-    <a href="/scope1" class="nav-item"><i class="fa-solid fa-industry" style="width:16px;color:var(--text-muted)"></i> Scope 1</a>
-    <a href="/scope2" class="nav-item"><i class="fa-solid fa-bolt" style="width:16px;color:var(--text-muted)"></i> Scope 2</a>
-    <a href="/scope3" class="nav-item"><i class="fa-solid fa-ship" style="width:16px;color:var(--text-muted)"></i> Scope 3</a>
-    <div class="nav-section" style="margin-top:10px">Báo cáo</div>
-    <a href="/reports" class="nav-item"><i class="fa-solid fa-file-lines" style="width:16px;color:var(--text-muted)"></i> Reports</a>
-  </nav>
-  <div class="nav-bottom">
-    {% set _u = admin if admin is defined else user %}
-    {% if _u and (_u.is_admin or (_u.get and _u.get("is_admin"))) %}
-    <a href="/settings" class="nav-item"><i class="fa-solid fa-gear" style="width:16px;color:var(--text-muted)"></i> Settings</a>
-    {% endif %}
-  </div>
-</div>
+{% set active_page = 'dashboard' %}
+{% include 'components/sidebar.html' %}
 
 <div class="main">
   <div class="topbar">
@@ -137,14 +110,6 @@
         </div>
         <div style="position: relative; height: 240px; width: 100%;">
           <canvas id="trendChart"></canvas>
-        </div>
-      </div>
-
-      <div class="shap-card">
-        <div class="chart-title">Động lực phát thải Scope 3 (Phân tích nội suy AI)</div>
-        <div id="shapRows"></div>
-        <div class="ai-insight">
-          <strong>AI Insight:</strong> {{ data.ai_insight | safe }}
         </div>
       </div>
     </div> <div class="bottom-row">
@@ -321,33 +286,6 @@ new Chart(doughCtx, {
   }
 });
 
-// 4. SHAP Analysis (Dữ liệu THỰC TẾ bóc tách từ Python)
-const shapData = dbData.shap_data;
-const shapContainer = document.getElementById('shapRows');
-
-if (!shapData || shapData.length === 0 || shapData[0].val === 0) {
-    shapContainer.innerHTML = '<div style="text-align:center; padding:20px; color:#7a8aab; font-size:0.8rem">Chưa có đủ dữ liệu hoạt động Scope 3 để AI phân tích.</div>';
-} else {
-    // Tìm giá trị lớn nhất để làm mốc quy đổi ra % chiều dài thanh Bar
-    const maxVal = Math.max(...shapData.map(d => Math.abs(d.val)));
-    
-    shapData.forEach(d => {
-      // Tính độ dài thanh Bar (Max = 85%)
-      const pct = maxVal > 0 ? (Math.abs(d.val) / maxVal) * 85 : 0;
-      const isPos = d.val > 0;
-      
-      shapContainer.innerHTML += `
-        <div class="shap-row">
-          <div class="shap-label" title="${d.label}">${d.label}</div>
-          <div class="shap-bar-wrap">
-            ${isPos
-              ? `<div class="shap-bar pos" style="width:${pct}%"></div>`
-              : `<div class="shap-bar neg" style="width:${pct}%"></div>`
-            }
-          </div>
-        </div>`;
-    });
-}
 // Nút chọn kỳ báo cáo
 document.querySelectorAll('.period-btn').forEach(btn => {
   btn.addEventListener('click', function() {

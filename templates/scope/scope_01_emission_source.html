@@ -111,42 +111,8 @@
 </head>
 <body>
 
-<div class="sidebar">
-  <div class="sidebar-logo">
-    <div class="logo-box">VPEI</div>
-  </div>
-  <nav class="nav-items">
-    <div class="nav-section">Menu chính</div>
-    
-    <a href="/dashboard" class="nav-item"><i class="fa-solid fa-chart-pie" style="width:16px;color:var(--text-muted)"></i> Dashboard</a>
-    
-    <div class="nav-item active" onclick="window.location.href='/scope1'">
-      <i class="fa-solid fa-industry" style="width:16px;color:var(--accent)"></i> Scope 1
-      <i class="fa-solid fa-chevron-down nav-expand"></i>
-    </div>
-    <div id="scope1Menu" class="submenu open">
-      <a href="/scope1/emission-source" class="nav-item sub active">Quản lý nguồn phát thải</a>
-    </div>
-    
-    <div class="nav-item" onclick="window.location.href='/scope2'">
-      <i class="fa-solid fa-bolt" style="width:16px;color:var(--text-muted)"></i> Scope 2
-      <i class="fa-solid fa-chevron-down nav-expand"></i>
-    </div>
-    <div id="scope2Menu" class="submenu">
-      <a href="/scope2/manager" class="nav-item sub">Lịch sử hoạt động</a>
-    </div>
-    
-    <a href="/scope3" class="nav-item"><i class="fa-solid fa-ship" style="width:16px;color:var(--text-muted)"></i> Scope 3</a>
-    <div class="nav-section" style="margin-top:10px">Báo cáo</div>
-    <a href="/reports" class="nav-item"><i class="fa-solid fa-file-lines" style="width:16px;color:var(--text-muted)"></i> Reports</a>
-  </nav>
-  <div class="nav-bottom">
-    {% set _u = admin if admin is defined else user %}
-    {% if _u and (_u.is_admin or (_u.get and _u.get("is_admin"))) %}
-    <a href="/settings" class="nav-item"><i class="fa-solid fa-gear" style="width:16px;color:var(--text-muted)"></i> Settings</a>
-    {% endif %}
-  </div>
-</div>
+{% set active_page = 'scope1' %}
+{% include 'components/sidebar.html' %}
 
 <div class="main">
   <div class="topbar">

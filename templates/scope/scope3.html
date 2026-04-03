@@ -143,30 +143,8 @@ tr:hover td { background:#f8f9fd; }
 </head>
 <body>
 
-<div class="sidebar">
-  <div class="sidebar-logo"><div class="logo-box">VPEI</div></div>
-  <nav class="nav-items">
-    <div class="nav-section">Menu chính</div>
-    <a href="/dashboard" class="nav-item"><i class="fa-solid fa-chart-pie" style="width:16px;color:var(--text-muted)"></i> Dashboard</a>
-    <a href="/scope1" class="nav-item"><i class="fa-solid fa-industry" style="width:16px;color:var(--text-muted)"></i> Scope 1</a>
-    <a href="/scope2" class="nav-item"><i class="fa-solid fa-bolt" style="width:16px;color:var(--text-muted)"></i> Scope 2</a>
-    <div class="nav-item active" onclick="toggleMenu('scope3Menu')">
-      <i class="fa-solid fa-ship" style="width:16px;color:var(--accent)"></i> Scope 3
-      <i class="fa-solid fa-chevron-down nav-expand"></i>
-    </div>
-    <div id="scope3Menu" class="submenu open">
-      <a href="/scope3/manager" class="nav-item sub">Lịch sử hoạt động</a>
-    </div>
-    <div class="nav-section" style="margin-top:10px">Báo cáo</div>
-    <a href="/reports" class="nav-item"><i class="fa-solid fa-file-lines" style="width:16px;color:var(--text-muted)"></i> Reports</a>
-  </nav>
-  <div class="nav-bottom">
-    {% set _u = admin if admin is defined else user %}
-    {% if _u and (_u.is_admin or (_u.get and _u.get("is_admin"))) %}
-    <a href="/settings" class="nav-item"><i class="fa-solid fa-gear" style="width:16px;color:var(--text-muted)"></i> Settings</a>
-    {% endif %}
-  </div>
-</div>
+{% set active_page = 'scope3' %}
+{% include 'components/sidebar.html' %}
 
 <script>
 function toggleMenu(id) {
