@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from core.middleware import SessionValidationMiddleware
-from routers import auth, dashboard, admin, scope1, scope2, scope3, settings, common
+from routers import auth, dashboard, admin, scope1, scope2, scope3, settings, common, reports
 
 app = FastAPI(title="VPEI – Vietnam Port Emission Inventory")
 
@@ -21,6 +21,7 @@ app.include_router(scope1.router)
 app.include_router(scope2.router)
 app.include_router(scope3.router)
 app.include_router(common.router)
+app.include_router(reports.router)
 
 @app.get("/")
 async def root():

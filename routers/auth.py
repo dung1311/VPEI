@@ -67,8 +67,57 @@ async def login_submit(
     return response
 
 
+@router.get("/profile", response_class=HTMLResponse)
+async def profile_page(request: Request, db: Session = Depends(get_db)):
+    user_info = getattr(request.state, "user", None)
+    if not user_info or not user_info.get("sub"):
+        return RedirectResponse(url="/login", status_code=302)
+
+    username = user_info.get("sub")
+    user = UserService.get_by_username_or_email(db, username)
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+        
+    return templates.TemplateResponse("auth/profile.html", {
+        "request": request,
+        "user_obj": user
+    })
+
+
 @router.post("/logout")
 async def logout():
     response = RedirectResponse(url="/login", status_code=302)
     response.delete_cookie("access_token")
     return response
+
+from fastapi.responses import JSONResponse
+from core.security import verify_password, hash_password
+
+@router.post("/api/auth/change-password")
+async def change_password(
+    request: Request,
+    old_password: str = Form(...),
+    new_password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    try:
+        user_info = getattr(request.state, "user", None)
+        if not user_info or not user_info.get("sub"):
+            return JSONResponse(status_code=401, content={"status": "error", "message": "Chưa đăng nhập"})
+
+        username = user_info.get("sub")
+        user = UserService.get_by_username_or_email(db, username)
+        if not user:
+            return JSONResponse(status_code=404, content={"status": "error", "message": "Không tìm thấy người dùng"})
+
+        if not verify_password(old_password, user.hashed_password):
+            return JSONResponse(status_code=400, content={"status": "error", "message": "Mật khẩu hiện tại không chính xác"})
+
+        if len(new_password) < 8:
+            return JSONResponse(status_code=400, content={"status": "error", "message": "Mật khẩu mới phải có ít nhất 8 ký tự"})
+
+        user.hashed_password = hash_password(new_password)
+        db.commit()
+        return JSONResponse(content={"status": "success", "message": "Cập nhật mật khẩu thành công"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
