@@ -61,12 +61,18 @@ def get_ship_activity_history(
     db: Session,
     year: Optional[int] = None,
     month: Optional[int] = None,
+    quarter: Optional[int] = None,
 ) -> Dict[str, Any]:
     # Query theo scope của Ship
     query = db.query(AuditLog).filter(AuditLog.scope == "scope3_ship")
 
     if year and month:
         query = query.filter(AuditLog.month_year == f"{month:02d}/{year}")
+    elif year and quarter:
+        q = int(quarter)
+        mlist = list(range((q - 1) * 3 + 1, q * 3 + 1))
+        patterns = [f"{m:02d}/{year}" for m in mlist]
+        query = query.filter(AuditLog.month_year.in_(patterns))
     elif year:
         query = query.filter(AuditLog.month_year.like(f"%/{year}"))
 

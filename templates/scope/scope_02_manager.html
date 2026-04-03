@@ -236,39 +236,6 @@ td {
   {% include 'components/topbar.html' %}
 
   <div class="content">
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">Bộ lọc theo tháng/năm</div>
-      </div>
-      <div class="card-body">
-        <div class="filter-grid">
-          <div>
-            <label for="year-filter">Năm</label>
-            <select id="year-filter" class="select"></select>
-          </div>
-          <div>
-            <label for="month-filter">Tháng</label>
-            <select id="month-filter" class="select">
-              <option value="">Tất cả tháng</option>
-              <option value="1">Tháng 01</option>
-              <option value="2">Tháng 02</option>
-              <option value="3">Tháng 03</option>
-              <option value="4">Tháng 04</option>
-              <option value="5">Tháng 05</option>
-              <option value="6">Tháng 06</option>
-              <option value="7">Tháng 07</option>
-              <option value="8">Tháng 08</option>
-              <option value="9">Tháng 09</option>
-              <option value="10">Tháng 10</option>
-              <option value="11">Tháng 11</option>
-              <option value="12">Tháng 12</option>
-            </select>
-          </div>
-          <div><button id="btn-filter" class="btn"><i class="fa-solid fa-filter"></i> Lọc dữ liệu</button></div>
-        </div>
-      </div>
-    </div>
-
     <div class="summary">
       <div class="summary-item">
         <div class="k">Tổng hoạt động</div>
@@ -360,23 +327,26 @@ async function deleteActivity(id){
   await loadHistory();
 }
 
-function initYearFilter(){
-  const yearSel = document.getElementById('year-filter');
-  yearSel.innerHTML = '<option value="">Tất cả năm</option>';
-  availableYears.forEach(y => {
-    const opt = document.createElement('option');
-    opt.value = y;
-    opt.textContent = `Năm ${y}`;
-    yearSel.appendChild(opt);
-  });
-}
+
+let filterYear = null;
+let filterMonth = null;
+let filterQuarter = null;
+
+window.onGlobalFilterChange = function(mode, searchParams) {
+  filterYear = searchParams.get('year');
+  filterMonth = searchParams.get('month');
+  filterQuarter = searchParams.get('quarter');
+  loadHistory();
+};
 
 async function loadHistory(){
-  const year = document.getElementById('year-filter').value;
-  const month = document.getElementById('month-filter').value;
+  const year = filterYear || '';
+  const month = filterMonth || '';
+  const quarter = filterQuarter || '';
   const params = new URLSearchParams();
   if(year) params.append('year', year);
   if(month) params.append('month', month);
+  if(quarter) params.append('quarter', quarter);
 
   const res = await fetch(`/api/scope2/manager/audit?${params.toString()}`);
   if(!res.ok){
@@ -390,7 +360,6 @@ async function loadHistory(){
   renderTable();
 }
 
-document.getElementById('btn-filter').addEventListener('click', loadHistory);
 if (canDelete) {
   const headRow = document.querySelector('thead tr');
   if (headRow) {
@@ -400,7 +369,6 @@ if (canDelete) {
     headRow.appendChild(th);
   }
 }
-initYearFilter();
 renderTable();
 </script>
 </body>

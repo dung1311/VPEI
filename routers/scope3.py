@@ -395,11 +395,16 @@ async def get_summary(db: Session = Depends(get_db)):
 async def manager_audit_log(
     year: int | None = Query(default=None),
     month: int | None = Query(default=None),
+    quarter: int | None = Query(default=None),
     db: Session = Depends(get_db),
 ):
     """Get combined audit log for Scope 3 (Container + Ship)"""
-    c_history = container_activity_service.get_scope3_activity_history(db, year=year, month=month)
-    s_history = ship_activity_service.get_ship_activity_history(db, year=year, month=month)
+    c_history = container_activity_service.get_scope3_activity_history(
+        db, year=year, month=month, quarter=quarter
+    )
+    s_history = ship_activity_service.get_ship_activity_history(
+        db, year=year, month=month, quarter=quarter
+    )
 
     combined_logs = c_history["logs"] + s_history["logs"]
     combined_logs.sort(

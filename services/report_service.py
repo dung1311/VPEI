@@ -4,14 +4,52 @@ from docx.shared import RGBColor, Pt
 import io
 import os
 import math
+from calendar import monthrange
+from datetime import date, datetime, time
+from typing import Optional, Set, Tuple, List
 from sqlalchemy.orm import Session
-from sqlalchemy import extract, func
+from sqlalchemy import extract, or_, and_
 from models.device import ActivityData, DeviceCategory
 from models.electrical_item import ElectricalItem
 from models.ship import Ship
 from models.container import Container
 from models.scope3_other_vehicle import Scope3OtherVehicle
 from services.ship_service import calculate_ship_co2
+
+def _report_months(month: Optional[int], quarter: Optional[int]) -> Optional[Set[int]]:
+    if month is not None:
+        return {month}
+    if quarter is not None:
+        q = int(quarter)
+        return set(range((q - 1) * 3 + 1, q * 3 + 1))
+    return None
+
+
+def _parse_period_value_date(raw: Optional[str]) -> Optional[date]:
+    s = (raw or "").strip()
+    if not s:
+        return None
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y"):
+        try:
+            return datetime.strptime(s, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def _year_month_pairs_in_range(d_start: date, d_end: date) -> List[Tuple[int, int]]:
+    out: List[Tuple[int, int]] = []
+    cur = date(d_start.year, d_start.month, 1)
+    while cur <= d_end:
+        last = date(cur.year, cur.month, monthrange(cur.year, cur.month)[1])
+        if last >= d_start and cur <= d_end:
+            out.append((cur.year, cur.month))
+        if cur.month == 12:
+            cur = date(cur.year + 1, 1, 1)
+        else:
+            cur = date(cur.year, cur.month + 1, 1)
+    return out
+
 
 class ReportService:
     @staticmethod
@@ -25,61 +63,128 @@ class ReportService:
         run.font.highlight_color = None
 
     @staticmethod
-    def generate_vpei_final_report(db: Session, year: int) -> bytes:
+    def generate_vpei_final_report(
+        db: Session,
+        year: int,
+        month: Optional[int] = None,
+        quarter: Optional[int] = None,
+        date_start: Optional[date] = None,
+        date_end: Optional[date] = None,
+        include_appendix: bool = True,
+    ) -> bytes:
+        use_range = date_start is not None and date_end is not None
+        if use_range:
+            if date_start > date_end:
+                raise ValueError("date_start phải trước hoặc bằng date_end")
+            start_time_s = date_start.strftime("%d/%m/%Y")
+            end_time_s = date_end.strftime("%d/%m/%Y")
+            mf = None
+        else:
+            mf = _report_months(month, quarter)
+            if month is not None:
+                d1 = monthrange(year, month)[1]
+                start_time_s = f"01/{month:02d}/{year}"
+                end_time_s = f"{d1:02d}/{month:02d}/{year}"
+            elif quarter is not None:
+                qn = int(quarter)
+                sm, em = (qn - 1) * 3 + 1, qn * 3
+                d1 = monthrange(year, em)[1]
+                start_time_s = f"01/{sm:02d}/{year}"
+                end_time_s = f"{d1:02d}/{em:02d}/{year}"
+            else:
+                start_time_s = f"01/01/{year}"
+                end_time_s = f"31/12/{year}"
+
         # ==========================================
         # 1. Fetch Real Data from Database
         # ==========================================
-        
+
         # --- Scope 1: ActivityData ---
-        scope1_activities = db.query(ActivityData).join(DeviceCategory).filter(
-            ActivityData.period_year == year
-        ).all()
-        
+        if use_range:
+            pairs = _year_month_pairs_in_range(date_start, date_end)
+            if pairs:
+                q_s1 = db.query(ActivityData).join(DeviceCategory).filter(
+                    or_(*[and_(ActivityData.period_year == py, ActivityData.period_month == pm) for py, pm in pairs])
+                )
+            else:
+                q_s1 = db.query(ActivityData).join(DeviceCategory).filter(ActivityData.id == -1)
+            scope1_activities = q_s1.all()
+        else:
+            q_s1 = db.query(ActivityData).join(DeviceCategory).filter(ActivityData.period_year == year)
+            if mf is not None:
+                q_s1 = q_s1.filter(ActivityData.period_month.in_(mf))
+            scope1_activities = q_s1.all()
+
         s1_co2e = sum(act.total_co2e for act in scope1_activities) if scope1_activities else 0.0
-        # Assume CH4 and N2O are small or 0 for now unless we have detailed formulas
         s1_co2 = s1_co2e
         s1_ch4 = 0.0
         s1_n2o = 0.0
 
-        # Build Scope 1 Table Data
         data_scope1 = []
         for idx, act in enumerate(scope1_activities, 1):
             device_name = act.category.name if act.category else "Unknown Device"
-            # mock year built, operating hours, power, co2e
             operating_hours = act.operating_hours
             power = act.recorded_power
             co2 = round(act.total_co2e, 2)
             data_scope1.append([idx, device_name, "N/A", power, operating_hours, co2])
-            
+
         # --- Scope 2: Electricity ---
-        # Note: Depending on how it's saved, we assume 'period_value' contains the year
         all_elec = db.query(ElectricalItem).all()
-        scope2_items = [e for e in all_elec if e.period_value and str(year) in e.period_value]
-        
-        # EF for electricity is approx 0.6235 tCO2/MWh? Wait, the model uses power
-        # Let's see how much they consumed. power * 720 * 0.8 * 0.6235 (from subagent findings)
+        if use_range:
+            scope2_items = []
+            for e in all_elec:
+                dv = _parse_period_value_date(e.period_value)
+                if dv is not None and date_start <= dv <= date_end:
+                    scope2_items.append(e)
+        else:
+            scope2_items = [e for e in all_elec if e.period_value and str(year) in e.period_value]
+
         s2_co2e = 0.0
         data_scope2 = []
         for idx, item in enumerate(scope2_items, 1):
-            # calculate monthly e_total if period_type is month
-            # if we don't have hours, we use a placeholder or calculate it
             e_total = (item.power * 720 * 0.8 * 0.6235 / 1000) if item.power else 0.0
             if item.period_type == 'year':
-                e_total *= 12  # Approximation
-            
+                e_total *= 12
+
             s2_co2e += e_total
             data_scope2.append([idx, item.name, item.period_value, f"{item.power} kW", round(e_total, 2)])
-            
+
         s2_co2 = s2_co2e
         s2_ch4 = 0.0
         s2_n2o = 0.0
 
         # --- Scope 3: Ships, Containers, Other Vehicles ---
-        ships = db.query(Ship).filter(extract('year', Ship.start_time) == year).all()
-        containers = db.query(Container).filter(extract('year', Container.start_time) == year).all()
-        other_vehicles = db.query(Scope3OtherVehicle).all()
-        # Filter other_vehicles by period containing the year string
-        other_vehicles = [v for v in other_vehicles if v.period and str(year) in v.period]
+        if use_range:
+            t0 = datetime.combine(date_start, time.min)
+            t1 = datetime.combine(date_end, time.max)
+            q_sh = db.query(Ship).filter(Ship.start_time.isnot(None), Ship.start_time >= t0, Ship.start_time <= t1)
+            q_ct = db.query(Container).filter(Container.start_time.isnot(None), Container.start_time >= t0, Container.start_time <= t1)
+            ships = q_sh.all()
+            containers = q_ct.all()
+            all_ov = db.query(Scope3OtherVehicle).all()
+
+            def _ov_in_range(v: Scope3OtherVehicle) -> bool:
+                d = _parse_period_value_date(v.period)
+                if d is not None:
+                    return date_start <= d <= date_end
+                p = v.period or ""
+                for yy in range(date_start.year, date_end.year + 1):
+                    if str(yy) in p:
+                        return True
+                return False
+
+            other_vehicles = [v for v in all_ov if _ov_in_range(v)]
+        else:
+            q_sh = db.query(Ship).filter(extract("year", Ship.start_time) == year)
+            q_ct = db.query(Container).filter(extract("year", Container.start_time) == year)
+            if mf is not None:
+                mlist = list(mf)
+                q_sh = q_sh.filter(extract("month", Ship.start_time).in_(mlist))
+                q_ct = q_ct.filter(extract("month", Container.start_time).in_(mlist))
+            ships = q_sh.all()
+            containers = q_ct.all()
+            other_vehicles = db.query(Scope3OtherVehicle).all()
+            other_vehicles = [v for v in other_vehicles if v.period and str(year) in v.period]
 
         s3_co2e_ships = 0.0
         data_tau_bien = []
@@ -142,8 +247,8 @@ class ReportService:
 
         context = {
             'company_name': 'Công ty TNHH Cảng Nam Đình Vũ',
-            'start_time': f'01/01/{year}',
-            'end_time': f'31/12/{year}',
+            'start_time': start_time_s,
+            'end_time': end_time_s,
             'seaport_name': 'Nam Đình Vũ - Hải Phòng',
             's1_co2': round(s1_co2, 2), 's1_ch4': round(s1_ch4, 2), 's1_n2o': round(s1_n2o, 2), 's1_co2e': round(s1_co2e, 2), 's1_w': s1_w,
             's2_co2': round(s2_co2, 2), 's2_ch4': round(s2_ch4, 2), 's2_n2o': round(s2_n2o, 2), 's2_co2e': round(s2_co2e, 2), 's2_w': s2_w,
@@ -151,7 +256,7 @@ class ReportService:
             'sum_co2e': round(sum_co2e, 2) if sum_co2e != 1.0 else 0.0
         }
 
-        template_path = "./static/VPEI_report_apd.docx"
+        template_path = "./static/VPEI_report_apd.docx" if include_appendix else "./static/VPEI_report.docx"
         if not os.path.exists(template_path):
             raise FileNotFoundError(f"Template {template_path} not found")
 

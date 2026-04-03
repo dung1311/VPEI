@@ -1,6 +1,6 @@
 # services/scope1.py
 import io
-from typing import List
+from typing import List, Set
 import pandas as pd
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.orm import Session
@@ -243,12 +243,21 @@ class ActivityDataService:
 class DashboardService:
     @staticmethod
     def get_dashboard_data(db: Session, year: int, month: int):
-        # [FIXED] 1. Quét trạng thái của nguyên 1 kỳ
+        return DashboardService.get_dashboard_data_for_months(db, year, [month])
+
+    @staticmethod
+    def get_dashboard_data_for_months(db: Session, year: int, months: List[int]):
+        months_set: Set[int] = set(int(m) for m in months if m)
+        months_sorted = sorted(months_set)
+        if not months_sorted:
+            months_sorted = list(range(1, 13))
+            months_set = set(months_sorted)
+
         acts = db.query(ActivityData.status).filter(
             ActivityData.period_year == year,
-            ActivityData.period_month == month
+            ActivityData.period_month.in_(months_sorted),
         ).all()
-        
+
         period_status = RecordStatusEnum.DRAFT
         if acts:
             statuses = [a[0] for a in acts]
@@ -257,75 +266,65 @@ class DashboardService:
             elif RecordStatusEnum.SUBMITTED in statuses:
                 period_status = RecordStatusEnum.SUBMITTED
 
-        # 2. Tính toán tổng
         cur = db.query(
             func.sum(ActivityData.total_co2e).label('total_co2e'),
             func.sum(ActivityData.recorded_power * ActivityData.operating_hours * ActivityData.load_factor).label('total_energy')
         ).filter(
             ActivityData.period_year == year,
-            ActivityData.period_month == month,
+            ActivityData.period_month.in_(months_sorted),
         ).first()
 
         total_co2e = cur.total_co2e or 0.0
         total_energy = cur.total_energy or 0.0
         total_fuel = total_energy * 0.25
 
-        # 3. Tính MoM
-        prev_year = year if month > 1 else year - 1
-        prev_month = month - 1 if month > 1 else 12
-
-        prev_co2e = db.query(func.sum(ActivityData.total_co2e)).filter(
-            ActivityData.period_year == prev_year,
-            ActivityData.period_month == prev_month,
-        ).scalar() or 0.0
-
         mom = 0.0
-        # [FIXED] Lỗi chia cho 0
-        if prev_co2e > 0:
-            mom = ((total_co2e - prev_co2e) / prev_co2e) * 100.0
-        elif total_co2e > 0 and prev_co2e == 0:
-            mom = 100.0  # Tăng trưởng 100% từ con số 0
+        if len(months_sorted) == 1:
+            month = months_sorted[0]
+            prev_year = year if month > 1 else year - 1
+            prev_month = month - 1 if month > 1 else 12
+            prev_co2e = db.query(func.sum(ActivityData.total_co2e)).filter(
+                ActivityData.period_year == prev_year,
+                ActivityData.period_month == prev_month,
+            ).scalar() or 0.0
+            if prev_co2e > 0:
+                mom = ((total_co2e - prev_co2e) / prev_co2e) * 100.0
+            elif total_co2e > 0 and prev_co2e == 0:
+                mom = 100.0
 
-        # 4. Top Emitter
         top = db.query(
             DeviceCategory.name,
             func.sum(ActivityData.total_co2e).label('co2e')
         ).join(DeviceCategory).filter(
             ActivityData.period_year == year,
-            ActivityData.period_month == month,
+            ActivityData.period_month.in_(months_sorted),
         ).group_by(DeviceCategory.name).order_by(func.sum(ActivityData.total_co2e).desc()).first()
 
         top_name = top.name if top else "N/A"
         top_co2e = top.co2e if top else 0.0
 
-        # Biểu đồ Cột
         bar_rows = db.query(
             DeviceCategory.device_type,
             func.sum(ActivityData.total_co2e).label('co2e')
         ).join(DeviceCategory).filter(
             ActivityData.period_year == year,
-            ActivityData.period_month == month,
+            ActivityData.period_month.in_(months_sorted),
         ).group_by(DeviceCategory.device_type).order_by(func.sum(ActivityData.total_co2e).desc()).limit(8).all()
 
         bar_chart = {"labels": [r[0].value for r in bar_rows], "values": [r[1] for r in bar_rows]}
 
-        # Biểu đồ Đường
-        line_labels = []
+        line_labels = [f"T{i}" for i in range(1, 13)]
         line_values = []
-        for i in range(11, -1, -1):
-            m = month - i
-            y = year
-            if m <= 0:
-                m += 12
-                y -= 1
-            val = db.query(func.sum(ActivityData.total_co2e)).filter(
-                ActivityData.period_year == y,
-                ActivityData.period_month == m,
-            ).scalar() or 0.0
-            line_labels.append(f"{m}/{y}")
+        for m in range(1, 13):
+            if m in months_set:
+                val = db.query(func.sum(ActivityData.total_co2e)).filter(
+                    ActivityData.period_year == year,
+                    ActivityData.period_month == m,
+                ).scalar() or 0.0
+            else:
+                val = 0.0
             line_values.append(val)
 
-        # Dữ liệu Bảng
         table_data = []
         if total_co2e > 0:
             rows = db.query(
@@ -335,7 +334,7 @@ class DashboardService:
                 func.sum(ActivityData.total_co2e).label('co2e')
             ).join(DeviceCategory).filter(
                 ActivityData.period_year == year,
-                ActivityData.period_month == month,
+                ActivityData.period_month.in_(months_sorted),
             ).group_by(DeviceCategory.device_type, DeviceCategory.fuel_type).all()
 
             for r in rows:
@@ -354,7 +353,7 @@ class DashboardService:
                 "top_emitter_name": top_name,
                 "top_emitter_co2e": top_co2e,
                 "mom_growth": mom,
-                "status": period_status.value # [FIXED] Trả về Enum value
+                "status": period_status.value
             },
             "bar_chart": bar_chart,
             "line_chart": {"labels": line_labels, "values": line_values},
@@ -362,8 +361,8 @@ class DashboardService:
         }
 
     @staticmethod
-    def export_excel(db: Session, year: int, month: int):
-        data = DashboardService.get_dashboard_data(db, year, month)
+    def export_excel(db: Session, year: int, months: List[int]):
+        data = DashboardService.get_dashboard_data_for_months(db, year, months)
         df = pd.DataFrame(data['table_data'])
         if not df.empty:
             df = df.rename(columns={
@@ -374,8 +373,9 @@ class DashboardService:
                 'percentage': 'Tỷ Trọng (%)',
             })
 
+        tag = "_".join(str(m) for m in sorted(set(months)))[:60]
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            df.to_excel(writer, sheet_name=f'Thang_{month}_{year}', index=False)
+            df.to_excel(writer, sheet_name=f"S1_{year}_{tag}"[:31], index=False)
         output.seek(0)
         return output

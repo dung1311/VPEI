@@ -47,16 +47,16 @@
 
     {% if not hide_period_filter %}
     <!-- Nút chọn kiểu lọc -->
-    <button class="period-btn" id="btn-year" onclick="setPeriodMode('year')">Năm</button>
-    <button class="period-btn" id="btn-quarter" onclick="setPeriodMode('quarter')">Quý</button>
-    <button class="period-btn" id="btn-month" onclick="setPeriodMode('month')">Tháng</button>
+    {% if not hide_period_btn_year %}<button class="period-btn" id="btn-year" onclick="setPeriodMode('year')">Năm</button>{% endif %}
+    {% if not hide_period_btn_quarter %}<button class="period-btn" id="btn-quarter" onclick="setPeriodMode('quarter')">Quý</button>{% endif %}
+    {% if not hide_period_btn_month %}<button class="period-btn" id="btn-month" onclick="setPeriodMode('month')">Tháng</button>{% endif %}
 
     <!-- Các Dropdown -->
-    <select class="period-select" id="select-year" onchange="applyPeriodFilter()"></select>
+    {% if not hide_period_btn_year %}<select class="period-select" id="select-year" onchange="applyPeriodFilter()"></select>{% endif %}
     
-    <select class="period-select" id="select-quarter" style="display: none;" onchange="applyPeriodFilter()"></select>
+    {% if not hide_period_btn_quarter %}<select class="period-select" id="select-quarter" style="display: none;" onchange="applyPeriodFilter()"></select>{% endif %}
     
-    <select class="period-select" id="select-month" style="display: none;" onchange="applyPeriodFilter()"></select>
+    {% if not hide_period_btn_month %}<select class="period-select" id="select-month" style="display: none;" onchange="applyPeriodFilter()"></select>{% endif %}
     {% endif %}
 
     {% if extra_right_html %}
@@ -168,14 +168,29 @@ function syncFilterFromUrl(data) {
         document.getElementById("select-month").value = mo;
         setPeriodMode('month', false);
     } else {
-        // Nêu không chọn tháng hay quý trên URL, nhưng API có default
-        if(!qr && !mo && data && data.default_month) {
-            mo = data.default_month;
-            if(document.getElementById("select-month")) document.getElementById("select-month").value = mo;
-            setPeriodMode('month', false);
-        } else {
-            setPeriodMode('year', false);
+        // URL chỉ có năm (hoặc không có tháng/quý): chế độ Năm — không ép mặc định sang Tháng
+        if(document.getElementById("select-month") && data && data.default_month) {
+            document.getElementById("select-month").value = data.default_month;
         }
+        setPeriodMode('year', false);
+    }
+
+    if (typeof window.onGlobalFilterChange === 'function') {
+        const fakeUrl = new URL(window.location.href);
+        const sY = document.getElementById("select-year");
+        const sQ = document.getElementById("select-quarter");
+        const sM = document.getElementById("select-month");
+        if(sY) fakeUrl.searchParams.set('year', sY.value);
+        
+        let m = 'year';
+        if(document.getElementById('btn-quarter') && document.getElementById('btn-quarter').classList.contains('active')) {
+            m = 'quarter';
+            if(sQ) fakeUrl.searchParams.set('quarter', sQ.value);
+        } else if(document.getElementById('btn-month') && document.getElementById('btn-month').classList.contains('active')) {
+            m = 'month';
+            if(sM) fakeUrl.searchParams.set('month', sM.value);
+        }
+        window.onGlobalFilterChange(m, fakeUrl.searchParams);
     }
 }
 
@@ -212,8 +227,10 @@ function applyPeriodFilter(forceMode=null) {
     // Xác định mode hiện tại
     let mode = forceMode;
     if(!mode) {
-        if(document.getElementById('btn-quarter').classList.contains('active')) mode = 'quarter';
-        else if(document.getElementById('btn-month').classList.contains('active')) mode = 'month';
+        const btnQ = document.getElementById('btn-quarter');
+        const btnM = document.getElementById('btn-month');
+        if(btnQ && btnQ.classList.contains('active')) mode = 'quarter';
+        else if(btnM && btnM.classList.contains('active')) mode = 'month';
         else mode = 'year';
     }
 

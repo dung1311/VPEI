@@ -117,25 +117,6 @@ function toggleMenu(id) {
   {% include 'components/topbar.html' %}
 
   <div class="content">
-    <div class="filters-row">
-      <div class="filter-group">
-        <label class="filter-label">Năm:</label>
-        <select id="filter-year" class="filter-select" onchange="applyFilters()">
-          <option value="">Tất cả</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label class="filter-label">Tháng:</label>
-        <select id="filter-month" class="filter-select" onchange="applyFilters()">
-          <option value="">Tất cả</option>
-          <option value="1">Tháng 1</option><option value="2">Tháng 2</option><option value="3">Tháng 3</option>
-          <option value="4">Tháng 4</option><option value="5">Tháng 5</option><option value="6">Tháng 6</option>
-          <option value="7">Tháng 7</option><option value="8">Tháng 8</option><option value="9">Tháng 9</option>
-          <option value="10">Tháng 10</option><option value="11">Tháng 11</option><option value="12">Tháng 12</option>
-        </select>
-      </div>
-      <button class="btn-small" onclick="loadAuditHistory()">Tải lại dữ liệu</button>
-    </div>
 
     <div class="activity-card">
       <div class="activity-header">
@@ -175,15 +156,28 @@ let availableYears = [];
 let deleteTarget = null;
 const canDelete = document.getElementById('page-config').dataset.canDelete === '1';
 
+let filterYear = null;
+let filterMonth = null;
+let filterQuarter = null;
+
+window.onGlobalFilterChange = function(mode, searchParams) {
+  filterYear = searchParams.get('year');
+  filterMonth = searchParams.get('month');
+  filterQuarter = searchParams.get('quarter');
+  loadAuditHistory();
+};
+
 // ─── LOAD AUDIT HISTORY ──────────────────────────────────
 async function loadAuditHistory() {
-  const year = document.getElementById('filter-year').value;
-  const month = document.getElementById('filter-month').value;
-  
+  const year = filterYear || '';
+  const month = filterMonth || '';
+  const quarter = filterQuarter || '';
+
   let url = '/api/scope3/manager/audit';
   const params = new URLSearchParams();
   if (year) params.append('year', year);
   if (month) params.append('month', month);
+  if (quarter) params.append('quarter', quarter);
   if (params.toString()) url += '?' + params.toString();
   
   try {
@@ -195,7 +189,6 @@ async function loadAuditHistory() {
     availableYears = data.available_years || [];
     
     renderAuditList();
-    populateYearFilter();
   } catch (err) {
     showToast('Lỗi tải dữ liệu: ' + err.message, 'error');
   }
@@ -246,21 +239,6 @@ function getTypeIcon(type) {
   return icons[type] || 'fa-circle';
 }
 
-function populateYearFilter() {
-  const select = document.getElementById('filter-year');
-  const currentOptions = Array.from(select.options).map(o => o.value);
-  
-  availableYears.forEach(year => {
-    if (!currentOptions.includes(String(year))) {
-      const option = document.createElement('option');
-      option.value = year;
-      option.textContent = 'Năm ' + year;
-      select.appendChild(option);
-    }
-  });
-}
-
-function applyFilters() { loadAuditHistory(); }
 
 function openDeleteModal(id) {
   deleteTarget = id;

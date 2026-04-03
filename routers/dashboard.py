@@ -6,6 +6,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import datetime
+from typing import Optional, Set
 
 from core.database import get_db
 from core.security import decode_token
@@ -18,6 +19,16 @@ from services import container_service, ship_service
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
+
+
+def _month_filter_set(month: Optional[int], quarter: Optional[int]) -> Optional[Set[int]]:
+    if month is not None:
+        return {month}
+    if quarter is not None:
+        q = int(quarter)
+        return set(range((q - 1) * 3 + 1, q * 3 + 1))
+    return None
+
 
 def get_val(obj, attr_name, default=0.0):
     """Hàm phụ trợ lấy giá trị an toàn cho cả Dict và Object"""
@@ -124,7 +135,13 @@ def calculate_shap_from_data(containers, ships):
 
 # ─── API HIỂN THỊ DASHBOARD ───
 @router.get("/dashboard", response_class=HTMLResponse)
-async def dashboard_page(request: Request, year: int = Query(None), db: Session = Depends(get_db)):
+async def dashboard_page(
+    request: Request,
+    year: int = Query(None),
+    quarter: int = Query(None),
+    month: int = Query(None),
+    db: Session = Depends(get_db),
+):
     token = request.cookies.get("access_token")
     if not token:
         return RedirectResponse(url="/login", status_code=302)
@@ -137,7 +154,13 @@ async def dashboard_page(request: Request, year: int = Query(None), db: Session 
 
     now = datetime.now()
     current_year = year or now.year
-    current_month = now.month
+    mf = _month_filter_set(month, quarter)
+    if month is not None:
+        period_label = f"Tháng {month}/{current_year}"
+    elif quarter is not None:
+        period_label = f"Quý {quarter}/{current_year}"
+    else:
+        period_label = f"Năm {current_year}"
 
     # Hàm parse ngày an toàn
     def parse_date(dt_val):
@@ -157,6 +180,8 @@ async def dashboard_page(request: Request, year: int = Query(None), db: Session 
     s1_breakdown = {}
     try:
         for m in range(1, 13):
+            if mf is not None and m not in mf:
+                continue
             acts = scope1_services.ActivityDataService.get_by_period(db, current_year, m)
             month_co2 = 0.0
             for a in acts:
@@ -183,19 +208,23 @@ async def dashboard_page(request: Request, year: int = Query(None), db: Session 
         for item in s2_items:
             kwh = float(item.get("kwh", 0.0) if isinstance(item, dict) else getattr(item, "kwh", 0.0))
             
-            if kwh > 0:
-                val_co2 = kwh * GRID_EF
-                s2_total += val_co2
-                
-                # Gom nhóm thiết bị
-                name = item.get("name", "Thiết bị điện (S2)") if isinstance(item, dict) else getattr(item, "name", "Thiết bị điện (S2)")
-                s2_breakdown[str(name)] = s2_breakdown.get(str(name), 0.0) + val_co2
-                
-                # Phân bổ vào tháng Trend
-                raw_date = item.get("entry_date", None) if isinstance(item, dict) else getattr(item, "entry_date", None)
-                dt = parse_date(raw_date)
-                
-                if dt and dt.year == current_year:
+            if kwh <= 0:
+                continue
+
+            raw_date = item.get("entry_date", None) if isinstance(item, dict) else getattr(item, "entry_date", None)
+            dt = parse_date(raw_date)
+            if mf is not None:
+                if not (dt and dt.year == current_year and dt.month in mf):
+                    continue
+
+            val_co2 = kwh * GRID_EF
+            s2_total += val_co2
+
+            name = item.get("name", "Thiết bị điện (S2)") if isinstance(item, dict) else getattr(item, "name", "Thiết bị điện (S2)")
+            s2_breakdown[str(name)] = s2_breakdown.get(str(name), 0.0) + val_co2
+
+            if dt and dt.year == current_year:
+                if mf is None or dt.month in mf:
                     s2_trend[dt.month - 1] += val_co2
 
     except Exception as e: 
@@ -209,28 +238,53 @@ async def dashboard_page(request: Request, year: int = Query(None), db: Session 
     s_co2 = 0.0
     total_trips = 0
     containers, ships = [], []
+
+    def _s3_included(obj, is_dict: bool):
+        dt = parse_date(obj.get("start_time") if is_dict else getattr(obj, "start_time", None))
+        if mf is None:
+            return True
+        return bool(dt and dt.year == current_year and dt.month in mf)
+
     try:
         containers = container_service.get_all_containers(db)
         ships = ship_service.get_all_ships(db)
-        total_trips += len(ships) + len(containers)
 
         for c in containers:
             val = float(get_val(c, 'total_co2') or get_val(c, 'e_total'))
             dt = parse_date(c.get('start_time') if isinstance(c, dict) else getattr(c, 'start_time', None))
-            c_co2 += val
-            if dt and dt.year == current_year: s3_trend[dt.month - 1] += val
+            if mf is None:
+                c_co2 += val
+                if dt and dt.year == current_year:
+                    s3_trend[dt.month - 1] += val
+            elif dt and dt.year == current_year and dt.month in mf:
+                c_co2 += val
+                s3_trend[dt.month - 1] += val
 
         for s in ships:
             val = float(get_val(s, 'total_co2'))
             dt = parse_date(s.get('start_time') if isinstance(s, dict) else getattr(s, 'start_time', None))
-            s_co2 += val
-            if dt and dt.year == current_year: s3_trend[dt.month - 1] += val
+            if mf is None:
+                s_co2 += val
+                if dt and dt.year == current_year:
+                    s3_trend[dt.month - 1] += val
+            elif dt and dt.year == current_year and dt.month in mf:
+                s_co2 += val
+                s3_trend[dt.month - 1] += val
 
         s3_total = c_co2 + s_co2
-    except Exception as e: print("Lỗi Scope 3:", e)
+        if mf is None:
+            total_trips = len(ships) + len(containers)
+        else:
+            total_trips = sum(1 for c in containers if _s3_included(c, isinstance(c, dict)))
+            total_trips += sum(1 for s in ships if _s3_included(s, isinstance(s, dict)))
+    except Exception as e:
+        print("Lỗi Scope 3:", e)
+
+    containers_shap = [c for c in containers if _s3_included(c, isinstance(c, dict))]
+    ships_shap = [s for s in ships if _s3_included(s, isinstance(s, dict))]
 
     # ─── 4. SHAP & AI INSIGHT ───
-    shap_data = calculate_shap_from_data(containers, ships)
+    shap_data = calculate_shap_from_data(containers_shap, ships_shap)
     
     if shap_data:
         top = shap_data[0]
@@ -265,6 +319,7 @@ async def dashboard_page(request: Request, year: int = Query(None), db: Session 
         "total_emissions": s1_total + s2_total + s3_total,
         "scope1_total": s1_total, "scope2_total": s2_total, "scope3_total": s3_total,
         "total_trips": total_trips, "current_year": current_year,
+        "period_label": period_label,
         "last_updated": now.strftime("%d/%m/%Y %H:%M"),
         "trend": {"months": ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'], "scope1": s1_trend, "scope2": s2_trend, "scope3": s3_trend},
         "quarterly": {"labels": ["Quý 1", "Quý 2", "Quý 3", "Quý 4", "Cả Năm (YTD)"], "scope1": to_quarters(s1_trend), "scope2": to_quarters(s2_trend), "scope3": to_quarters(s3_trend)},
