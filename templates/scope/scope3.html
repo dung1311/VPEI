@@ -325,18 +325,6 @@ function toggleMenu(id) {
             </div>
 
 
-            <div style="display:flex;gap:8px;align-items:center;">
-              <select id="recordsMonthFilter" class="select-pill" onchange="setRecordsTimeFilter()">
-                <option value="all">Tất cả tháng</option>
-                <option value="1">Tháng 1</option><option value="2">Tháng 2</option><option value="3">Tháng 3</option>
-                <option value="4">Tháng 4</option><option value="5">Tháng 5</option><option value="6">Tháng 6</option>
-                <option value="7">Tháng 7</option><option value="8">Tháng 8</option><option value="9">Tháng 9</option>
-                <option value="10">Tháng 10</option><option value="11">Tháng 11</option><option value="12">Tháng 12</option>
-              </select>
-              <select id="recordsYearFilter" class="select-pill" onchange="setRecordsTimeFilter()">
-                <option value="all">Tất cả năm</option>
-              </select>
-            </div>
           </div>
         </div>
       </div>
@@ -642,10 +630,17 @@ function setRecordsFilter(filterKey, btn) {
 }
 
 function setRecordsTimeFilter() {
-  selectedRecordsMonth = document.getElementById('recordsMonthFilter').value;
-  selectedRecordsYear = document.getElementById('recordsYearFilter').value;
   renderRecordsTable();
 }
+
+window.onGlobalFilterChange = function(mode, searchParams) {
+  const y = searchParams.get('year');
+  const m = searchParams.get('month');
+  selectedRecordsYear = y || 'all';
+  selectedRecordsMonth = m || 'all';
+  renderRecordsTable();
+  updateOverview();
+};
 
 function renderRecordsEmissionChart(filteredRecords) {
   const canvas = document.getElementById('recordsEmissionDonut');
@@ -985,19 +980,8 @@ let trendLineChartRef = null;
 
 
 function updateOverview() {
-  const select = document.querySelector('.topbar-right select');
-  const currentMonthStr = select ? select.value : 'all';
-  
-  let filterMonth = 'all';
-  let filterYear = 'all';
-  
-  if (currentMonthStr !== 'all') {
-      const match = currentMonthStr.match(/Tháng (\d{2})\/(\d{4})/);
-      if (match) {
-        filterMonth = parseInt(match[1], 10);
-        filterYear = parseInt(match[2], 10);
-      }
-  }
+  const filterYear = selectedRecordsYear === 'all' ? 'all' : parseInt(selectedRecordsYear, 10);
+  const filterMonth = selectedRecordsMonth === 'all' ? 'all' : parseInt(selectedRecordsMonth, 10);
 
   // Lọc dữ liệu
   let filteredRecords = containerRecords;
