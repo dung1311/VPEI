@@ -7,7 +7,12 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from sqlalchemy.orm import Session
 
-from services import container_service, ship_service, scope3_other_vehicle_service
+from services import (
+    container_service,
+    harbor_craft_service,
+    ship_service,
+    scope3_other_vehicle_service,
+)
 
 
 def month_filter_set(month: Optional[int], quarter: Optional[int]) -> Optional[Set[int]]:
@@ -135,13 +140,16 @@ def compute_scope3_period(
     truck_co2 = 0.0
     other_ve_co2 = 0.0
     ship_co2 = 0.0
+    harbor_co2 = 0.0
     s3_trend = [0.0] * 12
     truck_trend = [0.0] * 12
     ship_trend = [0.0] * 12
     other_trend = [0.0] * 12
+    harbor_trend = [0.0] * 12
     n_cont = 0
     n_ship = 0
     n_other = 0
+    n_harbor = 0
 
     for c in containers:
         if not row_in_period_start_time(c.get("start_time"), year, mf):
@@ -176,8 +184,20 @@ def compute_scope3_period(
             s3_trend[tm - 1] += val
             other_trend[tm - 1] += val
 
+    harbors = harbor_craft_service.get_all_harbor_crafts(db)
+    for h in harbors:
+        if not row_in_period_start_time(h.get("record_time"), year, mf):
+            continue
+        val = float(h.get("e_total") or 0.0)
+        harbor_co2 += val
+        n_harbor += 1
+        dt = parse_datetime(h.get("record_time"))
+        if dt:
+            s3_trend[dt.month - 1] += val
+            harbor_trend[dt.month - 1] += val
+
     container_co2e = truck_co2 + other_ve_co2
-    total = container_co2e + ship_co2
+    total = container_co2e + ship_co2 + harbor_co2
 
     container_trend = [truck_trend[i] + other_trend[i] for i in range(12)]
 
@@ -187,13 +207,16 @@ def compute_scope3_period(
         "container_co2e": container_co2e,
         "ship_co2e": ship_co2,
         "total_co2e": total,
-        "record_count": n_cont + n_ship + n_other,
+        "record_count": n_cont + n_ship + n_other + n_harbor,
         "n_containers": n_cont,
         "n_ships": n_ship,
         "n_other_vehicles": n_other,
+        "n_harbor_crafts": n_harbor,
+        "harbor_co2e": harbor_co2,
         "trend_monthly": s3_trend,
         "trend_container_monthly": container_trend,
         "trend_ship_monthly": ship_trend,
+        "trend_harbor_monthly": harbor_trend,
         "containers": containers,
         "ships": ships,
     }
@@ -206,6 +229,8 @@ def _metric_from_payload(p: Dict[str, Any], key: str) -> float:
         return float(p.get("container_co2e") or 0.0)
     if key == "ship":
         return float(p.get("ship_co2e") or 0.0)
+    if key == "harbor":
+        return float(p.get("harbor_co2e") or 0.0)
     return 0.0
 
 
@@ -264,5 +289,6 @@ def build_scope3_comparison_payload(
             "total": pack("total"),
             "container": pack("container"),
             "ship": pack("ship"),
+            "harbor": pack("harbor"),
         },
     }

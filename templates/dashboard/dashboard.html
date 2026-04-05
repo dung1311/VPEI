@@ -89,7 +89,7 @@
     <div class="charts-row">
       <div class="chart-card">
         <div class="chart-title" style="display: flex; justify-content: space-between; align-items: center;">
-          <span>Xu hướng phát thải hàng tháng – {{ data.period_label }}</span>
+          <span>Xu hướng phát thải hàng tháng – Năm <span id="displayYear"></span></span>
           <div style="font-weight:500; font-size:0.75rem; color:#4a5a7b; display:flex; gap:14px; align-items:center;">
             <span style="display:flex; align-items:center; gap:4px;"><span style="color:#0d1f3c; font-size:1.2rem; line-height:0;">•</span> Scope 1</span>
             <span style="display:flex; align-items:center; gap:4px;"><span style="color:#2e7df7; font-size:1.2rem; line-height:0;">•</span> Scope 2</span>
@@ -100,7 +100,8 @@
           <canvas id="trendChart"></canvas>
         </div>
       </div>
-    </div> <div class="bottom-row">
+    </div> 
+    <div class="bottom-row">
       <div class="chart-card">
         <div class="chart-title">Cấu trúc Phát thải theo Quý (tCO₂e)</div>
         <div style="position: relative; height: 200px; width: 100%;">
@@ -132,8 +133,8 @@
                 <strong>{{ "{:,.2f}".format(data.scope1_total) }} tCO₂e</strong>
             </div>
             <div style="display:flex; justify-content:space-between; padding-bottom:4px;">
-                <span>📅 Kỳ báo cáo:</span>
-                <strong>{{ data.period_label }}</strong>
+                <span>📅 Năm Báo cáo:</span>
+                <strong id="summaryYear"></strong>
             </div>
           </div>
         </div>
@@ -141,9 +142,23 @@
           <i class="fa-solid fa-clock-rotate-left"></i> Cập nhật lần cuối: {{ data.last_updated }}
         </div>
       </div>
-    </div> </div> </div> <script>
+    </div> 
+  </div> 
+</div> 
+
+<script>
 // --- INJECT DỮ LIỆU TỪ PYTHON VÀO JAVASCRIPT ---
 const dbData = {{ data | tojson }};
+
+// Nhãn biểu đồ / tóm tắt theo năm từ URL (topbar do components/topbar.html quản lý — không gắn listener lên mọi select để tránh coi tháng/quý là năm).
+document.addEventListener("DOMContentLoaded", function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentYear = urlParams.get("year") || String(new Date().getFullYear());
+    const elY = document.getElementById("displayYear");
+    const elS = document.getElementById("summaryYear");
+    if (elY) elY.innerText = currentYear;
+    if (elS) elS.innerText = currentYear;
+});
 
 // 1. BIỂU ĐỒ XU HƯỚNG THEO THÁNG (Trend Line Chart)
 const trendCtx = document.getElementById('trendChart').getContext('2d');
@@ -227,6 +242,7 @@ new Chart(trendCtx, {
       }
   }
 });
+
 // 2. BIỂU ĐỒ CẤU TRÚC THEO QUÝ (Stacked Bar Chart)
 const scopeCtx = document.getElementById('scopeBar').getContext('2d');
 new Chart(scopeCtx, {
@@ -302,15 +318,6 @@ new Chart(doughCtx, {
       maintainAspectRatio: false
   }
 });
-
-// Nút chọn kỳ báo cáo
-document.querySelectorAll('.period-btn').forEach(btn => {
-  btn.addEventListener('click', function() {
-    document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
-    this.classList.add('active');
-  });
-});
-
 </script>
 </body>
 </html>

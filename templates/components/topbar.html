@@ -107,92 +107,122 @@ document.addEventListener('click', () => {
 
 {% if not hide_period_filter %}
 <script>
-document.addEventListener("DOMContentLoaded", async function() {
-    const defaultData = {
-        years: [new Date().getFullYear(), new Date().getFullYear()-1],
-        quarters: [
-            {id:1, name:'Quý 1'},{id:2, name:'Quý 2'},{id:3, name:'Quý 3'},{id:4, name:'Quý 4'}
-        ],
-        months: Array.from({length:12}, (_, i) => ({id: i+1, name: `Tháng ${i+1}`})),
-        default_year: new Date().getFullYear(),
-        default_month: new Date().getMonth() + 1,
-        default_quarter: Math.floor(new Date().getMonth() / 3) + 1
-    };
-
-    let data = defaultData; window.defaultData = data;
-    try {
-        const res = await fetch('/api/common/periods');
-        if(res.ok) { data = await res.json(); window.defaultData = data; }
-    } catch(e) { console.error("Could not fetch API common periods", e); }
-
-    // Render Years
+function renderPeriodSelectOptions(data) {
     const selYear = document.getElementById("select-year");
-    if(selYear) {
-        selYear.innerHTML = data.years.map(y => `<option value="${y}">${y}</option>`).join('');
+    if (selYear) {
+        selYear.innerHTML = data.years.map((y) => `<option value="${y}">${y}</option>`).join("");
     }
-
-    // Render Quarters
     const selQuarter = document.getElementById("select-quarter");
-    if(selQuarter) {
-        selQuarter.innerHTML = data.quarters.map(q => `<option value="${q.id}">${q.name}</option>`).join('');
+    if (selQuarter) {
+        selQuarter.innerHTML = data.quarters.map((q) => `<option value="${q.id}">${q.name}</option>`).join("");
     }
-
-    // Render Months
     const selMonth = document.getElementById("select-month");
-    if(selMonth) {
-        selMonth.innerHTML = data.months.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
-    }
-
-    syncFilterFromUrl(data);
-});
-
-function syncFilterFromUrl(data) {
-    const params = new URLSearchParams(window.location.search);
-    let yr = params.get('year');
-    let qr = params.get('quarter');
-    let mo = params.get('month');
-    
-    // Nếu URL không có params, dùng default từ database (API fallback defaultData có set cứng cho default_year ...)
-    if(!yr && data && data.default_year) {
-        yr = data.default_year;
-    }
-    
-    if(yr && document.getElementById("select-year")) {
-        document.getElementById("select-year").value = yr;
-    }
-    
-    if(qr && document.getElementById("select-quarter")) {
-        document.getElementById("select-quarter").value = qr;
-        setPeriodMode('quarter', false);
-    } else if (mo && document.getElementById("select-month")) {
-        document.getElementById("select-month").value = mo;
-        setPeriodMode('month', false);
-    } else {
-        // URL chỉ có năm (hoặc không có tháng/quý): chế độ Năm — không ép mặc định sang Tháng
-        if(document.getElementById("select-month") && data && data.default_month) {
-            document.getElementById("select-month").value = data.default_month;
-        }
-        setPeriodMode('year', false);
-    }
-
-    if (typeof window.onGlobalFilterChange === 'function') {
-        const fakeUrl = new URL(window.location.href);
-        const sY = document.getElementById("select-year");
-        const sQ = document.getElementById("select-quarter");
-        const sM = document.getElementById("select-month");
-        if(sY) fakeUrl.searchParams.set('year', sY.value);
-        
-        let m = 'year';
-        if(document.getElementById('btn-quarter') && document.getElementById('btn-quarter').classList.contains('active')) {
-            m = 'quarter';
-            if(sQ) fakeUrl.searchParams.set('quarter', sQ.value);
-        } else if(document.getElementById('btn-month') && document.getElementById('btn-month').classList.contains('active')) {
-            m = 'month';
-            if(sM) fakeUrl.searchParams.set('month', sM.value);
-        }
-        window.onGlobalFilterChange(m, fakeUrl.searchParams);
+    if (selMonth) {
+        selMonth.innerHTML = data.months.map((m) => `<option value="${m.id}">${m.name}</option>`).join("");
     }
 }
+
+/** Chỉ đồng bộ UI (nút + select + hiển thị) với URL / data — không gọi onGlobalFilterChange. */
+function applyPeriodControlsFromUrl(data) {
+    const params = new URLSearchParams(window.location.search);
+    let yr = params.get("year");
+    let qr = params.get("quarter");
+    let mo = params.get("month");
+
+    if (!yr && data && data.default_year) {
+        yr = String(data.default_year);
+    }
+
+    const sY = document.getElementById("select-year");
+    if (yr && sY) {
+        sY.value = yr;
+    }
+
+    const sQ = document.getElementById("select-quarter");
+    const sM = document.getElementById("select-month");
+
+    if (qr && sQ) {
+        sQ.value = qr;
+        setPeriodMode("quarter", false);
+    } else if (mo && sM) {
+        sM.value = mo;
+        setPeriodMode("month", false);
+    } else {
+        if (sM && data && data.default_month) {
+            sM.value = String(data.default_month);
+        }
+        setPeriodMode("year", false);
+    }
+}
+
+function buildPeriodParamsFromDom() {
+    const fakeUrl = new URL(window.location.href);
+    const sY = document.getElementById("select-year");
+    const sQ = document.getElementById("select-quarter");
+    const sM = document.getElementById("select-month");
+    if (sY) fakeUrl.searchParams.set("year", sY.value);
+
+    let mode = "year";
+    const btnQ = document.getElementById("btn-quarter");
+    const btnM = document.getElementById("btn-month");
+    if (btnQ && btnQ.classList.contains("active")) {
+        mode = "quarter";
+        if (sQ) fakeUrl.searchParams.set("quarter", sQ.value);
+    } else if (btnM && btnM.classList.contains("active")) {
+        mode = "month";
+        if (sM) fakeUrl.searchParams.set("month", sM.value);
+    }
+    return { mode, searchParams: fakeUrl.searchParams };
+}
+
+function notifyGlobalPeriodChange() {
+    if (typeof window.onGlobalFilterChange !== "function") return;
+    const { mode, searchParams } = buildPeriodParamsFromDom();
+    window.onGlobalFilterChange(mode, searchParams);
+}
+
+function syncFilterFromUrl(data, options) {
+    applyPeriodControlsFromUrl(data);
+    if (options && options.skipNotify) return;
+    notifyGlobalPeriodChange();
+}
+
+document.addEventListener("DOMContentLoaded", async function () {
+    const defaultData = {
+        years: [new Date().getFullYear(), new Date().getFullYear() - 1],
+        quarters: [
+            { id: 1, name: "Quý 1" },
+            { id: 2, name: "Quý 2" },
+            { id: 3, name: "Quý 3" },
+            { id: 4, name: "Quý 4" },
+        ],
+        months: Array.from({ length: 12 }, (_, i) => ({ id: i + 1, name: `Tháng ${i + 1}` })),
+        default_year: new Date().getFullYear(),
+        default_month: new Date().getMonth() + 1,
+        default_quarter: Math.floor(new Date().getMonth() / 3) + 1,
+    };
+
+    let data = defaultData;
+    window.defaultData = data;
+
+    // Điền option ngay (không chờ fetch) để tránh topbar co giãn / nháy khi tải trang hoặc F5.
+    renderPeriodSelectOptions(data);
+    applyPeriodControlsFromUrl(data);
+
+    try {
+        const res = await fetch("/api/common/periods");
+        if (res.ok) {
+            data = await res.json();
+            window.defaultData = data;
+        }
+    } catch (e) {
+        console.error("Could not fetch API common periods", e);
+    }
+
+    renderPeriodSelectOptions(data);
+    applyPeriodControlsFromUrl(data);
+    notifyGlobalPeriodChange();
+});
 
 function setPeriodMode(mode, executeRedirect=false) {
     // Reset active buttons

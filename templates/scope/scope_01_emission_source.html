@@ -7,6 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -41,15 +42,6 @@
 
   /* MAIN */
   .main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
-  .topbar{background:var(--white);border-bottom:1px solid var(--gray-border);padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
-  .topbar-title{font-family:'Sora',sans-serif;font-weight:800;font-size:1.15rem;color:var(--navy);}
-  .topbar-right{display:flex;align-items:center;gap:10px;}
-  .select-pill{padding:6px 12px;border-radius:8px;border:1.5px solid var(--gray-border);font-size:0.83rem;font-weight:600;color:var(--navy);background:white;cursor:pointer;}
-  .badge-status { padding:5px 14px; border-radius:20px; font-size:0.8rem; font-weight:600; text-transform: uppercase; border: 1px solid transparent; }
-  .status-draft { background:#fef9c3; color:#b45309; border-color: #fde047; }
-  .status-submitted { background:#dcfce7; color:#15803d; border-color: #bbf7d0; }
-  .status-locked { background:#fee2e2; color:#b91c1c; border-color: #fecaca; }
-
   .content{flex:1;overflow-y:auto;padding:24px 28px;}
 
   /* SECTION HEADER */
@@ -66,9 +58,6 @@
   .device-card{background:white;border:1.5px solid var(--gray-border);border-radius:12px;padding:16px 18px;transition:all 0.2s;}
   .device-card:hover{border-color:var(--accent);box-shadow:0 2px 12px rgba(46,125,247,0.1);}
   .device-name{font-family:'Sora',sans-serif;font-weight:700;font-size:0.95rem;color:var(--navy);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;}
-  .device-actions{display:flex;gap:6px;}
-  .icon-btn{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:0.85rem;padding:2px;}
-  .icon-btn:hover:not(:disabled){color:var(--accent);}
   .device-count{display:flex;align-items:center;gap:6px;margin-bottom:10px;}
   .count-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:var(--gray-soft);border:1px solid var(--gray-border);border-radius:5px;font-size:0.82rem;font-weight:600;color:var(--navy);}
   .device-emission-label{font-size:0.75rem;color:var(--text-muted);margin-bottom:3px;}
@@ -82,21 +71,15 @@
   .data-table td{padding:10px 18px;font-size:0.85rem;color:#2a3a6b;border-bottom:1px solid #f0f2f8;}
   .data-table tr:last-child td{border-bottom:none;}
   .emission-val{font-weight:600;color:var(--navy);}
+  .icon-btn{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:0.85rem;padding:2px;}
+  .icon-btn:hover:not(:disabled){color:var(--accent);}
+  .device-badge { display:inline-block; padding:3px 9px; border-radius:5px; background:rgba(46,125,247,0.1); color:var(--accent); font-weight:600; font-size:0.75rem; border: 1px solid var(--gray-border);}
 
   /* BOTTOM SUMMARY */
   .summary-row{display:grid;grid-template-columns:1.2fr 1.5fr 1.5fr;gap:16px;margin-bottom:20px;}
   .summary-card{background:white;border-radius:14px;border:1px solid var(--gray-border);padding:20px;}
   .summary-total{font-family:'Sora',sans-serif;font-size:2rem;font-weight:800;color:var(--navy);}
   .chart-mini-title{font-size:0.85rem;font-weight:600;color:var(--navy);margin-bottom:12px;}
-
-  /* FOOTER ACTIONS */
-  .footer-actions{background:white;border-top:1px solid var(--gray-border);padding:14px 28px;display:flex;justify-content:flex-end;gap:12px;flex-shrink:0;}
-  .btn-save{padding:10px 20px;background:white;border:1.5px solid var(--gray-border);border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer;color:var(--navy);transition:all 0.2s;}
-  .btn-save:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
-  .btn-submit{padding:10px 20px;background:var(--navy);color:white;border:none;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif;transition:all 0.2s;}
-  .btn-submit:hover:not(:disabled){background:var(--navy-light);}
-  .btn-lock{padding:10px 20px;background:linear-gradient(135deg,var(--navy),var(--navy-light));color:white;border:none;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif;transition:all 0.2s;}
-  .btn-lock:hover:not(:disabled){opacity:0.9;}
 
   /* Modal */
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:100;}
@@ -115,33 +98,35 @@
 {% include 'components/sidebar.html' %}
 
 <div class="main">
-  {% set topbar_title = 'Scope 1 – Emission Source Management' %}
+  {% set topbar_title = '<i class="fa-solid fa-layer-group" style="color:var(--accent);margin-right:6px;font-size:0.9rem"></i>Scope 1 – Quản lý nguồn phát thải' %}
   {% include 'components/topbar.html' %}
 
   <div class="content">
     <div class="section-header">
-      <div class="section-title">Quản lý danh mục thiết bị</div>
-      <button class="btn-primary action-require-edit" onclick="document.getElementById('catModal').classList.add('show')">
-        + Thêm thiết bị
-      </button>
+      <div class="section-title">Tổng quan phân bổ thiết bị</div>
     </div>
 
     <div class="device-grid">
-      {% for cat in categories %}
-      <div class="device-card">
-        <div class="device-name">
-          {{ cat.name }}
-          <div class="device-actions">
-            <button class="icon-btn action-require-edit" onclick="openEditCatModal({{ cat.id }}, '{{ cat.name }}', '{{ cat.device_type }}', '{{ cat.fuel_type }}', {{ cat.count }}, {{ cat.capacity }})">✏️</button>
-            <button class="icon-btn action-require-edit" onclick="deleteCategory({{ cat.id }})">🗑</button>
+      {% for dt in device_types %}
+        {% set dt_categories = categories | selectattr('device_type', 'equalto', dt) | list %}
+        {% set count = dt_categories | length %}
+        {% set total_co2 = dt_categories | map(attribute='total_emissions') | sum %}
+        
+        {% set act_list = activities | selectattr('device_type', 'equalto', dt) | list %}
+        {% set total_hours = act_list | map(attribute='hours') | sum %}
+        
+        <div class="device-card">
+          <div class="device-name">
+            {{ dt }}
           </div>
+          <div class="device-count">
+            <div class="count-badge">Tổng: {{ count }} thiết bị</div>
+          </div>
+          <div class="device-emission-label">Thời gian hoạt động</div>
+          <div class="device-emission-val" style="margin-bottom: 8px; color: var(--accent);">{{ "{:,.1f}".format(total_hours) }} h</div>
+          <div class="device-emission-label">Tổng phát thải</div>
+          <div class="device-emission-val">{{ "{:,.1f}".format(total_co2) }} tCO₂e</div>
         </div>
-        <div class="device-count">
-          <div class="count-badge">Tổng: {{ cat.count }} thiết bị</div>
-        </div>
-        <div class="device-emission-label">Total Emissions</div>
-        <div class="device-emission-val">{{ "{:,.1f}".format(cat.total_emissions) }} tCO₂e</div>
-      </div>
       {% endfor %}
     </div>
 
@@ -149,18 +134,21 @@
       <div class="data-section-header">
         <div class="section-title" style="margin:0;">Nhập dữ liệu hoạt động</div>
         <div style="display:flex;gap:10px;">
-          <button class="btn-primary action-require-edit" onclick="openActivityModal()">[ Nhập tay ]</button>
+          <button class="btn-primary action-require-edit" onclick="document.getElementById('catModal').classList.add('show')">[ + Tạo Thiết Bị ]</button>
+          <button class="btn-primary action-require-edit" onclick="openActivityModal()">[ Nhập hoạt động ]</button>
           <button class="btn-outline action-require-edit" onclick="document.getElementById('importModal').classList.add('show')">[ Import Excel ]</button>
         </div>
       </div>
+
       <table class="data-table">
         <thead>
           <tr>
-            <th>Thiết bị</th>
-            <th>Số lượng</th>
+            <th>ID B/Ghi</th>
+            <th>Tên thiết bị</th>
             <th>Power (kW)</th>
             <th>Thời gian hoạt động (h)</th>
             <th>LF (%)</th>
+            <th>Thời gian ghi nhận</th>
             <th>Tổng phát thải (tCO₂e)</th>
             <th style="width:100px;">Thao tác</th>
           </tr>
@@ -168,15 +156,16 @@
         <tbody>
           {% for act in activities %}
           <tr>
-            <td style="font-weight:600;">{{ act.device_type }}</td>
-            <td>{{ act.quantity }}</td>
+            <td>{{ loop.index }}</td>
+            <td style="font-weight:600;">[{{ act.device_id }}] {{ act.device_name }}</td>
             <td>{{ act.power }}</td>
             <td>{{ act.hours }}</td>
-            <td>{{ act.lf }}</td>
+            <td>{{ "{:,.1f}".format(act.lf) }}</td>
+            <td>{{ act.record_time }}</td>
             <td><span class="emission-val">{{ "{:,.1f}".format(act.total_co) }}</span></td>
             <td>
               <div style="display:flex; gap:8px;">
-                <button class="icon-btn action-require-edit" onclick="openEditActModal({{ act.id }}, '{{ act.device_type }}', {{ act.quantity }}, {{ act.power }}, {{ act.hours }}, {{ act.lf }})">
+                <button class="icon-btn action-require-edit" onclick="openEditActModal({{ act.id }}, '{{ act.device_name }}', {{ act.power }}, {{ act.hours }}, {{ act.lf }}, '{{ act.record_time }}')">
                     <i class="fa-solid fa-pen-to-square"></i>
                 </button>
                 <button class="icon-btn action-require-edit" onclick="deleteActivity({{ act.id }})">
@@ -187,7 +176,7 @@
           </tr>
           {% else %}
           <tr>
-            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 20px;">Chưa có dữ liệu hoạt động trong kỳ này.</td>
+            <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 20px;">Chưa có dữ liệu hoạt động trong kỳ này.</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -216,8 +205,10 @@
   <div class="modal-card">
     <div class="modal-title">+ Thêm thiết bị mới</div>
     <div class="modal-form">
+      <label>ID / Mã thiết bị</label>
+      <input type="text" id="catId" placeholder="VD: KALMAR-01">
       <label>Tên thiết bị định danh</label>
-      <input type="text" id="catName" placeholder="VD: STS Crane - Bãi A">
+      <input type="text" id="catName" placeholder="VD: Xe nâng KALMAR 01">
       <label>Loại thiết bị (Hệ thống)</label>
       <select id="catType">
         {% for type in device_types %}
@@ -232,18 +223,14 @@
       </select>
       <div style="display:flex; gap:10px;">
         <div style="flex:1;">
-          <label>Số lượng trong bãi</label>
-          <input type="number" id="catQty" value="1" min="1">
-        </div>
-        <div style="flex:1;">
-          <label>Công suất (kW)</label>
+          <label>Công suất định mức (kW)</label>
           <input type="number" id="catCap" placeholder="0">
         </div>
       </div>
     </div>
     <div class="modal-actions">
       <button class="btn-outline" onclick="document.getElementById('catModal').classList.remove('show')">Hủy</button>
-      <button class="btn-primary" onclick="submitCategory()">Thêm thiết bị</button>
+      <button class="btn-primary" onclick="submitCategory()">Tạo thiết bị</button>
     </div>
   </div>
 </div>
@@ -252,7 +239,8 @@
   <div class="modal-card">
     <div class="modal-title">✏️ Chỉnh sửa Thiết Bị</div>
     <div class="modal-form">
-      <input type="hidden" id="editCatId">
+      <label>Mã thiết bị (ID)</label>
+      <input type="text" id="editCatId" readonly style="background:#f4f6fb; color:var(--text-muted);">
       <label>Tên định danh</label>
       <input type="text" id="editCatName">
       <label>Loại thiết bị</label>
@@ -264,10 +252,6 @@
         {% for fuel in fuel_types %}<option value="{{ fuel }}">{{ fuel }}</option>{% endfor %}
       </select>
       <div style="display:flex; gap:10px;">
-        <div style="flex:1;">
-          <label>Tổng số thiết bị</label>
-          <input type="number" id="editCatQty" min="1">
-        </div>
         <div style="flex:1;">
           <label>Công suất (kW)</label>
           <input type="number" id="editCatCap" min="0">
@@ -288,17 +272,17 @@
       <label>Chọn Thiết Bị</label>
       <select id="actCatId" onchange="updatePowerInput()">
         {% for cat in categories %}
-          <option value="{{ cat.id }}" data-cap="{{ cat.capacity }}">{{ cat.name }} ({{ cat.device_type }})</option>
+          <option value="{{ cat.id }}" data-cap="{{ cat.capacity }}">{{ cat.id }} - {{ cat.name }} ({{ cat.device_type }})</option>
         {% endfor %}
       </select>
       <div style="display:flex; gap:10px;">
         <div style="flex:1;">
-          <label>Số lượng thực tế</label>
-          <input type="number" id="actQty" value="1" min="1">
+          <label>Thời gian ghi nhận</label>
+          <input type="datetime-local" id="actRecordTime">
         </div>
         <div style="flex:1;">
           <label>Công suất (kW)</label>
-          <input type="number" id="actPower" readonly style="background:#f4f6fb;">
+          <input type="number" step="0.1" min="0" id="actPower" placeholder="Nhập công suất">
         </div>
       </div>
       <div style="display:flex; gap:10px;">
@@ -307,8 +291,8 @@
           <input type="number" id="actHours" value="120" min="0">
         </div>
         <div style="flex:1;">
-          <label>Load Factor</label>
-          <input type="number" id="actLf" value="0.75" step="0.01" min="0" max="1">
+          <label>Load Factor (%)</label>
+          <input type="number" id="actLf" value="75" step="0.1" min="0" max="100">
         </div>
       </div>
     </div>
@@ -324,16 +308,16 @@
     <div class="modal-title">✏️ Chỉnh sửa Hoạt động</div>
     <div class="modal-form">
       <input type="hidden" id="editActId">
-      <label>Loại thiết bị</label>
+      <label>Tên thiết bị</label>
       <input type="text" id="editActCatName" readonly style="background:#f4f6fb; color:var(--text-muted);">
       <div style="display:flex; gap:10px;">
         <div style="flex:1;">
-          <label>Số lượng thực tế</label>
-          <input type="number" id="editActQty" min="1">
+          <label>Thời gian ghi nhận</label>
+          <input type="datetime-local" id="editActRecordTime">
         </div>
         <div style="flex:1;">
           <label>Công suất (kW)</label>
-          <input type="number" id="editActPower" readonly style="background:#f4f6fb;">
+          <input type="number" step="0.1" min="0" id="editActPower" placeholder="Nhập công suất">
         </div>
       </div>
       <div style="display:flex; gap:10px;">
@@ -342,8 +326,8 @@
           <input type="number" id="editActHours" min="0" step="0.1">
         </div>
         <div style="flex:1;">
-          <label>Load Factor</label>
-          <input type="number" id="editActLf" step="0.01" min="0" max="1">
+          <label>Load Factor (%)</label>
+          <input type="number" id="editActLf" step="0.1" min="0" max="100">
         </div>
       </div>
     </div>
@@ -358,9 +342,14 @@
   <div class="modal-card">
     <div class="modal-title">📥 Import Excel Dữ Liệu</div>
     <div class="modal-form">
-      <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:10px;">
-        File Excel cần chứa các cột: <b>Loại thiết bị, Số lượng, Power (kW), Giờ hoạt động, LF (%)</b>.
-      </p>
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+          <p style="font-size:0.85rem; color:var(--text-muted); width: 68%;">
+            File Excel cần chứa các cột: <b>Mã thiết bị (ID), Loại thiết bị, Power (kW), Giờ hoạt động, LF (%), Thời gian (YYYY-MM-DD HH:MM)</b>.
+          </p>
+          <button class="btn-outline" style="padding: 5px 10px; font-size: 0.75rem; border-color: var(--green); color: var(--green);" onclick="downloadExcelTemplate()">
+              <i class="fa-solid fa-download"></i> Tải file mẫu
+          </button>
+      </div>
       <div style="border: 2px dashed var(--gray-border); padding: 20px; border-radius: 8px; text-align: center;">
           <input type="file" id="excelFile" accept=".xlsx, .xls" style="width: 100%; font-size: 0.85rem; cursor: pointer;">
       </div>
@@ -374,7 +363,6 @@
 
 <script id="categories-data" type="application/json">{{ categories | default([]) | tojson | safe }}</script>
 <script id="trend-data" type="application/json">{{ trend_data | default({"labels":[], "values":[]}) | tojson | safe }}</script>
-<script id="current-ctx" type="application/json">{{ period_ctx | tojson | safe }}</script>
 
 <script>
 function toggleMenu(id){
@@ -386,32 +374,49 @@ function toggleMenu(id){
   }
 }
 
-// Close Modals
-window.onclick = function(event) {
+window.addEventListener('click', function (event) {
   if (event.target.classList.contains('modal-overlay')) {
-      event.target.classList.remove('show');
+    event.target.classList.remove('show');
   }
-}
+});
 
 // ---------------------------------------------------------
-// STATUS MANAGEMENT & FILTER
+// TÍNH TOÁN BOUNDARY THỜI GIAN THEO URL PARAMS
 // ---------------------------------------------------------
-const ctx = JSON.parse(document.getElementById('current-ctx').textContent);
-
-document.addEventListener("DOMContentLoaded", function() {
-    const actionButtons = document.querySelectorAll('.action-require-edit');
-
-    if (ctx.status === 'Submitted') {
-        actionButtons.forEach(btn => btn.disabled = true);
-    } 
-    else if (ctx.status === 'Locked') {
-        actionButtons.forEach(btn => btn.disabled = true);
+function getPeriodBoundaries() {
+    let minDate, maxDate;
+    const urlParams = new URLSearchParams(window.location.search);
+    const y = parseInt(urlParams.get('year') || new Date().getFullYear(), 10);
+    
+    if (urlParams.has('month')) {
+        const m = parseInt(urlParams.get('month'), 10);
+        minDate = new Date(y, m - 1, 1, 0, 0);
+        maxDate = new Date(y, m, 0, 23, 59);
+    } else if (urlParams.has('quarter')) {
+        const q = parseInt(urlParams.get('quarter'), 10);
+        minDate = new Date(y, (q - 1) * 3, 1, 0, 0);
+        maxDate = new Date(y, q * 3, 0, 23, 59);
+    } else {
+        minDate = new Date(y, 0, 1, 0, 0);
+        maxDate = new Date(y, 11, 31, 23, 59);
     }
 
-    // DRAW CHARTS
+    const pad = (n) => String(n).padStart(2, '0');
+    const format = (d) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+    return { min: format(minDate), max: format(maxDate), minDate: minDate, maxDate: maxDate };
+}
+
+document.addEventListener("DOMContentLoaded", function() {
     const categoriesData = JSON.parse(document.getElementById('categories-data').textContent);
-    const chartLabels = categoriesData.map(c => c.name);
-    const chartValues = categoriesData.map(c => c.total_emissions);
+    const groupedData = categoriesData.reduce((acc, cat) => {
+        if (!acc[cat.device_type]) acc[cat.device_type] = 0;
+        acc[cat.device_type] += cat.total_emissions;
+        return acc;
+    }, {});
+    
+    const chartLabels = Object.keys(groupedData);
+    const chartValues = Object.values(groupedData);
 
     const eb = document.getElementById('equipBar').getContext('2d');
     new Chart(eb,{
@@ -420,7 +425,6 @@ document.addEventListener("DOMContentLoaded", function() {
       options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{display:false}}}
     });
 
-    // MINI TREND CHART FROM API DATA
     const trendData = JSON.parse(document.getElementById('trend-data').textContent);
     const mt = document.getElementById('miniTrend').getContext('2d');
     new Chart(mt,{
@@ -433,64 +437,30 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
-async function updatePeriodStatus(newStatus) {
-    const am = ctx.activity_month ?? ctx.month;
-    if (!confirm(`Bạn có chắc chắn muốn chuyển trạng thái tháng ${am}/${ctx.year} thành ${newStatus}?`)) return;
-    try {
-        const res = await fetch(`/scope1/activities/update-period-status?year=${ctx.year}&month=${am}&status=${newStatus}`, { method: 'POST' });
-        if (res.ok) window.location.reload();
-        else alert("Lỗi cập nhật trạng thái.");
-    } catch (err) { alert("Lỗi kết nối."); }
-}
-
 // ---------------------------------------------------------
-// CATEGORY CRUD
+// CATEGORY (DEVICE) CRUD
 // ---------------------------------------------------------
 async function submitCategory() {
   const payload = {
+    id: document.getElementById('catId').value.trim(),
     name: document.getElementById('catName').value.trim(),
     device_type: document.getElementById('catType').value,
     fuel_type: document.getElementById('catFuel').value,
-    total_quantity: parseInt(document.getElementById('catQty').value) || 1,
     nominal_capacity: parseFloat(document.getElementById('catCap').value) || 0
   };
+  
+  if(!payload.id) { alert("Vui lòng nhập Mã thiết bị"); return; }
+  
   const res = await fetch('/scope1/categories', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
   });
-  if(res.ok) window.location.reload(); else alert("Lỗi thêm thiết bị.");
-}
-
-function openEditCatModal(id, name, type, fuel, qty, cap) {
-  document.getElementById('editCatId').value = id;
-  document.getElementById('editCatName').value = name;
-  document.getElementById('editCatType').value = type;
-  document.getElementById('editCatFuel').value = fuel;
-  document.getElementById('editCatQty').value = qty;
-  document.getElementById('editCatCap').value = cap;
-  document.getElementById('editCatModal').classList.add('show');
-}
-
-async function submitEditCategory() {
-  const id = document.getElementById('editCatId').value;
-  const payload = {
-    name: document.getElementById('editCatName').value.trim(),
-    device_type: document.getElementById('editCatType').value,
-    fuel_type: document.getElementById('editCatFuel').value,
-    total_quantity: parseInt(document.getElementById('editCatQty').value) || 1,
-    nominal_capacity: parseFloat(document.getElementById('editCatCap').value) || 0
-  };
-  const res = await fetch(`/scope1/categories/${id}`, {
-    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-  });
-  if(res.ok) window.location.reload(); else alert("Lỗi cập nhật thiết bị.");
-}
-
-async function deleteCategory(id) {
-  if (!confirm(`Cảnh báo: Xóa nhóm thiết bị sẽ xóa toàn bộ dữ liệu phát thải liên quan! Xóa?`)) return;
-  try {
-    const res = await fetch(`/scope1/categories/${id}`, { method: 'DELETE' });
-    if (res.ok) window.location.reload(); else alert("Lỗi xóa thiết bị.");
-  } catch (e) { alert("Lỗi kết nối."); }
+  
+  if(res.ok) {
+    window.location.reload(); 
+  } else {
+    const err = await res.json();
+    alert("Lỗi thêm thiết bị: " + (err.detail || ""));
+  }
 }
 
 // ---------------------------------------------------------
@@ -498,7 +468,24 @@ async function deleteCategory(id) {
 // ---------------------------------------------------------
 function openActivityModal() {
   const select = document.getElementById('actCatId');
-  if(select.options.length === 0) { alert("Vui lòng tạo Thiết bị trước!"); return; }
+  if(select.options.length === 0) { alert("Chưa có thiết bị nào trong hệ thống! Vui lòng tạo thiết bị."); return; }
+  
+  const bounds = getPeriodBoundaries();
+  const timeInput = document.getElementById('actRecordTime');
+  
+  // Áp dụng Boundary để giới hạn chọn lịch
+  timeInput.min = bounds.min;
+  timeInput.max = bounds.max;
+  
+  // Set thời gian mặc định thông minh (nếu đang ở tháng quá khứ thì mặc định lấy ngày 1 của tháng đó)
+  const now = new Date();
+  let defaultTime = now;
+  if (now < bounds.minDate || now > bounds.maxDate) {
+      defaultTime = bounds.minDate;
+  }
+  defaultTime.setMinutes(defaultTime.getMinutes() - defaultTime.getTimezoneOffset());
+  timeInput.value = defaultTime.toISOString().slice(0,16);
+  
   updatePowerInput();
   document.getElementById('actModal').classList.add('show');
 }
@@ -511,38 +498,78 @@ function updatePowerInput() {
 }
 
 async function submitActivity() {
+  const rtVal = document.getElementById('actRecordTime').value;
+  if (!rtVal) { alert("Vui lòng chọn thời gian ghi nhận hợp lệ."); return; }
+
+  const selectedDate = new Date(rtVal);
+  const bounds = getPeriodBoundaries();
+  
+  // Rào chắn bảo vệ ở phía JS: Báo lỗi nếu người dùng cố tình nhập tay ngày ngoài khung
+  if (selectedDate < bounds.minDate || selectedDate > bounds.maxDate) {
+      alert(`Thời gian ghi nhận phải nằm trong kỳ báo cáo hiện tại (Từ ${bounds.min} đến ${bounds.max})`);
+      return;
+  }
+
   const payload = {
-    period_year: ctx.year,
-    period_month: ctx.activity_month ?? ctx.month,
-    category_id: parseInt(document.getElementById('actCatId').value),
-    quantity: parseInt(document.getElementById('actQty').value) || 1,
+    period_year: selectedDate.getFullYear(),
+    period_month: selectedDate.getMonth() + 1, 
+    device_id: document.getElementById('actCatId').value, 
     recorded_power: parseFloat(document.getElementById('actPower').value) || 0,
     operating_hours: parseFloat(document.getElementById('actHours').value) || 0,
-    load_factor: parseFloat(document.getElementById('actLf').value) || 0
+    load_factor: parseFloat(document.getElementById('actLf').value) || 0,
+    total_co2e: 0,
+    record_time: new Date(rtVal).toISOString()
   };
   const res = await fetch('/scope1/activities', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
   });
-  if(res.ok) window.location.reload(); else alert("Lỗi thêm dữ liệu.");
+  if(res.ok) window.location.reload(); else alert("Lỗi thêm dữ liệu hoạt động.");
 }
 
-function openEditActModal(id, type, qty, power, hours, lf) {
+function parseVNDateToLocal(dateStr) {
+    if (!dateStr) return "";
+    const parts = dateStr.split(" ");
+    if (parts.length < 2) return "";
+    const [d, m, y] = parts[0].split("/");
+    return `${y}-${m}-${d}T${parts[1]}`;
+}
+
+function openEditActModal(id, name, power, hours, lf, recordTime) {
   document.getElementById('editActId').value = id;
-  document.getElementById('editActCatName').value = type;
-  document.getElementById('editActQty').value = qty;
+  document.getElementById('editActCatName').value = name;
   document.getElementById('editActPower').value = power;
   document.getElementById('editActHours').value = hours;
   document.getElementById('editActLf').value = lf;
+  
+  const timeInput = document.getElementById('editActRecordTime');
+  const bounds = getPeriodBoundaries();
+  timeInput.min = bounds.min;
+  timeInput.max = bounds.max;
+  timeInput.value = parseVNDateToLocal(recordTime);
+  
   document.getElementById('editActModal').classList.add('show');
 }
 
 async function submitEditActivity() {
   const id = document.getElementById('editActId').value;
+  const rtVal = document.getElementById('editActRecordTime').value;
+  if (!rtVal) { alert("Vui lòng chọn thời gian ghi nhận hợp lệ."); return; }
+
+  const selectedDate = new Date(rtVal);
+  const bounds = getPeriodBoundaries();
+  
+  if (selectedDate < bounds.minDate || selectedDate > bounds.maxDate) {
+      alert(`Thời gian ghi nhận phải nằm trong kỳ báo cáo hiện tại (Từ ${bounds.min} đến ${bounds.max})`);
+      return;
+  }
+
   const payload = {
-    quantity: parseInt(document.getElementById('editActQty').value) || 1,
     recorded_power: parseFloat(document.getElementById('editActPower').value) || 0,
     operating_hours: parseFloat(document.getElementById('editActHours').value) || 0,
-    load_factor: parseFloat(document.getElementById('editActLf').value) || 0
+    load_factor: parseFloat(document.getElementById('editActLf').value) || 0,
+    period_month: selectedDate.getMonth() + 1,
+    total_co2e: 0,
+    record_time: new Date(rtVal).toISOString()
   };
   const res = await fetch(`/scope1/activities/${id}`, {
     method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
@@ -559,6 +586,22 @@ async function deleteActivity(id) {
 // ---------------------------------------------------------
 // IMPORT EXCEL
 // ---------------------------------------------------------
+function downloadExcelTemplate() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const y = urlParams.get('year') || new Date().getFullYear();
+    let m = urlParams.get('month');
+    
+    // Fallback thông minh: Nếu lọc quý, lấy tháng đầu tiên của quý. Nếu lọc Năm, mặc định lấy tháng 1
+    if (!m) {
+        if (urlParams.has('quarter')) {
+            m = (parseInt(urlParams.get('quarter')) - 1) * 3 + 1;
+        } else {
+            m = new Date().getMonth() + 1;
+        }
+    }
+    window.location.href = `/api/scope1/activities/import-template?year=${y}&month=${m}`;
+}
+
 async function submitImportExcel() {
     const file = document.getElementById('excelFile').files[0];
     if (!file) { alert("Vui lòng chọn file Excel!"); return; }
@@ -570,9 +613,12 @@ async function submitImportExcel() {
     const formData = new FormData();
     formData.append("file", file);
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const y = urlParams.get('year') || new Date().getFullYear();
+    let m = urlParams.get('month') || 1; 
+
     try {
-        const pm = ctx.activity_month ?? ctx.month;
-        const res = await fetch(`/scope1/activities/import?period_year=${ctx.year}&period_month=${pm}`, { method: 'POST', body: formData });
+        const res = await fetch(`/scope1/activities/import?period_year=${y}&period_month=${parseInt(m)}`, { method: 'POST', body: formData });
         if (res.ok) window.location.reload();
         else { const err = await res.json(); alert("Lỗi Import: " + (err.detail || "Định dạng sai.")); }
     } catch (err) { alert("Lỗi kết nối."); } 

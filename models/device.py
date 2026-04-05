@@ -1,57 +1,71 @@
+# models/device.py
 import enum
-from sqlalchemy import Column, Integer, Float, String, Enum, ForeignKey, Index
+from datetime import datetime
+from sqlalchemy import Column, Integer, String, Float, Enum, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from core.database import Base
 
-# --- ENUMS ---
-class DeviceTypeEnum(str, enum.Enum):
-    MOBILE_CRANE = "Mobile Harbor Crane"
+class DeviceTypeEnum(enum.Enum):
+    MOBILE_HARBOR_CRANE = "Mobile Harbor Crane"
+    RTG_CRANE = "RTG Crane"
+    STS_CRANE = "STS Crane"
     REACH_STACKER = "Reach Stacker"
-    YARD_TRACTOR = "Yard Tractor"
-    EMPTY_HANDLER = "Empty Container Handler"
     FORKLIFT = "Forklift"
-    RTG_CRANE = "RTG crane"
+    TERMINAL_TRACTOR = "Terminal Tractor"
+    OTHER = "Barge"
 
-class FuelTypeEnum(str, enum.Enum):
+class FuelTypeEnum(enum.Enum):
     DIESEL = "Diesel"
-    ELECTRIC = "Electric"
+    GASOLINE = "Gasoline"
+    LNG = "LNG"
+    ELECTRICITY = "Electricity"
+    OTHER = "Khác"
 
-class RecordStatusEnum(str, enum.Enum):
-    DRAFT = "Draft"
-    SUBMITTED = "Submitted"
-    LOCKED = "Locked"
+class Device(Base):
+    """
+    Quản lý danh sách các thiết bị/phương tiện vật lý cụ thể.
+    """
+    __tablename__ = "devices"
 
-# --- TABLES ---
-class DeviceCategory(Base):
-    __tablename__ = "scope1_device_categories"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), unique=True, index=True, nullable=False)
-    device_type = Column(Enum(DeviceTypeEnum), nullable=False)          
-    fuel_type = Column(Enum(FuelTypeEnum), nullable=False)
-    total_quantity = Column(Integer, default=1)                         
-    nominal_capacity = Column(Float, nullable=False)                    
+    id = Column(String, primary_key=True, index=True) # ID dạng String do người dùng nhập
+    name = Column(String, index=True, nullable=False) # Ví dụ: "Xe nâng RTG-01"
+    device_type = Column(Enum(DeviceTypeEnum), nullable=False)
     
-    activities = relationship("ActivityData", back_populates="category", cascade="all, delete-orphan")
+    # Đặt mặc định nhiên liệu là DIESEL
+    fuel_type = Column(Enum(FuelTypeEnum), default=FuelTypeEnum.DIESEL, nullable=False)
+    nominal_capacity = Column(Float, nullable=False) 
+    
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
+    # Quan hệ 1-N: 1 Thiết bị có thể có nhiều bản ghi hoạt động
+    activities = relationship("ActivityData", back_populates="device", cascade="all, delete")
 
 class ActivityData(Base):
-    __tablename__ = "scope1_activities"
+    """
+    Lưu trữ lịch sử hoạt động chi tiết (thời gian làm việc, mức tiêu thụ, phát thải)
+    """
+    __tablename__ = "activity_data"
 
     id = Column(Integer, primary_key=True, index=True)
-    period_year = Column(Integer, nullable=False)
-    period_month = Column(Integer, nullable=False)
-    category_id = Column(Integer, ForeignKey("scope1_device_categories.id"), nullable=False)
     
-    quantity = Column(Integer, default=1, nullable=False)           
-    recorded_power = Column(Float, nullable=False)                  
-    operating_hours = Column(Float, nullable=False)                 
-    load_factor = Column(Float, nullable=False)                     
-    total_co2e = Column(Float, nullable=False)                      
+    # [FIXED] Sửa thành String để trỏ đúng Khóa ngoại tới devices.id
+    device_id = Column(String, ForeignKey("devices.id"), nullable=False)
     
-    status = Column(Enum(RecordStatusEnum), default=RecordStatusEnum.DRAFT, nullable=False)
-    category = relationship("DeviceCategory", back_populates="activities")
+    # Lưu trực tiếp loại thiết bị để tiện group by và hiển thị trên UI không cần JOIN
+    device_type = Column(Enum(DeviceTypeEnum), nullable=False)
 
-    __table_args__ = (
-        Index('ix_period_status', 'period_year', 'period_month', 'status'),
-    )
+    recorded_power = Column(Float, nullable=False)
+    operating_hours = Column(Float, nullable=False)
+    load_factor = Column(Float, nullable=False)
+    total_co2e = Column(Float, nullable=False)
+    
+    record_time = Column(DateTime, default=datetime.now, nullable=False) 
+    
+    period_month = Column(Integer, nullable=False)
+    period_year = Column(Integer, nullable=False)
+    
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+    device = relationship("Device", back_populates="activities")

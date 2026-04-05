@@ -1,76 +1,69 @@
-from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional, List, Dict
+# schemas/device.py
+from pydantic import BaseModel, Field
+from typing import Optional
 from datetime import datetime
-from models.device import DeviceTypeEnum, FuelTypeEnum, RecordStatusEnum
+from models.device import DeviceTypeEnum, FuelTypeEnum
 
-class DeviceCategoryBase(BaseModel):
-    name: str
-    device_type: DeviceTypeEnum
-    fuel_type: FuelTypeEnum
-    total_quantity: int = 1
-    nominal_capacity: float
+# ==========================================
+# SCHEMAS CHO DEVICE
+# ==========================================
 
-class DeviceCategoryCreate(DeviceCategoryBase):
+class DeviceBase(BaseModel):
+    id: str = Field(..., description="Mã thiết bị duy nhất (VD: KALMAR-01)")
+    name: str = Field(..., description="Tên thiết bị chi tiết")
+    device_type: DeviceTypeEnum = Field(..., description="Phân loại thiết bị")
+    fuel_type: FuelTypeEnum = Field(default=FuelTypeEnum.DIESEL, description="Loại nhiên liệu")
+    nominal_capacity: float = Field(..., description="Công suất định mức thiết kế (kW)")
+
+class DeviceCreate(DeviceBase):
     pass
 
-class DeviceCategoryUpdate(BaseModel):
+class DeviceUpdate(BaseModel):
     name: Optional[str] = None
     device_type: Optional[DeviceTypeEnum] = None
     fuel_type: Optional[FuelTypeEnum] = None
-    total_quantity: Optional[int] = None
     nominal_capacity: Optional[float] = None
 
-class DeviceCategoryResponse(DeviceCategoryBase):
-    id: int
+class DeviceResponse(DeviceBase):
     created_at: datetime
-    emission_factor: Optional[float] = None
-    model_config = ConfigDict(from_attributes=True)
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ==========================================
+# SCHEMAS CHO ACTIVITY DATA
+# ==========================================
 
 class ActivityDataBase(BaseModel):
-    period_year: int
-    period_month: int
-    category_id: int
-    quantity: int = Field(..., gt=0)
-    recorded_power: float
-    operating_hours: float
-    load_factor: float = Field(..., ge=0.0, le=1.0)
+    device_id: str = Field(..., description="ID/Mã của thiết bị thực hiện hoạt động")
+    recorded_power: float = Field(..., description="Công suất hoạt động thực tế (kW)")
+    operating_hours: float = Field(..., description="Thời gian hoạt động (h)")
+    load_factor: float = Field(..., description="Hệ số tải LF (%)")
+    total_co2e: float = Field(..., description="Tổng phát thải (tCO2e)")
+    record_time: datetime = Field(..., description="Thời điểm ghi nhận hoạt động")
+    period_month: int = Field(..., description="Tháng báo cáo (1-12)")
+    period_year: int = Field(..., description="Năm báo cáo")
 
 class ActivityDataCreate(ActivityDataBase):
     pass
 
 class ActivityDataUpdate(BaseModel):
-    quantity: Optional[int] = Field(None, gt=0)
+    device_id: Optional[str] = None
     recorded_power: Optional[float] = None
     operating_hours: Optional[float] = None
-    load_factor: Optional[float] = Field(None, ge=0.0, le=1.0)
+    load_factor: Optional[float] = None
+    total_co2e: Optional[float] = None
+    record_time: Optional[datetime] = None
+    period_month: Optional[int] = None
+    period_year: Optional[int] = None
 
 class ActivityDataResponse(ActivityDataBase):
     id: int
-    total_co2e: float
-    status: RecordStatusEnum
+    device_type: DeviceTypeEnum
     created_at: datetime
-    category: Optional[DeviceCategoryResponse] = None
-    model_config = ConfigDict(from_attributes=True)
+    updated_at: datetime
 
-class PeriodStatusUpdate(BaseModel):
-    year: int
-    month: int
-    new_status: RecordStatusEnum
-
-class DashboardKPIs(BaseModel):
-    total_fuel: float
-    total_co2e: float
-    top_emitter_name: str
-    top_emitter_co2e: float
-    mom_growth: float
-    status: str
-
-class ChartData(BaseModel):
-    labels: List[str]
-    values: List[float]
-
-class DashboardResponse(BaseModel):
-    kpis: DashboardKPIs
-    bar_chart: ChartData
-    line_chart: ChartData
-    table_data: List[Dict]
+    class Config:
+        from_attributes = True

@@ -187,8 +187,7 @@ async def dashboard_page(
             s1_trend[m - 1] = month_co2
             s1_total += month_co2
     except Exception as e: 
-        print("Lỗi Scope 1:", e)
-
+        print("Lỗi Dashboard Scope 1:", e)
     # ─── 2. SCOPE 2 (Tính từ kWh * EF) ───
     s2_trend = [0.0] * 12
     s2_total = 0.0
