@@ -172,21 +172,17 @@ async def dashboard_page(
                 return None
         return None
 
-    # ─── 1. SCOPE 1 ───
+    # ─── 1. SCOPE 1 (cùng service / aggregation với trang Scope 1) ───
     s1_trend = [0.0] * 12
     s1_total = 0.0
+    s1_months = sorted(mf) if mf is not None else list(range(1, 13))
     try:
-        for m in range(1, 13):
-            if mf is not None and m not in mf:
-                continue
-            acts = scope1_services.ActivityDataService.get_by_period(db, current_year, m)
-            month_co2 = 0.0
-            for a in acts:
-                val = float(getattr(a, 'total_co2e', 0.0) or 0.0)
-                month_co2 += val
-            s1_trend[m - 1] = month_co2
-            s1_total += month_co2
-    except Exception as e: 
+        s1_summary = scope1_services.DashboardService.get_dashboard_data_for_months(
+            db, current_year, s1_months
+        )
+        s1_total = float(s1_summary["kpis"]["total_co2e"] or 0.0)
+        s1_trend = [float(v) for v in s1_summary["line_chart"]["values"]]
+    except Exception as e:
         print("Lỗi Dashboard Scope 1:", e)
     # ─── 2. SCOPE 2 (Tính từ kWh * EF) ───
     s2_trend = [0.0] * 12
