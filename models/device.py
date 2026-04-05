@@ -12,7 +12,7 @@ class DeviceTypeEnum(enum.Enum):
     REACH_STACKER = "Reach Stacker"
     FORKLIFT = "Forklift"
     TERMINAL_TRACTOR = "Terminal Tractor"
-    OTHER = "Khác"
+    OTHER = "Barge"
 
 class FuelTypeEnum(enum.Enum):
     DIESEL = "Diesel"

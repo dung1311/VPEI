@@ -44,11 +44,23 @@
   .topbar{background:var(--white);border-bottom:1px solid var(--gray-border);padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
   .topbar-title{font-family:'Sora',sans-serif;font-weight:800;font-size:1.15rem;color:var(--navy);}
   .topbar-right{display:flex;align-items:center;gap:10px;}
-  .select-pill{padding:6px 12px;border-radius:8px;border:1.5px solid var(--gray-border);font-size:0.83rem;font-weight:600;color:var(--navy);background:white;cursor:pointer;}
-  .badge-status { padding:5px 14px; border-radius:20px; font-size:0.8rem; font-weight:600; text-transform: uppercase; border: 1px solid transparent; }
-  .status-draft { background:#fef9c3; color:#b45309; border-color: #fde047; }
-  .status-submitted { background:#dcfce7; color:#15803d; border-color: #bbf7d0; }
-  .status-locked { background:#fee2e2; color:#b91c1c; border-color: #fecaca; }
+  
+  /* TABS THỜI GIAN */
+  .time-tabs { display:flex; border:1.5px solid var(--gray-border); border-radius:8px; overflow:hidden; margin-right: 8px;}
+  .time-tab { padding:6px 14px; font-size:0.78rem; font-weight:600; cursor:pointer; background:white; color:#4a5a7b; border:none; transition:all 0.18s; font-family:'Sora',sans-serif; }
+  .time-tab.active { background:var(--navy); color:white; }
+  .time-tab:hover:not(.active) { background:var(--gray-soft); }
+  .select-pill { padding:6px 14px; border-radius:8px; border:1.5px solid var(--gray-border); font-size:0.83rem; font-weight:600; color:var(--navy); background:white; cursor:pointer; }
+
+  /* PROFILE DROPDOWN */
+  .profile-container { position: relative; display: flex; align-items: center; gap: 8px; cursor: pointer; margin-left: 12px; }
+  .avatar-circle { width: 32px; height: 32px; border-radius: 50%; background: #2e7df7; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; }
+  .profile-name { font-size: 0.85rem; font-weight: 600; color: var(--navy); }
+  .profile-dropdown { position: absolute; top: calc(100% + 10px); right: 0; background: white; border: 1px solid var(--gray-border); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 160px; display: none; flex-direction: column; z-index: 100; overflow: hidden; }
+  .profile-dropdown.show { display: flex; }
+  .profile-item { padding: 12px 16px; display: flex; align-items: center; gap: 10px; font-size: 0.85rem; font-weight: 500; color: var(--navy); text-decoration: none; transition: background 0.2s; }
+  .profile-item:hover { background: var(--gray-soft); }
+  .profile-item.logout { color: var(--red); border-top: 1px solid var(--gray-border); }
 
   .content{flex:1;overflow-y:auto;padding:24px 28px;}
 
@@ -106,8 +118,32 @@
 {% include 'components/sidebar.html' %}
 
 <div class="main">
-  {% set topbar_title = 'Scope 1 – Emission Source Management' %}
-  {% include 'components/topbar.html' %}
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title">Scope 1 – Emission Source Management</div>
+    </div>
+    <div class="topbar-right">
+        <div class="time-tabs">
+            <button class="time-tab" id="btn-year">Năm</button>
+            <button class="time-tab" id="btn-quarter">Quý</button>
+            <button class="time-tab" id="btn-month">Tháng</button>
+        </div>
+        <select class="select-pill" id="timeSelect"></select>
+
+        <div class="profile-container" onclick="toggleProfileMenu(event)">
+            <div class="avatar-circle">V</div>
+            <div class="profile-name">vpeiadmin <i class="fa-solid fa-chevron-down" style="font-size:0.7rem; color:var(--text-muted); margin-left:4px;"></i></div>
+            <div class="profile-dropdown" id="profileMenu">
+                <a href="/profile" class="profile-item"><i class="fa-solid fa-user-pen"></i> Xem thông tin</a>
+                <form action="/logout" method="POST" style="margin: 0;">
+                    <button type="submit" class="profile-item logout" style="width: 100%; background: transparent; border: none; border-top: 1px solid var(--gray-border); font-family: inherit; cursor: pointer; text-align: left;">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i> Đăng xuất
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+  </div>
 
   <div class="content">
     <div class="section-header">
@@ -147,27 +183,25 @@
           <button class="btn-outline action-require-edit" onclick="document.getElementById('importModal').classList.add('show')">[ Import Excel ]</button>
         </div>
       </div>
-      
+
       <table class="data-table">
         <thead>
           <tr>
-            <th>Mã TB (ID)</th>
+            <th>ID B/Ghi</th>
             <th>Tên thiết bị</th>
-            <th>Loại thiết bị</th>
             <th>Power (kW)</th>
-            <th>TG hoạt động (h)</th>
+            <th>Thời gian hoạt động (h)</th>
             <th>LF (%)</th>
             <th>Thời gian ghi nhận</th>
-            <th>Phát thải (tCO₂e)</th>
+            <th>Tổng phát thải (tCO₂e)</th>
             <th style="width:100px;">Thao tác</th>
           </tr>
         </thead>
         <tbody>
           {% for act in activities %}
           <tr>
-            <td style="font-weight:600; color:var(--accent);">{{ act.device_id }}</td>
-            <td style="font-weight:600;">{{ act.device_name }}</td>
-            <td><span class="device-badge" style="background:#f4f6fb; color:#4a5a7b;">{{ act.device_type }}</span></td>
+            <td>{{ loop.index }}</td>
+            <td style="font-weight:600;">[{{ act.device_id }}] {{ act.device_name }}</td>
             <td>{{ act.power }}</td>
             <td>{{ act.hours }}</td>
             <td>{{ "{:,.1f}".format(act.lf) }}</td>
@@ -186,7 +220,7 @@
           </tr>
           {% else %}
           <tr>
-            <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 20px;">Chưa có dữ liệu hoạt động trong kỳ này.</td>
+            <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 20px;">Chưa có dữ liệu hoạt động trong kỳ này.</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -241,6 +275,36 @@
     <div class="modal-actions">
       <button class="btn-outline" onclick="document.getElementById('catModal').classList.remove('show')">Hủy</button>
       <button class="btn-primary" onclick="submitCategory()">Tạo thiết bị</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="editCatModal">
+  <div class="modal-card">
+    <div class="modal-title">✏️ Chỉnh sửa Thiết Bị</div>
+    <div class="modal-form">
+      <label>Mã thiết bị (ID)</label>
+      <input type="text" id="editCatId" readonly style="background:#f4f6fb; color:var(--text-muted);">
+      <label>Tên định danh</label>
+      <input type="text" id="editCatName">
+      <label>Loại thiết bị</label>
+      <select id="editCatType">
+        {% for type in device_types %}<option value="{{ type }}">{{ type }}</option>{% endfor %}
+      </select>
+      <label>Loại nhiên liệu</label>
+      <select id="editCatFuel">
+        {% for fuel in fuel_types %}<option value="{{ fuel }}">{{ fuel }}</option>{% endfor %}
+      </select>
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <label>Công suất (kW)</label>
+          <input type="number" id="editCatCap" min="0">
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="document.getElementById('editCatModal').classList.remove('show')">Hủy</button>
+      <button class="btn-primary" onclick="submitEditCategory()">Cập nhật</button>
     </div>
   </div>
 </div>
@@ -343,7 +407,6 @@
 
 <script id="categories-data" type="application/json">{{ categories | default([]) | tojson | safe }}</script>
 <script id="trend-data" type="application/json">{{ trend_data | default({"labels":[], "values":[]}) | tojson | safe }}</script>
-<script id="current-ctx" type="application/json">{{ period_ctx | tojson | safe }}</script>
 
 <script>
 function toggleMenu(id){
@@ -355,18 +418,30 @@ function toggleMenu(id){
   }
 }
 
+function toggleProfileMenu(e) {
+    e.stopPropagation();
+    document.getElementById('profileMenu').classList.toggle('show');
+}
+
 window.onclick = function(event) {
   if (event.target.classList.contains('modal-overlay')) {
       event.target.classList.remove('show');
   }
+  if (!event.target.closest('.profile-container')) {
+      const menu = document.getElementById('profileMenu');
+      if (menu && menu.classList.contains('show')) {
+          menu.classList.remove('show');
+      }
+  }
 }
 
-const ctx = JSON.parse(document.getElementById('current-ctx').textContent);
-
+// ---------------------------------------------------------
+// TÍNH TOÁN BOUNDARY THỜI GIAN THEO URL PARAMS
+// ---------------------------------------------------------
 function getPeriodBoundaries() {
     let minDate, maxDate;
-    const y = parseInt(ctx.year, 10);
     const urlParams = new URLSearchParams(window.location.search);
+    const y = parseInt(urlParams.get('year') || new Date().getFullYear(), 10);
     
     if (urlParams.has('month')) {
         const m = parseInt(urlParams.get('month'), 10);
@@ -387,60 +462,78 @@ function getPeriodBoundaries() {
     return { min: format(minDate), max: format(maxDate), minDate: minDate, maxDate: maxDate };
 }
 
-
+// ---------------------------------------------------------
+// LOGIC ĐỊNH TUYẾN URL (ROUTING) CHO TOPBAR
+// ---------------------------------------------------------
 document.addEventListener("DOMContentLoaded", function() {
     const urlParams = new URLSearchParams(window.location.search);
-    const currentYear = urlParams.get('year') || new Date().getFullYear();
+    const currentYear = urlParams.get('year') || new Date().getFullYear().toString();
+    let currentMode = 'year';
 
-    const topbarSelects = document.querySelectorAll('.topbar-right select');
-    topbarSelects.forEach(select => {
-        select.innerHTML = ''; 
-        select.removeAttribute('onchange'); 
-        
-        for (let y = 2030; y >= 2020; y--) {
-            const opt = document.createElement('option');
-            opt.value = y;
-            opt.text = y; 
-            if (y === parseInt(currentYear)) opt.selected = true;
-            select.appendChild(opt);
+    if (urlParams.has('month')) currentMode = 'month';
+    else if (urlParams.has('quarter')) currentMode = 'quarter';
+
+    // 1. Highlight Tab đang active
+    const activeTab = document.getElementById('btn-' + currentMode);
+    if (activeTab) activeTab.classList.add('active');
+
+    // 2. Render các Option cho thẻ Select Box
+    const sel = document.getElementById('timeSelect');
+    sel.innerHTML = '';
+    if (currentMode === 'month') {
+        for(let i=1; i<=12; i++) {
+            const opt = new Option(`Tháng ${String(i).padStart(2,'0')}`, i);
+            if (i === parseInt(urlParams.get('month'))) opt.selected = true;
+            sel.add(opt);
         }
-        
-        select.addEventListener('change', function() {
-            urlParams.set('year', this.value);
-            window.location.href = window.location.pathname + '?' + urlParams.toString();
+    } else if (currentMode === 'quarter') {
+        for(let i=1; i<=4; i++) {
+            const opt = new Option(`Quý ${i}`, i);
+            if (i === parseInt(urlParams.get('quarter'))) opt.selected = true;
+            sel.add(opt);
+        }
+    } else {
+        for(let y=2030; y>=2020; y--) {
+            const opt = new Option(`Năm ${y}`, y);
+            if (y === parseInt(currentYear)) opt.selected = true;
+            sel.add(opt);
+        }
+    }
+
+    // 3. Xử lý khi thay đổi giá trị trong Select Box -> Đổi URL
+    sel.addEventListener('change', function() {
+        const val = this.value;
+        if (currentMode === 'year') {
+            urlParams.set('year', val);
+            urlParams.delete('month');
+            urlParams.delete('quarter');
+        } else {
+            urlParams.set('year', currentYear);
+            urlParams.set(currentMode, val);
+        }
+        window.location.href = window.location.pathname + '?' + urlParams.toString();
+    });
+
+    // 4. Xử lý khi nhấn nút Tab -> Chuyển Mode và giải phóng URL
+    document.querySelectorAll('.time-tab').forEach(tab => {
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+            let newUrl = window.location.pathname + '?year=' + currentYear;
+            const text = this.innerText.toLowerCase().trim();
+            
+            if (text === 'năm') {
+                window.location.href = newUrl;
+            } else if (text === 'quý') {
+                let q = urlParams.get('quarter') || 1;
+                window.location.href = newUrl + '&quarter=' + q;
+            } else if (text === 'tháng') {
+                let m = urlParams.get('month') || 1;
+                window.location.href = newUrl + '&month=' + m;
+            }
         });
     });
 
-    const timeTabs = document.querySelectorAll('.topbar-right button, .period-btn');
-    timeTabs.forEach(tab => {
-        const text = tab.innerText.toLowerCase().trim();
-        if (['năm', 'quý', 'tháng'].includes(text)) {
-            tab.removeAttribute('onclick'); 
-            
-            tab.addEventListener('click', function(e) {
-                e.preventDefault();
-                let newUrl = window.location.pathname + '?year=' + currentYear;
-                
-                if (text === 'năm') {
-                    window.location.href = newUrl;
-                } 
-                else if (text === 'quý') {
-                    let q = urlParams.get('quarter') || 1;
-                    window.location.href = newUrl + '&quarter=' + q;
-                }
-                else if (text === 'tháng') {
-                    let m = urlParams.get('month') || 1;
-                    window.location.href = newUrl + '&month=' + m;
-                }
-            });
-        }
-    });
-
-    const actionButtons = document.querySelectorAll('.action-require-edit');
-    if (ctx.status === 'Submitted' || ctx.status === 'Locked') {
-        actionButtons.forEach(btn => btn.disabled = true);
-    }
-
+    // VẼ BIỂU ĐỒ (Dùng dữ liệu Jinja đã Inject sẵn)
     const categoriesData = JSON.parse(document.getElementById('categories-data').textContent);
     const groupedData = categoriesData.reduce((acc, cat) => {
         if (!acc[cat.device_type]) acc[cat.device_type] = 0;
@@ -470,6 +563,9 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
+// ---------------------------------------------------------
+// CATEGORY (DEVICE) CRUD
+// ---------------------------------------------------------
 async function submitCategory() {
   const payload = {
     id: document.getElementById('catId').value.trim(),
@@ -484,10 +580,18 @@ async function submitCategory() {
   const res = await fetch('/scope1/categories', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
   });
-  if(res.ok) window.location.reload(); else { const err = await res.json(); alert("Lỗi thêm thiết bị: " + (err.detail || "")); }
+  
+  if(res.ok) {
+    window.location.reload(); 
+  } else {
+    const err = await res.json();
+    alert("Lỗi thêm thiết bị: " + (err.detail || ""));
+  }
 }
 
-
+// ---------------------------------------------------------
+// ACTIVITY CRUD
+// ---------------------------------------------------------
 function openActivityModal() {
   const select = document.getElementById('actCatId');
   if(select.options.length === 0) { alert("Chưa có thiết bị nào trong hệ thống! Vui lòng tạo thiết bị."); return; }
@@ -495,9 +599,11 @@ function openActivityModal() {
   const bounds = getPeriodBoundaries();
   const timeInput = document.getElementById('actRecordTime');
   
+  // Áp dụng Boundary để giới hạn chọn lịch
   timeInput.min = bounds.min;
   timeInput.max = bounds.max;
   
+  // Set thời gian mặc định thông minh (nếu đang ở tháng quá khứ thì mặc định lấy ngày 1 của tháng đó)
   const now = new Date();
   let defaultTime = now;
   if (now < bounds.minDate || now > bounds.maxDate) {
@@ -524,13 +630,14 @@ async function submitActivity() {
   const selectedDate = new Date(rtVal);
   const bounds = getPeriodBoundaries();
   
+  // Rào chắn bảo vệ ở phía JS: Báo lỗi nếu người dùng cố tình nhập tay ngày ngoài khung
   if (selectedDate < bounds.minDate || selectedDate > bounds.maxDate) {
       alert(`Thời gian ghi nhận phải nằm trong kỳ báo cáo hiện tại (Từ ${bounds.min} đến ${bounds.max})`);
       return;
   }
 
   const payload = {
-    period_year: ctx.year,
+    period_year: selectedDate.getFullYear(),
     period_month: selectedDate.getMonth() + 1, 
     device_id: document.getElementById('actCatId').value, 
     recorded_power: parseFloat(document.getElementById('actPower').value) || 0,
@@ -607,10 +714,18 @@ async function deleteActivity(id) {
 // ---------------------------------------------------------
 function downloadExcelTemplate() {
     const urlParams = new URLSearchParams(window.location.search);
-    const currentYear = urlParams.get('year') || new Date().getFullYear();
-    const currentMonth = urlParams.get('month') || ctx.activity_month || ctx.month || 1;
+    const y = urlParams.get('year') || new Date().getFullYear();
+    let m = urlParams.get('month');
     
-    window.location.href = `/api/scope1/activities/import-template?year=${currentYear}&month=${currentMonth}`;
+    // Fallback thông minh: Nếu lọc quý, lấy tháng đầu tiên của quý. Nếu lọc Năm, mặc định lấy tháng 1
+    if (!m) {
+        if (urlParams.has('quarter')) {
+            m = (parseInt(urlParams.get('quarter')) - 1) * 3 + 1;
+        } else {
+            m = new Date().getMonth() + 1;
+        }
+    }
+    window.location.href = `/api/scope1/activities/import-template?year=${y}&month=${m}`;
 }
 
 async function submitImportExcel() {
@@ -624,9 +739,12 @@ async function submitImportExcel() {
     const formData = new FormData();
     formData.append("file", file);
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const y = urlParams.get('year') || new Date().getFullYear();
+    let m = urlParams.get('month') || 1; 
+
     try {
-        const pm = ctx.activity_month ?? ctx.month;
-        const res = await fetch(`/scope1/activities/import?period_year=${ctx.year}&period_month=${pm}`, { method: 'POST', body: formData });
+        const res = await fetch(`/scope1/activities/import?period_year=${y}&period_month=${parseInt(m)}`, { method: 'POST', body: formData });
         if (res.ok) window.location.reload();
         else { const err = await res.json(); alert("Lỗi Import: " + (err.detail || "Định dạng sai.")); }
     } catch (err) { alert("Lỗi kết nối."); } 
