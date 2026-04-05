@@ -13,7 +13,7 @@ from core.security import decode_token, get_token_payload
 
 # Container Services & Schemas
 from services import container_service, container_activity_service, scope3_other_vehicle_service
-from services.scope3_period_service import compute_scope3_period
+from services.scope3_period_service import compute_scope3_period, build_scope3_comparison_payload
 from schemas.container import ContainerCreate, ContainerUpdate
 from schemas.scope3_other_vehicle import Scope3OtherVehicleCreate
 
@@ -399,6 +399,18 @@ async def get_summary(
         "trend_ship_monthly": s3["trend_ship_monthly"],
         "trend_monthly": s3["trend_monthly"],
     }
+
+
+@router.get("/api/scope3/comparison-series")
+async def scope3_comparison_series(
+    db: Session = Depends(get_db),
+    year: int | None = Query(default=None),
+    month: int | None = Query(default=None),
+    quarter: int | None = Query(default=None),
+):
+    """Chuỗi giá trị nhiều kỳ (năm/tháng/quý) để biểu đồ so sánh — cùng logic tổng hợp Scope 3."""
+    y = year or datetime.now().year
+    return build_scope3_comparison_payload(db, y, month, quarter)
 
 
 @router.get("/api/scope3/manager/audit")

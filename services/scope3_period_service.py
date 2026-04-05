@@ -197,3 +197,72 @@ def compute_scope3_period(
         "containers": containers,
         "ships": ships,
     }
+
+
+def _metric_from_payload(p: Dict[str, Any], key: str) -> float:
+    if key == "total":
+        return float(p.get("total_co2e") or 0.0)
+    if key == "container":
+        return float(p.get("container_co2e") or 0.0)
+    if key == "ship":
+        return float(p.get("ship_co2e") or 0.0)
+    return 0.0
+
+
+def _series_with_pct(values: List[float]) -> Dict[str, Any]:
+    pct: List[float] = [0.0]
+    for i in range(1, len(values)):
+        a, b = values[i - 1], values[i]
+        pct.append(round(((b - a) / a) * 100, 1) if a else 0.0)
+    return {"values": values, "pct_vs_prev": pct}
+
+
+def build_scope3_comparison_payload(
+    db: Session,
+    year: int,
+    month: Optional[int] = None,
+    quarter: Optional[int] = None,
+) -> Dict[str, Any]:
+    """
+    Chuỗi giá trị theo kỳ để so sánh (5 năm / 12 tháng / 4 quý) + % so với điểm liền trước.
+    """
+    if month is not None:
+        mode = "month"
+        buckets: List[Tuple[int, Optional[int], Optional[int]]] = [(year, m, None) for m in range(1, 13)]
+        labels = [f"{year}-{str(m).zfill(2)}" for m in range(1, 13)]
+        display_labels = [f"T{m}" for m in range(1, 13)]
+        current_index = max(0, min(int(month) - 1, 11))
+    elif quarter is not None:
+        mode = "quarter"
+        buckets = [(year, None, q) for q in range(1, 5)]
+        labels = [f"{year}-Q{q}" for q in range(1, 5)]
+        display_labels = [f"Q{q}" for q in range(1, 5)]
+        current_index = max(0, min(int(quarter) - 1, 3))
+    else:
+        mode = "year"
+        years = [year - 4 + i for i in range(5)]
+        buckets = [(y, None, None) for y in years]
+        labels = [str(y) for y in years]
+        display_labels = labels[:]
+        current_index = 4 if year in years else len(years) - 1
+
+    period_payloads = [
+        compute_scope3_period(db, y, m, q) for y, m, q in buckets
+    ]
+
+    def pack(metric_key: str) -> Dict[str, Any]:
+        vals = [_metric_from_payload(p, metric_key) for p in period_payloads]
+        return _series_with_pct(vals)
+
+    return {
+        "mode": mode,
+        "year": year,
+        "labels": labels,
+        "display_labels": display_labels,
+        "current_index": current_index,
+        "series": {
+            "total": pack("total"),
+            "container": pack("container"),
+            "ship": pack("ship"),
+        },
+    }
