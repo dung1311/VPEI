@@ -47,8 +47,16 @@ body { font-family:'Montserrat',sans-serif; background:var(--gray-soft); color:v
 .topbar-sub { font-size:0.7rem; color:var(--text-muted); font-weight:500; }
 .topbar-right { display:flex; align-items:center; gap:8px; }
 .select-pill { padding:6px 12px; border-radius:8px; border:1.5px solid var(--gray-border); font-size:0.78rem; font-weight:600; color:var(--navy); background:white; cursor:pointer; font-family:'Montserrat',sans-serif; }
-.badge-status { padding:5px 13px; border-radius:20px; font-size:0.72rem; font-weight:700; cursor:pointer; border:none; font-family:'Montserrat',sans-serif; transition:all .2s; }
-.badge-draft { background:#fef9c3; color:#a16207; }
+
+/* PROFILE DROPDOWN */
+.profile-container { position: relative; display: flex; align-items: center; gap: 8px; cursor: pointer; margin-left: 12px; }
+.avatar-circle { width: 32px; height: 32px; border-radius: 50%; background: #2e7df7; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; }
+.profile-name { font-size: 0.85rem; font-weight: 600; color: var(--navy); }
+.profile-dropdown { position: absolute; top: calc(100% + 10px); right: 0; background: white; border: 1px solid var(--gray-border); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 160px; display: none; flex-direction: column; z-index: 100; overflow: hidden; }
+.profile-dropdown.show { display: flex; }
+.profile-item { padding: 12px 16px; display: flex; align-items: center; gap: 10px; font-size: 0.85rem; font-weight: 500; color: var(--navy); text-decoration: none; transition: background 0.2s; }
+.profile-item:hover { background: var(--gray-soft); }
+.profile-item.logout { color: var(--red); border-top: 1px solid var(--gray-border); }
 
 /* ─── SUB-NAV TABS ─── */
 .subnav { background:var(--white); border-bottom:1px solid var(--gray-border); padding:0 28px; display:flex; gap:0; flex-shrink:0; }
@@ -67,15 +75,13 @@ body { font-family:'Montserrat',sans-serif; background:var(--gray-soft); color:v
 .content { flex:1; overflow-y:auto; padding:20px 28px; display:flex; flex-direction:column; gap:16px; }
 
 /* ─── KPI ─── */
-.kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+.kpi-row { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; }
 .kpi-card { background:white; border-radius:13px; padding:16px 18px; border:1px solid var(--gray-border); cursor:pointer; transition:all .2s; position:relative; overflow:hidden; }
 .kpi-card:hover { border-color:var(--accent); box-shadow:0 4px 16px rgba(46,125,247,.1); transform:translateY(-1px); }
 .kpi-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:.85rem; margin-bottom:8px; }
 .kpi-label { font-size:0.68rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; }
 .kpi-value { font-size:1.4rem; font-weight:800; color:var(--navy); line-height:1.1; }
 .kpi-unit { font-size:0.72rem; font-weight:500; color:var(--text-muted); }
-.kpi-change { font-size:0.73rem; font-weight:700; margin-top:4px; }
-.kpi-change.up   { color:var(--red); }
 
 /* ─── CHARTS ─── */
 .charts-row { display:grid; grid-template-columns:1.3fr 1fr; gap:14px; }
@@ -95,9 +101,10 @@ body { font-family:'Montserrat',sans-serif; background:var(--gray-soft); color:v
 .form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 .form-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
 .btn-primary { padding:9px 22px; border-radius:9px; font-size:.8rem; font-weight:700; cursor:pointer; border:none; background:var(--navy); color:white; font-family:'Montserrat',sans-serif; transition:all .2s; display:flex; align-items:center; gap:7px; }
-.btn-primary:hover { background:var(--navy-light); box-shadow:0 4px 14px rgba(13,31,60,.2); }
+.btn-primary:hover:not(:disabled) { background:var(--navy-light); box-shadow:0 4px 14px rgba(13,31,60,.2); }
 .btn-outline { padding:9px 22px; border-radius:9px; font-size:.8rem; font-weight:700; cursor:pointer; border:1.5px solid var(--gray-border); background:white; color:var(--navy); font-family:'Montserrat',sans-serif; transition:all .2s; display:flex; align-items:center; gap:7px; }
-.btn-outline:hover { border-color:var(--accent); color:var(--accent); }
+.btn-outline:hover:not(:disabled) { border-color:var(--accent); color:var(--accent); }
+button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* ─── TABLE ─── */
 .table-card { background:white; border-radius:13px; border:1px solid var(--gray-border); overflow:hidden; }
@@ -113,6 +120,7 @@ tr:last-child td { border-bottom:none; }
 tr:hover td { background:#f8f9fd; }
 .tbl-action-btn { width:27px; height:27px; border-radius:6px; border:1.5px solid var(--gray-border); background:white; cursor:pointer; font-size:.7rem; transition:all .18s; display:inline-flex; align-items:center; justify-content:center; }
 .tbl-action-btn.del:hover { border-color:var(--red); color:var(--red); }
+.tbl-action-btn.edit:hover { border-color:var(--amber); color:var(--amber); }
 
 /* ─── RECORDS LAYOUT ─── */
 .records-layout { display:grid; grid-template-columns:1.45fr .9fr; gap:14px; align-items:start; }
@@ -136,6 +144,13 @@ tr:hover td { background:#f8f9fd; }
 .toast.error { background:#dc2626; }
 .hidden { display:none!important; }
 
+/* ─── TABS THỜI GIAN ─── */
+.time-tabs { display:flex; border:1.5px solid var(--gray-border); border-radius:8px; overflow:hidden; margin-right: 8px;}
+.time-tab { padding:6px 14px; font-size:0.78rem; font-weight:600; cursor:pointer; background:white; color:#4a5a7b; border:none; transition:all 0.18s; font-family:'Montserrat',sans-serif; }
+.time-tab.active { background:var(--navy); color:white; }
+.time-tab:hover:not(.active) { background:var(--gray-soft); }
+.select-pill { padding:6px 14px; border-radius:8px; border:1.5px solid var(--gray-border); font-size:0.83rem; font-weight:600; color:var(--navy); background:white; cursor:pointer; }
+
 ::-webkit-scrollbar { width:5px; }
 ::-webkit-scrollbar-track { background:transparent; }
 ::-webkit-scrollbar-thumb { background:var(--gray-border); border-radius:10px; }
@@ -152,13 +167,52 @@ function toggleMenu(id) {
   if (!menu) return;
   menu.classList.toggle('open');
 }
+
+function toggleProfileMenu(e) {
+    e.stopPropagation();
+    document.getElementById('profileMenu').classList.toggle('show');
+}
+
+window.onclick = function(event) {
+  if (event.target.classList.contains('modal-overlay')) {
+      event.target.classList.remove('show');
+  }
+  if (!event.target.closest('.profile-container')) {
+      const menu = document.getElementById('profileMenu');
+      if (menu && menu.classList.contains('show')) {
+          menu.classList.remove('show');
+      }
+  }
+}
 </script>
 
 <div class="main">
-    <!-- {% set topbar_title = 'Scope 3 – Phát thải gián tiếp <span style="font-size:0.8rem; font-weight:400; color:#7a8aab; margin-left:14px; border-left:1px solid #dde3ef; padding-left:14px;">Quản lý dữ liệu vận chuyển &amp; logistics</span>' %} -->
-  {% set topbar_title = 'Scope 3 – Phát thải gián tiếp' %}
-  {% set extra_right_html = '' %}
-  {% include 'components/topbar.html' %}
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title">Scope 3 – Phát thải gián tiếp</div>
+    </div>
+    <div class="topbar-right">
+        <div class="time-tabs">
+            <button class="time-tab" id="btn-year">Năm</button>
+            <button class="time-tab" id="btn-quarter">Quý</button>
+            <button class="time-tab" id="btn-month">Tháng</button>
+        </div>
+        <select class="select-pill" id="timeSelect"></select>
+
+        <div class="profile-container" onclick="toggleProfileMenu(event)">
+            <div class="avatar-circle">V</div>
+            <div class="profile-name">vpeiadmin <i class="fa-solid fa-chevron-down" style="font-size:0.7rem; color:var(--text-muted); margin-left:4px;"></i></div>
+            <div class="profile-dropdown" id="profileMenu">
+                <a href="#" class="profile-item"><i class="fa-solid fa-user-pen"></i> Xem thông tin</a>
+                <form action="/logout" method="POST" style="margin: 0;">
+                    <button type="submit" class="profile-item logout" style="width: 100%; background: transparent; border: none; border-top: 1px solid var(--gray-border); font-family: inherit; cursor: pointer; text-align: left;">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i> Đăng xuất
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+  </div>
 
   <div class="subnav">
     <div class="subnav-tab active" id="tab-btn-overview" onclick="setMainTab('overview')">
@@ -178,24 +232,27 @@ function toggleMenu(id) {
         <div class="kpi-card">
           <div class="kpi-icon" style="background:rgba(46,125,247,.1);color:#0d1f3c"><i class="fa-solid fa-cloud"></i></div>
           <div class="kpi-label">Tổng CO₂e</div>
-          <div class="kpi-value" id="kpi-total">{{ "{:,.1f}".format(summary.total_co2e|default(0)) }}<span class="kpi-unit"> tCO₂e</span></div>
-          <div class="kpi-change up" id="kpi-total-chg">↑ +0%</div>
+          <div class="kpi-value" id="kpi-total">0<span class="kpi-unit"> tCO₂e</span></div>
         </div>
         <div class="kpi-card">
           <div class="kpi-icon" style="background:rgba(34,197,94,.1);color:#22c55e"><i class="fa-solid fa-truck"></i></div>
           <div class="kpi-label">Phát thải Xe Container</div>
-          <div class="kpi-value" id="kpi-container">{{ "{:,.1f}".format(summary.container_co2e|default(0)) }}<span class="kpi-unit"> t</span></div>
+          <div class="kpi-value" id="kpi-container">0<span class="kpi-unit"> t</span></div>
         </div>
         <div class="kpi-card">
           <div class="kpi-icon" style="background:rgba(15,172,233,.1);color:#0ea5e9"><i class="fa-solid fa-ship"></i></div>
           <div class="kpi-label">Phát thải Tàu biển</div>
-          <div class="kpi-value" id="kpi-ship">{{ "{:,.1f}".format(summary.ship_co2e|default(0)) }}<span class="kpi-unit"> t</span></div>
+          <div class="kpi-value" id="kpi-ship">0<span class="kpi-unit"> t</span></div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-icon" style="background:rgba(139,92,246,.1);color:#8b5cf6"><i class="fa-solid fa-route"></i></div>
-          <div class="kpi-label">Số chuyến / Tàu cập cảng</div>
-          <div class="kpi-value" id="kpi-trips">{{ summary.total_trips|default(0) }}</div>
-          <div class="kpi-unit">lượt / tàu</div>
+          <div class="kpi-icon" style="background:rgba(139,92,246,.1);color:#8b5cf6"><i class="fa-solid fa-anchor"></i></div>
+          <div class="kpi-label">Phát thải Tàu cảng</div>
+          <div class="kpi-value" id="kpi-harbor">0<span class="kpi-unit"> t</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background:rgba(249,115,22,.1);color:#f97316"><i class="fa-solid fa-route"></i></div>
+          <div class="kpi-label">Số chuyến / Lượt hoạt động</div>
+          <div class="kpi-value" id="kpi-trips">0</div>
         </div>
       </div>
 
@@ -228,6 +285,7 @@ function toggleMenu(id) {
             <div class="vehicle-tabs">
               <button class="vtab active" onclick="selectVehicleType('truck', this)"><span>🚛</span> Xe container</button>
               <button class="vtab" onclick="selectVehicleType('container-ship', this)"><span>🚢</span> Tàu biển</button>
+              <button class="vtab" onclick="selectVehicleType('harbor_craft', this)"><span>🛥️</span> Tàu trong cảng</button>
             </div>
           </div>
 
@@ -309,9 +367,71 @@ function toggleMenu(id) {
             <button class="btn-primary" onclick="saveShipData()" style="width:100%;justify-content:center;margin-top:16px"><i class="fa-solid fa-save"></i> Lưu dữ liệu Tàu biển</button>
           </div>
 
+          <div id="form-harbor-craft" class="form-section hidden">
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Tên thiết bị / Tàu</label><input type="text" id="h-name" class="form-input" placeholder="VD: Tàu lai dắt 01"></div>
+              <div class="form-group">
+                <label class="form-label">Loại tàu cảng</label>
+                <select id="h-type" class="form-select">
+                  <option value="atb">ATB (Tàu kéo sà lan)</option>
+                  <option value="assist_tug">Tàu kéo hỗ trợ</option>
+                  <option value="barge">Sà lan</option>
+                  <option value="commercial_fishing">Tàu đánh cá thương mại</option>
+                  <option value="crew_boat">Tàu chở đoàn thủy thủ</option>
+                  <option value="excursion">Tàu tham quan/du lịch</option>
+                  <option value="ferry">Phà</option>
+                  <option value="government">Tàu công vụ</option>
+                  <option value="ocean_tug">Tàu kéo biển</option>
+                  <option value="tugboat">Tàu kéo</option>
+                  <option value="work_boat">Tàu dịch vụ</option>
+                  <option value="other">Khác</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row-3">
+              <div class="form-group">
+                <label class="form-label">Loại động cơ</label>
+                <select id="h-engine-type" class="form-select">
+                  <option value="main">Máy chính (Main)</option>
+                  <option value="aux">Máy phụ (Aux)</option>
+                </select>
+              </div>
+              <div class="form-group"><label class="form-label">Năm đóng</label><input type="number" id="h-year" class="form-input" value="2010"></div>
+              <div class="form-group"><label class="form-label">Công suất (kW)</label><input type="number" id="h-power" class="form-input" placeholder="VD: 500"></div>
+            </div>
+            <div class="form-row-3">
+              <div class="form-group"><label class="form-label">TG Hoạt động (h)</label><input type="number" id="h-activity" class="form-input" placeholder="VD: 120"></div>
+              <div class="form-group">
+                <label class="form-label">Dùng nhiên liệu tái tạo (RD99)?</label>
+                <select id="h-use-rd99" class="form-select">
+                  <option value="false">Không</option>
+                  <option value="true">Có</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Engine Tier</label>
+                <select id="h-engine-tier" class="form-select">
+                  <option value="0-3">Tier 0-3</option>
+                  <option value="4">Tier 4</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Thời gian ghi nhận</label><input type="datetime-local" id="h-record-time" class="form-input"></div>
+              <div id="h-update-reason-group" class="form-group hidden"><label class="form-label">Lý do cập nhật (bắt buộc)</label><input type="text" id="h-update-reason" class="form-input"></div>
+            </div>
+            
+            <div style="display:flex; gap:8px; margin-top:16px;">
+              <button id="harbor-save-btn" class="btn-primary" onclick="saveHarborCraftData()" style="width:100%;justify-content:center;"><i class="fa-solid fa-save"></i> Lưu dữ liệu Tàu cảng</button>
+              <button id="harbor-cancel-edit-btn" class="btn-secondary hidden" onclick="cancelEditHarborCraft()">Hủy sửa</button>
+            </div>
+          </div>
+
         </div>
       </div>
-    </div><div id="page-records" class="hidden">
+    </div>
+    
+    <div id="page-records" class="hidden">
       <div class="section-card" style="margin-bottom:12px;">
         <div class="section-header" style="border-bottom:none;padding-bottom:8px;">
           <div class="section-title"><i class="fa-solid fa-filter"></i> Lọc bản ghi theo phương tiện</div>
@@ -322,9 +442,8 @@ function toggleMenu(id) {
               <button class="vtab active" onclick="setRecordsFilter('all', this)"><span class="vtab-dot" style="background:var(--navy)"></span> Tất cả</button>
               <button class="vtab" onclick="setRecordsFilter('truck', this)"><span class="vtab-dot" style="background:#0ea5e9"></span> Xe container</button>
               <button class="vtab" onclick="setRecordsFilter('container-ship', this)"><span class="vtab-dot" style="background:#0d1f3c"></span> Tàu biển</button>
+              <button class="vtab" onclick="setRecordsFilter('harbor_craft', this)"><span class="vtab-dot" style="background:#8b5cf6"></span> Tàu trong cảng</button>
             </div>
-
-
           </div>
         </div>
       </div>
@@ -353,7 +472,11 @@ function toggleMenu(id) {
           </div>
         </div>
       </div>
-    </div></div></div><div class="modal-overlay" id="importModal">
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="importModal">
   <div class="modal">
     <div class="modal-title"><i class="fa-solid fa-file-import" style="color:var(--accent);margin-right:8px"></i>📥 Import Dữ Liệu Excel</div>
     
@@ -362,6 +485,7 @@ function toggleMenu(id) {
         <select id="import-vehicle-type" class="form-select">
             <option value="container">🚛 Xe Container</option>
             <option value="ship">🚢 Tàu Biển</option>
+            <option value="harbor_craft">🛥️ Tàu Trong Cảng</option>
         </select>
     </div>
 
@@ -405,7 +529,8 @@ function toggleMenu(id) {
 <script>
 const VEHICLES = {
   'truck': { label: 'Xe container', icon: '🚛', color: '#0ea5e9' },
-  'container-ship': { label: 'Tàu biển', icon: '🚢', color: '#0d1f3c' }
+  'container-ship': { label: 'Tàu biển', icon: '🚢', color: '#0d1f3c' },
+  'harbor_craft': { label: 'Tàu trong cảng', icon: '🛥️', color: '#8b5cf6' }
 };
 
 const SHIP_TYPES = {
@@ -419,10 +544,28 @@ const SHIP_TYPES = {
     'other_ship': 'Tàu Khác'
 };
 
+const HARBOR_CRAFT_TYPES = {
+    'atb': 'ATB (Tàu kéo sà lan)',
+    'assist_tug': 'Tàu kéo hỗ trợ',
+    'barge': 'Sà lan',
+    'commercial_fishing': 'Tàu đánh cá thương mại',
+    'crew_boat': 'Tàu chở đoàn thủy thủ',
+    'excursion': 'Tàu tham quan/du lịch',
+    'ferry': 'Phà',
+    'government': 'Tàu công vụ',
+    'ocean_tug': 'Tàu kéo biển',
+    'tugboat': 'Tàu kéo',
+    'work_boat': 'Tàu dịch vụ',
+    'other': 'Khác'
+};
+
+const CHART_PALETTE = ['#0d1f3c', '#2e7df7', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+
 let containerRecords = [];
 let selectedVehicleType = 'truck';
 let deleteTarget = { id: null, type: null };
 let editingContainerId = null;
+let editingHarborCraftId = null;
 let toastTimer;
 let recordsDonutRef = null;
 let selectedRecordsFilter = 'all';
@@ -433,8 +576,92 @@ let globalFilterYear = null;
 let globalFilterQuarter = null;
 let globalFilterMonth = null;
 
+let vehicleBarChartRef = null;
+let trendLineChartRef = null;
+
+function getRecordSpecificType(r) {
+    const type = getRecordVehicleType(r);
+    if (type === 'container-ship') return SHIP_TYPES[r.ship_type] || r.ship_type || 'Tàu biển';
+    if (type === 'harbor_craft') return HARBOR_CRAFT_TYPES[r.craft_type] || r.craft_type || 'Tàu trong cảng';
+    return 'Xe container';
+}
+
+function getBuckets(mode) {
+    if (mode === 'month') return Array.from({length: 12}, (_, i) => ({val: i+1, label: `Tháng ${String(i+1).padStart(2,'0')}`}));
+    if (mode === 'quarter') return Array.from({length: 4}, (_, i) => ({val: i+1, label: `Quý ${i+1}`}));
+    if (mode === 'year') {
+        let years = [];
+        for(let y=2030; y>=2020; y--) years.push({val: y, label: `Năm ${y}`});
+        return years;
+    }
+    return [];
+}
+
+function setTimeMode(mode, btn, autoReload) {
+    window.currentMode = mode;
+    document.querySelectorAll('.time-tab').forEach(b => b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+
+    const sel = document.getElementById('timeSelect');
+    const buckets = getBuckets(mode);
+    sel.innerHTML = buckets.map(b => `<option value="${b.val}">${b.label}</option>`).join('');
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (mode === 'month' && urlParams.has('month')) sel.value = urlParams.get('month');
+    else if (mode === 'quarter' && urlParams.has('quarter')) sel.value = urlParams.get('quarter');
+    else if (mode === 'year' && urlParams.has('year')) sel.value = urlParams.get('year');
+    else sel.value = buckets[0].val;
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    window.currentYear = urlParams.get('year') || new Date().getFullYear().toString();
+    window.currentMode = 'year'; 
+
+    if (urlParams.has('month')) window.currentMode = 'month';
+    else if (urlParams.has('quarter')) window.currentMode = 'quarter';
+
+    const activeTab = document.getElementById('btn-' + window.currentMode);
+    if(activeTab) setTimeMode(window.currentMode, activeTab, false);
+
+    const sel = document.getElementById('timeSelect');
+    if (sel) {
+        sel.addEventListener('change', function() {
+            const val = this.value;
+            const params = new URLSearchParams();
+            
+            if (window.currentMode === 'year') {
+                params.set('year', val);
+            } else {
+                params.set('year', window.currentYear);
+                params.set(window.currentMode, val);
+            }
+
+            window.location.href = window.location.pathname + '?' + params.toString();
+        });
+    }
+
+    document.querySelectorAll('.time-tab').forEach(tab => {
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+            let newUrl = window.location.pathname + '?year=' + window.currentYear;
+            const text = this.innerText.toLowerCase().trim();
+            
+            if (text === 'năm') {
+                window.location.href = newUrl;
+            } else if (text === 'quý') {
+                let q = urlParams.get('quarter') || 1;
+                window.location.href = newUrl + '&quarter=' + q;
+            } else if (text === 'tháng') {
+                let m = urlParams.get('month') || 1;
+                window.location.href = newUrl + '&month=' + m;
+            }
+        });
+    });
+});
+
 function syncGlobalPeriodFromParams(searchParams) {
-  globalFilterYear = searchParams.get('year');
+  globalFilterYear = searchParams.get('year') || new Date().getFullYear();
   globalFilterQuarter = searchParams.get('quarter');
   globalFilterMonth = searchParams.get('month');
   if (searchParams.get('quarter')) globalPeriodMode = 'quarter';
@@ -461,6 +688,15 @@ function recordInGlobalPeriod(record) {
   return true;
 }
 
+function getRecordMonthYear(record) {
+  const timeField = record.start_time || record.record_time;
+  if (timeField) {
+    const d = new Date(timeField);
+    if (!Number.isNaN(d.getTime())) return { month: d.getMonth() + 1, year: d.getFullYear() };
+  }
+  return { month: null, year: 2026 };
+}
+
 function setMainTab(tabName) {
   const tabs = ['overview', 'input', 'records'];
   tabs.forEach((t) => {
@@ -473,24 +709,16 @@ function setMainTab(tabName) {
 
 function selectVehicleType(type, btn) {
   selectedVehicleType = type;
-  document.querySelectorAll('.vehicle-tabs .vtab').forEach((b) => b.classList.remove('active'));
+  document.querySelectorAll('#page-input .vehicle-tabs .vtab').forEach((b) => b.classList.remove('active'));
   btn.classList.add('active');
   
   document.getElementById('form-truck').classList.add('hidden');
   document.getElementById('form-ship').classList.add('hidden');
+  document.getElementById('form-harbor-craft').classList.add('hidden');
   
   if (type === 'truck') document.getElementById('form-truck').classList.remove('hidden');
   else if (type === 'container-ship') document.getElementById('form-ship').classList.remove('hidden');
-}
-
-function setEditMode(on) {
-  const reasonGroup = document.getElementById('update-reason-group');
-  const cancelBtn = document.getElementById('container-cancel-edit-btn');
-  const saveBtn = document.getElementById('container-save-btn');
-
-  reasonGroup.classList.toggle('hidden', !on);
-  cancelBtn.classList.toggle('hidden', !on);
-  saveBtn.innerHTML = on ? '<i class="fa-solid fa-pen-to-square"></i> Cập nhật dữ liệu' : '<i class="fa-solid fa-save"></i> Lưu dữ liệu xe';
+  else if (type === 'harbor_craft') document.getElementById('form-harbor-craft').classList.remove('hidden');
 }
 
 function formatForDateTimeLocal(isoText) {
@@ -501,77 +729,121 @@ function formatForDateTimeLocal(isoText) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function startEditContainer(id) {
-  const record = containerRecords.find((r) => r.id === id);
-  if (!record) { showToast('Không tìm thấy bản ghi để sửa', 'warn'); return; }
-  
-  editingContainerId = id;
-  document.getElementById('c-license-plate').value = record.license_plate || '';
-  document.getElementById('c-start-time').value = formatForDateTimeLocal(record.start_time);
-  document.getElementById('c-end-time').value = formatForDateTimeLocal(record.end_time);
-  document.getElementById('c-max-weight').value = record.max_weight ?? 40;
-  document.getElementById('c-journey-type').value = record.journey_type || 'both';
-  document.getElementById('c-velocity-1').value = record.velocity_1 ?? '';
-  document.getElementById('c-velocity-2').value = record.velocity_2 ?? '';
-  document.getElementById('c-velocity-3').value = record.velocity_3 ?? '';
-  document.getElementById('c-input-weight').value = record.input_weight ?? '';
-  document.getElementById('c-output-weight').value = record.output_weight ?? '';
-  document.getElementById('c-distance-1').value = record.distance_1 ?? '';
-  document.getElementById('c-distance-2').value = record.distance_2 ?? '';
-  document.getElementById('c-distance-3').value = record.distance_3 ?? '';
-  document.getElementById('c-update-reason').value = '';
+function formatDisplayDate(isoText) {
+  const timeField = isoText;
+  if (!timeField) return '—';
+  const d = new Date(timeField);
+  if (Number.isNaN(d.getTime())) return '—';
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
 
-  setEditMode(true);
+function getRecordVehicleType(record) { return record.ui_type || 'truck'; }
+function getRecordEmission(record) {
+  const value = parseFloat(record.total_emission || record.total_co2 || record.e_total || record.eTotal || record.co2 || 0);
+  return Number.isFinite(value) ? value : 0;
+}
+
+// ─── API LƯU TÀU CẢNG (HARBOR CRAFT) ───
+async function saveHarborCraftData() {
+  const recordTimeStr = document.getElementById('h-record-time').value;
+  if(!recordTimeStr) { showToast('Vui lòng chọn thời gian ghi nhận', 'warn'); return; }
+  
+  const btn = document.getElementById('harbor-save-btn');
+  btn.disabled = true;
+
+  const recordTime = new Date(recordTimeStr);
+  const payload = {
+    device_name: document.getElementById('h-name').value || 'Tàu Cảng',
+    craft_type: document.getElementById('h-type').value || 'other',
+    engine_type: document.getElementById('h-engine-type').value || 'main',
+    year_built: parseInt(document.getElementById('h-year').value) || 2010,
+    power: parseFloat(document.getElementById('h-power').value) || 0,
+    activity_hours: parseFloat(document.getElementById('h-activity').value) || 0,
+    use_rd99: document.getElementById('h-use-rd99').value === 'true',
+    engine_tier: document.getElementById('h-engine-tier').value || '0-3',
+    record_time: recordTime.toISOString()
+  };
+
+  let method = 'POST', url = '/api/scope3/harbor_crafts';
+  if (editingHarborCraftId !== null) {
+    const reason = document.getElementById('h-update-reason').value.trim();
+    if (!reason) { showToast('Nhập lý do cập nhật', 'warn'); btn.disabled = false; return; }
+    payload.reason = reason; method = 'PUT'; url = `/api/scope3/harbor_crafts/${editingHarborCraftId}`;
+  }
+
+  try {
+    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const data = await res.json().catch(()=>({}));
+    if (!res.ok) throw new Error(data.detail || 'Lỗi lưu tàu cảng');
+    cancelEditHarborCraft();
+    await loadAllRecords();
+    showToast('✓ Đã lưu thành công!', 'success');
+  } catch (err) { 
+    showToast('❌ ' + err.message, 'error'); 
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function startEditHarborCraft(id) {
+  const record = containerRecords.find((r) => r.id === id);
+  if (!record) return;
+  editingHarborCraftId = id;
+  document.getElementById('h-name').value = record.device_name || '';
+  document.getElementById('h-type').value = record.craft_type || 'other';
+  document.getElementById('h-engine-type').value = record.engine_type || 'main';
+  document.getElementById('h-year').value = record.year_built || 2010;
+  document.getElementById('h-power').value = record.power || 0;
+  document.getElementById('h-activity').value = record.activity_hours || 0;
+  document.getElementById('h-use-rd99').value = record.use_rd99 ? 'true' : 'false';
+  document.getElementById('h-engine-tier').value = record.engine_tier || '0-3';
+  document.getElementById('h-record-time').value = formatForDateTimeLocal(record.record_time);
+  document.getElementById('h-update-reason').value = '';
+
+  document.getElementById('h-update-reason-group').classList.remove('hidden');
+  document.getElementById('harbor-cancel-edit-btn').classList.remove('hidden');
+  document.getElementById('harbor-save-btn').innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Cập nhật dữ liệu';
+  
+  const hTabBtn = document.querySelectorAll('#page-input .vehicle-tabs .vtab')[2];
+  selectVehicleType('harbor_craft', hTabBtn);
   setMainTab('input');
 }
 
-function cancelEditContainer() {
-  editingContainerId = null;
-  setEditMode(false);
-  clearContainerForm();
+function cancelEditHarborCraft() {
+  editingHarborCraftId = null;
+  document.getElementById('h-update-reason-group').classList.add('hidden');
+  document.getElementById('harbor-cancel-edit-btn').classList.add('hidden');
+  document.getElementById('harbor-save-btn').innerHTML = '<i class="fa-solid fa-save"></i> Lưu dữ liệu Tàu cảng';
+  
+  ['h-name', 'h-year', 'h-power', 'h-activity', 'h-record-time', 'h-update-reason'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('h-type').value = 'atb';
+  document.getElementById('h-engine-type').value = 'main';
+  document.getElementById('h-use-rd99').value = 'false';
+  document.getElementById('h-engine-tier').value = '0-3';
 }
 
+// ─── API LƯU XE CONTAINER VÀ TÀU BIỂN ───
 async function saveShipData() {
-    const startTimeStr = document.getElementById('s-start-time').value;
-    const endTimeStr = document.getElementById('s-end-time').value;
-    
-    if(!startTimeStr || !endTimeStr) {
-        showToast('Vui lòng chọn thời gian vào/rời cảng', 'warn'); return;
-    }
+  const start_timeStr = document.getElementById('s-start-time').value;
+  const end_timeStr = document.getElementById('s-end-time').value;
+  if(!start_timeStr || !end_timeStr) { showToast('Vui lòng chọn thời gian!', 'warn'); return; }
 
-    const start_time = new Date(startTimeStr);
-    const end_time = new Date(endTimeStr);
-    const time_in_port = (end_time - start_time) / (1000 * 60 * 60);
-
-    if(time_in_port <= 0) {
-        showToast('Thời gian rời cảng phải sau thời gian vào cảng', 'warn'); return;
-    }
-
-    const payload = {
+  const payload = {
         name: document.getElementById('s-name').value,
         ship_type: document.getElementById('s-type').value,
-        year_built: parseInt(document.getElementById('s-year').value) || 2010,
-        buoy: parseInt(document.getElementById('s-buoy').value) || 0,
-        deadweight_tonnage: parseFloat(document.getElementById('s-dwt').value) || 0,
-        start_time: start_time.toISOString(),
-        end_time: end_time.toISOString(),
-        v_trip: parseFloat(document.getElementById('s-vtrip').value) || 0,
-        v_maneuver: parseFloat(document.getElementById('s-vmaneuver').value) || 0,
-        v_max: parseFloat(document.getElementById('s-vmax').value) || 0,
-        P_main: parseFloat(document.getElementById('s-pmain').value) || 0,
-        P_aux: parseFloat(document.getElementById('s-paux').value) || 0,
-        rpm: parseFloat(document.getElementById('s-rpm').value) || 100,
-        valve_type: document.getElementById('s-valve').value,
-        is_man: document.getElementById('s-isman').value === 'true'
-    };
-    if(!payload.name) { showToast('Vui lòng nhập tên tàu', 'warn'); return; }
-    try {
-        const res = await fetch('/api/scope3/ships', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        if (!res.ok) throw new Error('Lỗi lưu Tàu');
-        document.querySelectorAll('#form-ship input').forEach(i => i.value='');
-        await loadAllRecords();
-        showToast('✓ Đã lưu tàu thành công!', 'success');
-    } catch (err) { showToast('❌ ' + err.message, 'error'); }
+        year_built: parseInt(document.getElementById('s-year').value),
+        start_time: new Date(start_timeStr).toISOString(), 
+        end_time: new Date(end_timeStr).toISOString(),
+        P_main: parseFloat(document.getElementById('s-pmain').value)
+  };
+  try {
+    const res = await fetch('/api/scope3/ships', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    if (!res.ok) throw new Error('Lỗi');
+    await loadAllRecords();
+    showToast('✓ Lữu tàu biển thành công', 'success');
+  } catch (e) { showToast('Lỗi', 'error'); }
 }
 
 async function saveContainerData() {
@@ -583,74 +855,22 @@ async function saveContainerData() {
   const payload = {
     license_plate: licensePlate,
     start_time: new Date(startTime).toISOString(),
-    end_time: new Date(endTime).toISOString(),
-    max_weight: parseFloat(document.getElementById('c-max-weight').value) || 40,
-    journey_type: document.getElementById('c-journey-type').value,
-    velocity_1: parseFloat(document.getElementById('c-velocity-1').value) || 0,
-    velocity_2: parseFloat(document.getElementById('c-velocity-2').value) || 0,
-    velocity_3: parseFloat(document.getElementById('c-velocity-3').value) || 0,
-    input_weight: parseFloat(document.getElementById('c-input-weight').value) || 0,
-    output_weight: parseFloat(document.getElementById('c-output-weight').value) || 0,
-    distance_1: parseFloat(document.getElementById('c-distance-1').value) || 0,
-    distance_2: parseFloat(document.getElementById('c-distance-2').value) || 0,
-    distance_3: parseFloat(document.getElementById('c-distance-3').value) || 0
+    end_time: new Date(endTime).toISOString()
   };
-
   let method = 'POST', url = '/api/scope3/containers';
-  if (editingContainerId !== null) {
-    const reason = document.getElementById('c-update-reason').value.trim();
-    if (!reason) { showToast('Nhập lý do cập nhật', 'warn'); return; }
-    payload.reason = reason; method = 'PUT'; url = `/api/scope3/containers/${editingContainerId}`;
-  }
-
+  if (editingContainerId) { method = 'PUT'; url = `/api/scope3/containers/${editingContainerId}`; payload.reason = "Cập nhật"; }
   try {
     const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    if (!res.ok) throw new Error('Lỗi lưu container');
+    if (!res.ok) throw new Error('Lỗi');
     cancelEditContainer();
     await loadAllRecords();
-    showToast('✓ Đã lưu thành công!', 'success');
-  } catch (err) { showToast('❌ Lỗi lưu dữ liệu', 'error'); }
+    showToast('✓ Lữu xe container thành công', 'success');
+  } catch (e) { showToast('Lỗi', 'error'); }
 }
+function startEditContainer(id) { editingContainerId = id; setMainTab('input'); }
+function cancelEditContainer() { editingContainerId = null; }
 
-function getRecordVehicleType(record) {
-  return record.ui_type || 'truck';
-}
-
-function getRecordEmission(record) {
-  const value = parseFloat(record.total_co2 || record.e_total || record.eTotal || record.co2 || 0);
-  return Number.isFinite(value) ? value : 0;
-}
-
-function getRecordMonthYear(record) {
-  if (record.start_time) {
-    const d = new Date(record.start_time);
-    if (!Number.isNaN(d.getTime())) return { month: d.getMonth() + 1, year: d.getFullYear() };
-  }
-  return { month: null, year: 2026 };
-}
-
-function formatPortEntryDate(record) {
-  if (!record.start_time) return '—';
-  const d = new Date(record.start_time);
-  if (Number.isNaN(d.getTime())) return '—';
-  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
-
-function refreshYearFilterOptions() {
-  const sel = document.getElementById('recordsYearFilter');
-  if (!sel) return;
-  const years = [...new Set(containerRecords.map((r) => getRecordMonthYear(r).year).filter(Boolean))].sort((a, b) => b - a);
-  sel.innerHTML = '<option value="all">Tất cả năm</option>' + years.map((y) => `<option value="${y}">${y}</option>`).join('');
-}
-
-function getRecordsByFilter() {
-  return containerRecords.filter((r) => {
-    const type = getRecordVehicleType(r);
-    if (selectedRecordsFilter !== 'all' && type !== selectedRecordsFilter) return false;
-    return recordInGlobalPeriod(r);
-  });
-}
-
+// ─── BẢNG & DANH SÁCH BẢN GHI ───
 function setRecordsFilter(filterKey, btn) {
   selectedRecordsFilter = filterKey;
   document.querySelectorAll('#recordsFilterTabs .vtab').forEach((b) => b.classList.remove('active'));
@@ -658,28 +878,26 @@ function setRecordsFilter(filterKey, btn) {
   renderRecordsTable();
 }
 
-function setRecordsTimeFilter() {
-  renderRecordsTable();
-}
-
-window.onGlobalFilterChange = function(mode, searchParams) {
-  syncGlobalPeriodFromParams(searchParams);
-  selectedRecordsYear = searchParams.get('year') || 'all';
-  selectedRecordsMonth = searchParams.get('month') || 'all';
-  renderRecordsTable();
-  updateOverview();
-};
-
 function renderRecordsEmissionChart(filteredRecords) {
   const canvas = document.getElementById('recordsEmissionDonut');
   if (!canvas) return;
 
   const grouped = {};
+  let colorIdx = 0;
+
   filteredRecords.forEach((r) => {
-    const type = getRecordVehicleType(r);
+    const specType = getRecordSpecificType(r);
     const emission = getRecordEmission(r);
-    if (!grouped[type]) { grouped[type] = { label: VEHICLES[type]?.label || type, color: VEHICLES[type]?.color || '#94a3b8', value: 0 }; }
-    grouped[type].value += emission;
+    
+    if (!grouped[specType]) { 
+        grouped[specType] = { 
+            label: specType, 
+            color: CHART_PALETTE[colorIdx % CHART_PALETTE.length], 
+            value: 0 
+        };
+        colorIdx++;
+    }
+    grouped[specType].value += emission;
   });
 
   const items = Object.values(grouped).filter((x) => x.value > 0);
@@ -696,20 +914,19 @@ function renderRecordsEmissionChart(filteredRecords) {
   });
 }
 
-// ─── RENDER BẢNG & CHI TIẾT TÊN TÀU ───
-// ─── RENDER BẢNG & CHI TIẾT TÊN PHƯƠNG TIỆN ───
 function renderRecordsTable() {
   const container = document.getElementById('recordsTablesContainer');
-  const filteredRecords = getRecordsByFilter();
+  let filtered = containerRecords.filter(r => recordInGlobalPeriod(r));
+  if (selectedRecordsFilter !== 'all') filtered = filtered.filter(r => getRecordVehicleType(r) === selectedRecordsFilter);
 
-  if (!filteredRecords.length) {
+  if (!filtered.length) {
     container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:24px;">Chưa có bản ghi nào</div>';
     renderRecordsEmissionChart([]);
     return;
   }
 
   const grouped = {};
-  filteredRecords.forEach(r => {
+  filtered.forEach(r => {
     const type = getRecordVehicleType(r);
     if (!grouped[type]) grouped[type] = [];
     grouped[type].push(r);
@@ -717,150 +934,224 @@ function renderRecordsTable() {
 
   container.innerHTML = Object.keys(grouped).map(type => {
     const rows = grouped[type] || [];
-    const vehicleGroup = VEHICLES[type] || { label: type, color: '#64748b', icon: '🚚' };
+    const vGroup = VEHICLES[type];
 
     const rowHtml = rows.map((r, idx) => {
       const emission = getRecordEmission(r);
-      const label = r.license_plate || r.name || '—';
-      const portEntryDate = formatPortEntryDate(r); 
-      const canEdit = type === 'truck';
-
-      let specificTypeLabel = vehicleGroup.label;
-      if (type === 'container-ship' && r.ship_type) {
-          specificTypeLabel = SHIP_TYPES[r.ship_type] || r.ship_type;
-      }
+      const label = r.license_plate || r.device_name || r.name || '—';
+      const timeStr = formatDisplayDate(r.start_time || r.record_time); 
+      
+      let editFn = `startEditContainer(${r.id})`;
+      if(type === 'harbor_craft') editFn = `startEditHarborCraft(${r.id})`;
+      const canEdit = (type === 'truck' || type === 'harbor_craft');
+      
+      const specificTypeLabel = getRecordSpecificType(r);
 
       return `
         <tr>
           <td>${idx + 1}</td>
           <td><strong>${label}</strong></td>
-          <td>${vehicleGroup.icon} ${specificTypeLabel}</td>
-          <td>${portEntryDate}</td>
-          <td style="font-weight:700;color:${vehicleGroup.color}">${emission.toLocaleString('vi-VN', { maximumFractionDigits: 2 })} tCO₂e</td>
+          <td>${vGroup.icon} ${specificTypeLabel}</td>
+          <td>${timeStr}</td>
+          <td style="font-weight:700;color:${vGroup.color}">${emission.toLocaleString('vi-VN', { maximumFractionDigits: 2 })} tCO₂e</td>
           <td style="display:flex; gap:4px;">
-            ${canEdit ? `<button class="tbl-action-btn edit" onclick="startEditContainer(${r.id})" style="background:#fef3c7;color:#d97706;"><i class="fa-solid fa-pencil"></i></button>` : ''}
-            <button class="tbl-action-btn del" onclick="deleteRecord(${r.id}, '${type}')"><i class="fa-solid fa-trash"></i></button>
+            ${canEdit ? `<button class="tbl-action-btn edit" onclick="${editFn}" style="color:var(--amber);"><i class="fa-solid fa-pencil"></i></button>` : ''}
+            <button class="tbl-action-btn del" onclick="deleteRecord(${r.id}, '${type}')" style="color:var(--red)"><i class="fa-solid fa-trash"></i></button>
           </td>
         </tr>
       `;
     }).join('');
 
     return `
-      <div style="border:1px solid var(--gray-border);border-radius:10px;overflow:hidden;background:white;margin-bottom:10px;">
-        <div style="padding:10px 14px;border-bottom:1px solid var(--gray-border);font-size:.78rem;font-weight:800;color:${vehicleGroup.color};">
-          ${vehicleGroup.icon} ${vehicleGroup.label} (${rows.length})
+      <div style="border:1px solid var(--gray-border);border-radius:10px;overflow:hidden;background:white;margin-bottom:12px;">
+        <div style="padding:10px 14px;background:#f8f9fd;font-size:.78rem;font-weight:800;color:${vGroup.color}; border-bottom:1px solid var(--gray-border);">
+          ${vGroup.icon} ${vGroup.label} (${rows.length})
         </div>
         <table>
-            <thead><tr><th>#</th><th>Biển số / Tên</th><th>Loại</th><th>Thời gian</th><th>CO₂e (tCO₂e)</th><th>Hành động</th></tr></thead>
+            <thead><tr><th>#</th><th>Biển số / Tên</th><th>Loại chi tiết</th><th>Thời gian</th><th>CO₂e (tCO₂e)</th><th>Hành động</th></tr></thead>
             <tbody>${rowHtml}</tbody>
         </table>
       </div>
     `;
   }).join('');
-
-  renderRecordsEmissionChart(filteredRecords);
+  
+  renderRecordsEmissionChart(filtered);
 }
 
-// ─── IMPORT EXCEL LOGIC ───
+// ─── TỔNG QUAN ───
+function updateOverview() {
+  let filtered = containerRecords.filter(r => recordInGlobalPeriod(r));
+
+  let tCO2e = 0, tTruck = 0, tShip = 0, tHarbor = 0;
+  filtered.forEach(r => {
+    const type = getRecordVehicleType(r);
+    const em = getRecordEmission(r);
+    tCO2e += em;
+    if (type === 'truck') tTruck += em;
+    else if (type === 'container-ship') tShip += em;
+    else if (type === 'harbor_craft') tHarbor += em;
+  });
+
+  document.getElementById('kpi-total').innerHTML = `${tCO2e.toLocaleString('vi-VN', { maximumFractionDigits: 1 })}<span class="kpi-unit"> tCO₂e</span>`;
+  document.getElementById('kpi-container').innerHTML = `${tTruck.toLocaleString('vi-VN', { maximumFractionDigits: 1 })}<span class="kpi-unit"> t</span>`;
+  document.getElementById('kpi-ship').innerHTML = `${tShip.toLocaleString('vi-VN', { maximumFractionDigits: 1 })}<span class="kpi-unit"> t</span>`;
+  document.getElementById('kpi-harbor').innerHTML = `${tHarbor.toLocaleString('vi-VN', { maximumFractionDigits: 1 })}<span class="kpi-unit"> t</span>`;
+  document.getElementById('kpi-trips').innerText = filtered.length;
+
+  if (vehicleBarChartRef) vehicleBarChartRef.destroy();
+  vehicleBarChartRef = new Chart(document.getElementById('vehicleBar').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: ['Xe Container', 'Tàu Biển', 'Tàu Cảng'],
+      datasets: [{ data: [tTruck, tShip, tHarbor], backgroundColor: [VEHICLES['truck'].color, VEHICLES['container-ship'].color, VEHICLES['harbor_craft'].color], borderRadius: 6 }]
+    },
+    options: { plugins: { legend: { display: false } }, maintainAspectRatio: false }
+  });
+
+  if (trendLineChartRef) trendLineChartRef.destroy();
+  const mData = { truck: Array(12).fill(0), ship: Array(12).fill(0), harbor: Array(12).fill(0) };
+  const targetYear = globalFilterYear ? parseInt(globalFilterYear, 10) : new Date().getFullYear();
+
+  containerRecords.forEach(r => {
+    const dt = getRecordMonthYear(r);
+    if (dt.year === targetYear && dt.month >= 1 && dt.month <= 12) {
+      const type = getRecordVehicleType(r);
+      const em = getRecordEmission(r);
+      if (type === 'truck') mData.truck[dt.month - 1] += em;
+      else if (type === 'container-ship') mData.ship[dt.month - 1] += em;
+      else if (type === 'harbor_craft') mData.harbor[dt.month - 1] += em;
+    }
+  });
+
+  trendLineChartRef = new Chart(document.getElementById('trendLine').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'],
+      datasets: [
+        { label: 'Xe Container', data: mData.truck, borderColor: VEHICLES['truck'].color, borderWidth: 2, tension: 0.4 },
+        { label: 'Tàu Biển', data: mData.ship, borderColor: VEHICLES['container-ship'].color, borderWidth: 2, tension: 0.4 },
+        { label: 'Tàu Trong Cảng', data: mData.harbor, borderColor: VEHICLES['harbor_craft'].color, borderWidth: 2, tension: 0.4 }
+      ]
+    },
+    options: { plugins: { legend: { position: 'bottom'} }, maintainAspectRatio: false }
+  });
+}
+
+// ─── TẢI DỮ LIỆU & IMPORT EXCEL ───
+async function loadAllRecords() {
+  try {
+    const [r1, r2, r3] = await Promise.all([
+      fetch('/api/scope3/containers'),
+      fetch('/api/scope3/ships'),
+      fetch('/api/scope3/harbor_crafts') 
+    ]);
+    const d1 = await r1.json(), d2 = await r2.json(), d3 = await r3.json();
+    
+    const i1 = (d1.items || []).map(i => ({...i, ui_type: 'truck'}));
+    const i2 = (d2.items || []).map(i => ({...i, ui_type: 'container-ship'}));
+    const i3 = (d3.items || []).map(i => ({...i, ui_type: 'harbor_craft'}));
+    
+    containerRecords = [...i1, ...i2, ...i3];
+    renderRecordsTable();
+    updateOverview();
+  } catch (err) {}
+}
+
 function downloadExcelTemplate() {
     const type = document.getElementById('import-vehicle-type').value;
-    const url = type === 'ship' ? '/api/scope3/ships/template' : '/api/scope3/containers/template';
+    const y = globalFilterYear || new Date().getFullYear();
+    const m = globalFilterMonth || new Date().getMonth() + 1;
+    let url = `/api/scope3/containers/template`;
+    if (type === 'ship') url = `/api/scope3/ships/template`;
+    else if (type === 'harbor_craft') url = `/api/scope3/harbor_crafts/template?year=${y}&month=${m}`;
     window.location.href = url;
 }
 
 async function submitImportExcel() {
     const fileInput = document.getElementById('import-file');
+    const file = fileInput.files[0];
     const type = document.getElementById('import-vehicle-type').value;
     const btn = document.getElementById('btn-submit-import');
 
-    if (!fileInput.files || fileInput.files.length === 0) {
-        showToast('Vui lòng chọn file Excel để import!', 'warn');
-        return;
-    }
+    if (!file) { showToast('Vui lòng chọn file', 'warn'); return; }
 
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...';
 
-    const formData = new FormData();
-    formData.append('file', fileInput.files[0]);
+    const fd = new FormData(); 
+    fd.append('file', file);
 
-    const endpoint = type === 'ship' ? '/api/scope3/ships/import' : '/api/scope3/containers/import';
+    let endpoint = `/api/scope3/containers/import`;
+    if (type === 'ship') endpoint = `/api/scope3/ships/import`;
+    else if (type === 'harbor_craft') endpoint = `/api/scope3/harbor_crafts/import`;
 
     try {
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            body: formData
-        });
-
-        const data = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-            throw new Error(data.detail || 'Lỗi khi xử lý file Excel');
-        }
-
-        document.getElementById('importModal').classList.remove('show');
+        const res = await fetch(endpoint, { method: 'POST', body: fd });
+        const data = await res.json().catch(() => ({}));
+        
+        if (!res.ok) throw new Error(data.detail || 'Lỗi Import Excel');
+        
+        document.getElementById('importModal').classList.remove('show'); 
         fileInput.value = '';
-        
-        await loadAllRecords();
-        if(data.imported > 0) {
-            showToast(`✓ Đã import thành công ${data.imported} bản ghi!`, 'success');
-        } else {
-            showToast(`⚠️ Không có bản ghi hợp lệ nào được import!`, 'warn');
-        }
-        
-    } catch (err) {
-        showToast('❌ ' + err.message, 'error');
+        await loadAllRecords(); 
+        showToast('✓ Import thành công!', 'success'); 
+    } catch(e) { 
+        showToast('❌ ' + e.message, 'error'); 
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-upload"></i> Bắt đầu Import';
     }
 }
 
-// ─── XUẤT EXCEL & PDF THEO ĐÚNG TÊN & LOẠI PHƯƠNG TIỆN ───
+function deleteRecord(id, type) { deleteTarget = { id, type }; document.getElementById('deleteModal').classList.add('show'); }
+async function confirmDelete() {
+  const { id, type } = deleteTarget;
+  let ep = `/api/scope3/containers/${id}`;
+  if (type === 'container-ship') ep = `/api/scope3/ships/${id}`;
+  else if (type === 'harbor_craft') ep = `/api/scope3/harbor_crafts/${id}`;
+  await fetch(ep, { method: 'DELETE' });
+  document.getElementById('deleteModal').classList.remove('show');
+  await loadAllRecords();
+  showToast('Đã xóa', 'success');
+}
+function cancelDelete() { document.getElementById('deleteModal').classList.remove('show'); }
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.className = 'toast ' + type + ' show';
+  document.getElementById('toast-text').textContent = msg;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ─── XUẤT EXCEL & PDF ───
 function getSafeFilenameSuffix() {
     const map = {
         'all': 'Tat_ca',
         'truck': 'Xe_container',
-        'container-ship': 'Tau_bien'
+        'container-ship': 'Tau_bien',
+        'harbor_craft': 'Tau_cang'
     };
     return map[selectedRecordsFilter] || selectedRecordsFilter;
 }
 
-function toExportRow(r, idx) {
-  const vehicleType = getRecordVehicleType(r);
-  const vehicleGroup = VEHICLES[vehicleType] || { label: vehicleType };
-  const emission = getRecordEmission(r);
-  const label = r.license_plate || r.name || '—';
-  const portEntryDate = formatPortEntryDate(r);
-  
-  let specificTypeLabel = vehicleGroup.label;
-  if (vehicleType === 'container-ship' && r.ship_type) {
-      specificTypeLabel = SHIP_TYPES[r.ship_type] || r.ship_type;
-  }
-
-  return {
-    '#': idx + 1,
-    'Biển số / Tên': label,
-    'Loại phương tiện': specificTypeLabel,
-    'Ngày vào cảng': portEntryDate,
-    'CO2e (tCO2e)': Number(emission.toFixed(4)),
-    'Ghi chú': r.note || '—'
-  };
-}
-
 function getPeriodLabelForExport() {
-  const y = globalFilterYear || selectedRecordsYear || 'all';
+  const y = globalFilterYear || 'all';
   if (globalPeriodMode === 'month' && globalFilterMonth) return `${y}_T${globalFilterMonth}`;
   if (globalPeriodMode === 'quarter' && globalFilterQuarter) return `${y}_Q${globalFilterQuarter}`;
   if (globalPeriodMode === 'year' && y !== 'all') return `${y}_nam`;
-  return `${y}_${selectedRecordsMonth}`;
+  return `${y}_all`;
 }
 
 function getGroupedExportRows() {
-  const filteredRecords = getRecordsByFilter();
+  const filteredRecords = containerRecords.filter(r => recordInGlobalPeriod(r));
+  let finalRecords = filteredRecords;
+  if (selectedRecordsFilter !== 'all') {
+      finalRecords = filteredRecords.filter(r => getRecordVehicleType(r) === selectedRecordsFilter);
+  }
+  
   const grouped = {};
-
-  filteredRecords.forEach((r) => {
+  finalRecords.forEach((r) => {
     const key = getRecordVehicleType(r) || 'unknown';
     if (!grouped[key]) grouped[key] = [];
     grouped[key].push(r);
@@ -868,232 +1159,56 @@ function getGroupedExportRows() {
 
   return Object.keys(grouped).map((k) => ({
     label: VEHICLES[k]?.label || k,
-    rows: (grouped[k] || []).map((r, idx) => toExportRow(r, idx)),
+    rows: (grouped[k] || []).map((r, idx) => ({
+        '#': idx + 1,
+        'Biển số / Tên': r.license_plate || r.device_name || r.name || '—',
+        'Loại chi tiết': getRecordSpecificType(r),
+        'Thời gian': formatDisplayDate(r.start_time || r.record_time),
+        'CO2e (tCO2e)': Number(getRecordEmission(r).toFixed(4)),
+        'Ghi chú': r.note || '—'
+    })),
   })).filter((g) => g.rows.length > 0);
 }
 
 function exportRecordsExcel() {
   const groups = getGroupedExportRows();
-  if (!groups.length) {
-    showToast('Không có dữ liệu để xuất Excel', 'warn');
-    return;
-  }
-
+  if (!groups.length) { showToast('Không có dữ liệu', 'warn'); return; }
   const wb = XLSX.utils.book_new();
-
   groups.forEach((g, idx) => {
     const ws = XLSX.utils.json_to_sheet(g.rows);
     const name = (g.label || `Sheet_${idx + 1}`).replace(/[\\/?*\[\]:]/g, '').slice(0, 31);
     XLSX.utils.book_append_sheet(wb, ws, name || `Sheet_${idx + 1}`);
   });
-
-  const ymPart = getPeriodLabelForExport();
-  const filename = `scope3_records_${getSafeFilenameSuffix()}_${ymPart}.xlsx`;
-  XLSX.writeFile(wb, filename);
-  showToast('Đã xuất Excel thành công', 'success');
+  XLSX.writeFile(wb, `scope3_records_${getSafeFilenameSuffix()}_${getPeriodLabelForExport()}.xlsx`);
 }
 
 function exportRecordsPdf() {
   const groups = getGroupedExportRows();
-  if (!groups.length) {
-    showToast('Không có dữ liệu để xuất PDF', 'warn');
-    return;
-  }
-
-  if (!window.pdfMake) {
-    showToast('Không tải được thư viện PDF', 'error');
-    return;
-  }
-
-  const filterName = selectedRecordsFilter === 'all' ? 'Tất cả' : (VEHICLES[selectedRecordsFilter]?.label || selectedRecordsFilter);
-
+  if (!groups.length) { showToast('Không có dữ liệu', 'warn'); return; }
   const content = [
     { text: 'VPEI - Scope 3 Records', style: 'header' },
-    { text: `Bộ lọc: ${filterName} | Kỳ: ${getPeriodLabelForExport()}`, style: 'subheader', margin: [0, 0, 0, 10] }
+    { text: `Kỳ: ${getPeriodLabelForExport()}`, style: 'subheader', margin: [0, 0, 0, 10] }
   ];
-
   groups.forEach((g, idx) => {
     content.push({ text: `${g.label} (${g.rows.length} bản ghi)`, style: 'sectionTitle', margin: [0, idx === 0 ? 2 : 10, 0, 6] });
     content.push({
       table: {
-        headerRows: 1,
-        widths: [22, 100, 100, 100, 80, '*'],
-        body: [
-          ['#', 'Biển số / Tên', 'Loại phương tiện', 'Ngày vào cảng', 'CO₂e', 'Ghi chú'],
-          ...g.rows.map((r) => [
-            String(r['#'] ?? ''),
-            String(r['Biển số / Tên'] ?? ''),
-            String(r['Loại phương tiện'] ?? ''),
-            String(r['Ngày vào cảng'] ?? ''),
-            String(r['CO2e (tCO2e)'] ?? ''),
-            String(r['Ghi chú'] ?? '')
-          ])
+        headerRows: 1, widths: [22, 100, 100, 100, 80, '*'],
+        body: [['#', 'Tên/Biển số', 'Loại chi tiết', 'Thời gian', 'CO₂e', 'Ghi chú'],
+          ...g.rows.map((r) => [String(r['#']), String(r['Biển số / Tên']), String(r['Loại chi tiết']), String(r['Thời gian']), String(r['CO2e (tCO2e)']), String(r['Ghi chú'])])
         ]
-      },
-      layout: 'lightHorizontalLines',
-      fontSize: 8
+      }, layout: 'lightHorizontalLines', fontSize: 8
     });
   });
-
-  const docDefinition = {
-    pageOrientation: 'landscape',
-    pageSize: 'A4',
-    pageMargins: [24, 24, 24, 24],
-    defaultStyle: { font: 'Roboto', fontSize: 9 },
-    styles: {
-      header: { fontSize: 13, bold: true },
-      subheader: { fontSize: 9, color: '#475569' },
-      sectionTitle: { fontSize: 10, bold: true, color: '#0d1f3c' }
-    },
-    content
-  };
-
-  const ymPart = getPeriodLabelForExport();
-  const filename = `scope3_records_${getSafeFilenameSuffix()}_${ymPart}.pdf`;
-  window.pdfMake.createPdf(docDefinition).download(filename);
-  showToast('Đã xuất PDF thành công', 'success');
+  window.pdfMake.createPdf({ pageOrientation: 'landscape', pageSize: 'A4', pageMargins: [24,24,24,24], defaultStyle: { fontSize: 9 }, styles: { header: { fontSize: 13, bold: true }, subheader: { fontSize: 9, color: '#475569' }, sectionTitle: { fontSize: 10, bold: true, color: '#0d1f3c' } }, content }).download(`scope3_${getSafeFilenameSuffix()}.pdf`);
 }
 
-
-function deleteRecord(id, type) {
-  deleteTarget = { id, type };
-  document.getElementById('deleteModal').classList.add('show');
-}
-
-async function confirmDelete() {
-  if (!deleteTarget.id) return;
-  const endpoint = deleteTarget.type === 'container-ship' ? `/api/scope3/ships/${deleteTarget.id}` : `/api/scope3/containers/${deleteTarget.id}`;
-  try {
-    const res = await fetch(endpoint, { method: 'DELETE' });
-    if (!res.ok) throw new Error('Lỗi xóa');
-    cancelDelete();
-    await loadAllRecords();
-    showToast('✓ Đã xóa bản ghi', 'success');
-  } catch (err) { showToast('❌ Lỗi xóa', 'error'); }
-}
-
-function cancelDelete() {
-  deleteTarget = { id: null, type: null };
-  document.getElementById('deleteModal').classList.remove('show');
-}
-
-function clearContainerForm() {
-  ['c-license-plate', 'c-start-time', 'c-end-time', 'c-velocity-1', 'c-velocity-2', 'c-velocity-3', 'c-update-reason'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-}
-
-async function loadAllRecords() {
-  try {
-    const [resCont, resShip] = await Promise.all([fetch('/api/scope3/containers'), fetch('/api/scope3/ships')]);
-    const contData = await resCont.json();
-    const shipData = await resShip.json();
-
-    const cItems = (contData.items || []).map(i => ({...i, ui_type: 'truck'}));
-    const sItems = (shipData.items || []).map(i => ({...i, ui_type: 'container-ship'}));
-    
-    containerRecords = [...cItems, ...sItems];
-    refreshYearFilterOptions();
-    renderRecordsTable();
-        updateOverview();
-  } catch (err) { showToast('⚠️ Không thể tải dữ liệu', 'warn'); }
-}
-
-function showToast(msg, type = 'success') {
-  const t = document.getElementById('toast');
-  const icons = { success: 'fa-circle-check', warn: 'fa-triangle-exclamation', error: 'fa-circle-xmark' };
-  t.className = 'toast ' + type + ' show';
-  document.getElementById('toast-icon').className = 'fa-solid ' + (icons[type] || icons.success);
-  document.getElementById('toast-text').textContent = msg;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
-}
-
-let vehicleBarChartRef = null;
-let trendLineChartRef = null;
-
-
-
-function updateOverview() {
-  let filteredRecords = containerRecords.filter((r) => recordInGlobalPeriod(r));
-
-  // Tính KPI
-  let totalCo2e = 0, containerCo2e = 0, shipCo2e = 0;
-  filteredRecords.forEach(r => {
-    const type = getRecordVehicleType(r);
-    const emission = getRecordEmission(r);
-    totalCo2e += emission;
-    if (type === 'truck') containerCo2e += emission;
-    else if (type === 'container-ship') shipCo2e += emission;
-  });
-
-  // Cập nhật DOM
-  const elTotal = document.getElementById('kpi-total');
-  if(elTotal) elTotal.innerHTML = `${totalCo2e.toLocaleString('vi-VN', { maximumFractionDigits: 1 })}<span class="kpi-unit"> tCO₂e</span>`;
-  const elCont = document.getElementById('kpi-container');
-  if(elCont) elCont.innerHTML = `${containerCo2e.toLocaleString('vi-VN', { maximumFractionDigits: 1 })}<span class="kpi-unit"> t</span>`;
-  const elShip = document.getElementById('kpi-ship');
-  if(elShip) elShip.innerHTML = `${shipCo2e.toLocaleString('vi-VN', { maximumFractionDigits: 1 })}<span class="kpi-unit"> t</span>`;
-  const elTrips = document.getElementById('kpi-trips');
-  if(elTrips) elTrips.innerText = filteredRecords.length;
-
-  // Vẽ biểu đồ Bar
-  if (vehicleBarChartRef) vehicleBarChartRef.destroy();
-  const ctxBar = document.getElementById('vehicleBar');
-  if (ctxBar) {
-    vehicleBarChartRef = new Chart(ctxBar.getContext('2d'), {
-      type: 'bar',
-      data: {
-        labels: ['Xe Container', 'Tàu Biển'],
-        datasets: [{ data: [containerCo2e, shipCo2e], backgroundColor: ['#0ea5e9', '#0d1f3c'], borderRadius: 6 }]
-      },
-      options: { plugins: { legend: { display: false } }, maintainAspectRatio: false }
-    });
-  }
-
-  // Vẽ biểu đồ Line
-  if (trendLineChartRef) trendLineChartRef.destroy();
-  const ctxLine = document.getElementById('trendLine');
-  if (ctxLine) {
-    const mData = { truck: Array(12).fill(0), ship: Array(12).fill(0) };
-    const yearToTrend = globalFilterYear ? parseInt(globalFilterYear, 10) : new Date().getFullYear();
-
-    containerRecords.forEach(r => {
-      if (!recordInGlobalPeriod(r)) return;
-      const dt = getRecordMonthYear(r);
-      if (dt.year === yearToTrend && dt.month >= 1 && dt.month <= 12) {
-        const type = getRecordVehicleType(r);
-        if (type === 'truck') mData.truck[dt.month - 1] += getRecordEmission(r);
-        else if (type === 'container-ship') mData.ship[dt.month - 1] += getRecordEmission(r);
-      }
-    });
-
-    trendLineChartRef = new Chart(ctxLine.getContext('2d'), {
-      type: 'line',
-      data: {
-        labels: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'],
-        datasets: [
-          { label: 'Xe Container', data: mData.truck, borderColor: '#0ea5e9', borderWidth: 2, tension: 0.4 },
-          { label: 'Tàu Biển', data: mData.ship, borderColor: '#0d1f3c', borderWidth: 2, tension: 0.4 }
-        ]
-      },
-      options: { plugins: { legend: { position: 'bottom'} }, maintainAspectRatio: false }
-    });
-  }
-}
-
+// Khởi tạo
+init();
 async function init() {
   syncGlobalPeriodFromParams(new URLSearchParams(window.location.search));
-  setEditMode(false);
-  setRecordsTimeFilter();
   await loadAllRecords();
 }
-
-
-init();
-
-
 </script>
 </body>
 </html>

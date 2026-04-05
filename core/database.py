@@ -36,7 +36,7 @@ def init_db():
     from models import container as _  # noqa: F401
     from models import scope3_other_vehicle as _  # noqa: F401
     from models import ship as _  # noqa: F401
-
+    from models import harbor_craft as _  # noqa: F401
     Base.metadata.create_all(bind=engine)
 
     # Ensure audit_log table has scope column for per-scope activity history.

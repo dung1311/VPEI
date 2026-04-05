@@ -1,4 +1,5 @@
-import io, random
+import io
+import random
 import pandas as pd
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Request, Depends, Query, HTTPException, status
@@ -16,10 +17,15 @@ from services import container_service, container_activity_service, scope3_other
 from schemas.container import ContainerCreate, ContainerUpdate
 from schemas.scope3_other_vehicle import Scope3OtherVehicleCreate
 
-# Ship Services & Schemas (Mới bổ sung)
+# Ship Services & Schemas
 from services import ship_service, ship_activity_service
 from schemas.ship import ShipCreate, ShipUpdate
 from models.audit_log import AuditLog
+
+# Harbor Craft Services & Schemas (TÀU TRONG CẢNG)
+from services import harbor_craft_service
+from schemas.harbor_craft import HarborCraftCreate, HarborCraftUpdate
+from models.harbor_craft import HarborCraftTypeEnum, EngineTypeEnum
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -30,7 +36,9 @@ def _actor_from_request(request: Request) -> str:
     return payload.get("sub") or "system"
 
 
+# =====================================================================
 # ─── UI PAGES (HTML) ───────────────────────────────────────
+# =====================================================================
 
 @router.get("/scope3", response_class=HTMLResponse)
 async def scope3_page(request: Request, db: Session = Depends(get_db)):
@@ -50,18 +58,23 @@ async def scope3_page(request: Request, db: Session = Depends(get_db)):
     
     # 2. Lấy summary của Ship
     ships = ship_service.get_all_ships(db)
-    ship_total_co2 = sum(s.total_co2 for s in ships if s.total_co2)
+    ship_total_co2 = sum(s.get("e_total", 0.0) if isinstance(s, dict) else getattr(s, "total_co2", getattr(s, "e_total", 0.0)) for s in ships)
     
-    # 3. Gộp dữ liệu Summary
-    # (Tùy thuộc vào cấu trúc dict trả về của container_summary, ta cộng thêm ship_total_co2 vào)
-    total_co2e = container_summary.get("total_co2e", 0.0) + ship_total_co2
+    # 3. Lấy summary của Tàu cảng (Harbor Craft)
+    harbors = harbor_craft_service.get_all_harbor_crafts(db)
+    harbor_total_co2 = sum(h.get("e_total", 0.0) for h in harbors)
+    
+    # 4. Gộp dữ liệu Summary
+    total_co2e = container_summary.get("total_co2", 0.0) + ship_total_co2 + harbor_total_co2
+    total_trips = container_summary.get("total_trips", 0) + len(ships) + len(harbors)
     
     summary = {
         **container_summary,
-        "container_co2e": container_summary.get("total_co2e", 0.0),
+        "container_co2e": container_summary.get("total_co2", 0.0),
         "ship_co2e": ship_total_co2,
+        "harbor_co2e": harbor_total_co2,
         "total_co2e": total_co2e,
-        "total_ships": len(ships)
+        "total_trips": total_trips
     }
 
     return templates.TemplateResponse(
@@ -87,18 +100,15 @@ async def scope3_manager_page(request: Request, db: Session = Depends(get_db)):
         resp.delete_cookie("access_token")
         return resp
 
-    # 1. Lấy lịch sử của Container và Ship
     c_history = container_activity_service.get_scope3_activity_history(db)
     s_history = ship_activity_service.get_ship_activity_history(db)
 
-    # 2. Gộp logs và sắp xếp theo thời gian mới nhất (Parse string time -> datetime để sort)
     combined_logs = c_history["logs"] + s_history["logs"]
     combined_logs.sort(
         key=lambda x: datetime.strptime(x["time"], "%d/%m/%Y %H:%M:%S"), 
         reverse=True
     )
 
-    # 3. Gộp các năm có dữ liệu (Unique & Sort)
     combined_years = sorted(
         list(set(c_history["available_years"] + s_history["available_years"])), 
         reverse=True
@@ -122,23 +132,16 @@ async def scope3_manager_page(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/api/scope3/containers/template")
 async def download_container_template():
-    """Tải file Excel mẫu cho Xe Container (Dữ liệu giả định đa dạng)"""
     now = datetime.now()
     dummy_data = []
-    
-    # Các danh sách để random
     journey_types = ["both", "import", "export"]
     plates = ["51C", "51H", "29H", "15C", "43C", "61C", "60C"]
     
     for i in range(1, 11):
         j_type = random.choice(journey_types)
         max_w = random.choice([20.0, 30.0, 40.0])
-        
-        # Trọng lượng nhập/xuất logic theo Journey Type
         in_w = round(random.uniform(5.0, max_w), 1) if j_type in ["both", "import"] else 0.0
         out_w = round(random.uniform(5.0, max_w), 1) if j_type in ["both", "export"] else 0.0
-        
-        # Thời gian random
         hours_in = random.randint(12, 72)
         hours_out = random.randint(1, hours_in - 2)
         
@@ -178,17 +181,14 @@ async def download_container_template():
 
 @router.get("/api/scope3/ships/template")
 async def download_ship_template():
-    """Tải file Excel mẫu cho Tàu Biển (Dữ liệu giả định đa dạng)"""
     now = datetime.now()
     dummy_data = []
-    
-    # Các danh sách để random
     ship_types = ["container_ship", "bulk_carrier", "general_cargo_ship", "oil_tanker", "roro_ship"]
     ship_prefixes = ["Ocean", "Star", "Express", "Pioneer", "Voyager", "Marine", "Glory"]
     
     for i in range(1, 11):
         v_max = round(random.uniform(20.0, 26.0), 1)
-        hours_in = random.randint(48, 240) # Lên tới 10 ngày
+        hours_in = random.randint(48, 240)
         hours_out = random.randint(1, 24)
         
         dummy_data.append({
@@ -224,20 +224,58 @@ async def download_ship_template():
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
         headers={"Content-Disposition": "attachment; filename=Template_Import_Tau_Bien.xlsx"}
     )
+
+
+@router.get("/api/scope3/harbor_crafts/template")
+async def download_harbor_craft_template():
+    now = datetime.now()
+    dummy_data = []
+    device_names = ["Tàu lai dắt 01", "Tàu lai dắt 02", "Xà lan 01", "Tàu hoa tiêu 01", "Tàu kéo 01"]
+    craft_types = [e.value for e in HarborCraftTypeEnum]
+    
+    for i in range(1, 11):
+        dummy_data.append({
+            "Tên thiết bị": random.choice(device_names),
+            "Loại tàu (atb, barge, tugboat...)": random.choice(craft_types),
+            "Loại động cơ (main/aux)": random.choice(["main", "aux"]),
+            "Năm đóng": random.randint(2005, 2023),
+            "Power (kW)": round(random.uniform(100.0, 1500.0), 1),
+            "Giờ hoạt động": round(random.uniform(5.0, 24.0), 1),
+            "Dùng RD99 (TRUE/FALSE)": False,
+            "Engine Tier (0-3 hoặc 4)": "0-3",
+            "Thời gian (YYYY-MM-DD HH:MM)": (now - timedelta(days=random.randint(1, 10))).strftime("%Y-%m-%d %H:%M")
+        })
+        
+    df = pd.DataFrame(dummy_data)
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name='Data_Tau_Cang', index=False)
+        for column in df:
+            column_length = max(df[column].astype(str).map(len).max(), len(column))
+            col_idx = df.columns.get_loc(column)
+            writer.sheets['Data_Tau_Cang'].set_column(col_idx, col_idx, column_length + 2)
+            
+    output.seek(0)
+    return StreamingResponse(
+        output, 
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+        headers={"Content-Disposition": "attachment; filename=Template_Import_Tau_Cang.xlsx"}
+    )
+
+
+# --- IMPORTS EXCEL POST ENDPOINTS ---
 @router.post("/api/scope3/containers/import")
 async def import_containers(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
-    """Import dữ liệu Xe Container từ file Excel"""
     try:
         contents = await file.read()
         df = pd.read_excel(io.BytesIO(contents))
-        df = df.fillna(0) # Xử lý các ô trống
+        df = df.fillna(0) 
         
         imported_count = 0
         actor = _actor_from_request(request)
         
         for _, row in df.iterrows():
             try:
-                # Đọc ngày tháng
                 start_t = pd.to_datetime(row["Thời gian vào (YYYY-MM-DD HH:MM)"])
                 end_t = pd.to_datetime(row["Thời gian ra (YYYY-MM-DD HH:MM)"])
                 
@@ -261,15 +299,15 @@ async def import_containers(request: Request, file: UploadFile = File(...), db: 
                 imported_count += 1
             except Exception as e:
                 print(f"Lỗi dòng xe container: {e}")
-                continue # Bỏ qua dòng lỗi, import tiếp
+                continue 
                 
         return {"message": "Import success", "imported": imported_count}
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Lỗi đọc file Excel: {str(e)}")
 
+
 @router.post("/api/scope3/ships/import")
 async def import_ships(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
-    """Import dữ liệu Tàu Biển từ file Excel"""
     try:
         contents = await file.read()
         df = pd.read_excel(io.BytesIO(contents))
@@ -310,8 +348,66 @@ async def import_ships(request: Request, file: UploadFile = File(...), db: Sessi
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Lỗi đọc file Excel: {str(e)}")
 
-# ─── CONTAINER & OTHER VEHICLES API ENDPOINTS ──────────────
 
+@router.post("/api/scope3/harbor_crafts/import")
+async def import_harbor_crafts(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    """Import dữ liệu Tàu Trong Cảng từ file Excel (Đã fix lỗi ENUM)"""
+    try:
+        contents = await file.read()
+        df = pd.read_excel(io.BytesIO(contents))
+        df = df.fillna(0)
+        
+        imported_count = 0
+        actor = _actor_from_request(request)
+        
+        for _, row in df.iterrows():
+            try:
+                record_time_raw = row.get("Thời gian (YYYY-MM-DD HH:MM)")
+                if pd.isna(record_time_raw) or not record_time_raw:
+                    record_t = datetime.now()
+                else:
+                    record_t = pd.to_datetime(record_time_raw)
+                
+                # Ép kiểu an toàn sang Enum
+                raw_craft = str(row.get("Loại tàu (atb, barge, tugboat...)", "other")).strip().lower()
+                try:
+                    c_type = HarborCraftTypeEnum(raw_craft)
+                except ValueError:
+                    c_type = HarborCraftTypeEnum.OTHER
+                    
+                raw_engine = str(row.get("Loại động cơ (main/aux)", "main")).strip().lower()
+                try:
+                    e_type = EngineTypeEnum(raw_engine)
+                except ValueError:
+                    e_type = EngineTypeEnum.MAIN
+                    
+                payload = HarborCraftCreate(
+                    device_name=str(row.get("Tên thiết bị", "Tàu Cảng")),
+                    craft_type=c_type,
+                    engine_type=e_type,
+                    year_built=int(row.get("Năm đóng", 2010)),
+                    power=float(row.get("Power (kW)", 0)),
+                    activity_hours=float(row.get("Giờ hoạt động", 0)),
+                    use_rd99=bool(row.get("Dùng RD99 (TRUE/FALSE)", False)),
+                    engine_tier=str(row.get("Engine Tier (0-3 hoặc 4)", "0-3")),
+                    record_time=record_t
+                )
+                harbor_craft_service.create_harbor_craft(payload, db, actor=actor)
+                imported_count += 1
+            except Exception as e:
+                print(f"Lỗi dòng tàu cảng: {e}")
+                continue
+                
+        return {"message": "Import success", "imported": imported_count}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Lỗi đọc file Excel: {str(e)}")
+
+
+# =====================================================================
+# ─── API ENDPOINTS CHO CRUD DỮ LIỆU (JSON) ───────────────────────────
+# =====================================================================
+
+# ─── CONTAINER & OTHER VEHICLES API ───
 @router.post("/api/scope3/containers")
 async def create_container(container: ContainerCreate, request: Request, db: Session = Depends(get_db)):
     return container_service.create_container(container, db, actor=_actor_from_request(request))
@@ -339,17 +435,8 @@ async def update_container(container_id: int, container: ContainerUpdate, reques
 async def delete_container(container_id: int, request: Request, db: Session = Depends(get_db)):
     return container_service.delete_container(container_id, db, actor=_actor_from_request(request))
 
-@router.post("/api/scope3/other-vehicles")
-async def create_other_vehicle_record(payload: Scope3OtherVehicleCreate, request: Request, db: Session = Depends(get_db)):
-    return scope3_other_vehicle_service.create_other_vehicle_record(payload, db, actor=_actor_from_request(request))
 
-@router.delete("/api/scope3/other-vehicles/{record_id}")
-async def delete_other_vehicle_record(record_id: int, request: Request, db: Session = Depends(get_db)):
-    return scope3_other_vehicle_service.delete_other_vehicle_record(record_id, db, actor=_actor_from_request(request))
-
-
-# ─── SHIP API ENDPOINTS ──────────────────────────────────────
-
+# ─── SHIP API ───
 @router.post("/api/scope3/ships")
 async def create_ship_endpoint(ship: ShipCreate, request: Request, db: Session = Depends(get_db)):
     return ship_service.create_ship(ship, db, actor=_actor_from_request(request))
@@ -372,22 +459,57 @@ async def delete_ship_endpoint(ship_id: int, request: Request, db: Session = Dep
     return ship_service.delete_ship(ship_id, db, actor=_actor_from_request(request))
 
 
+# ─── HARBOR CRAFT API (TÀU TRONG CẢNG) ───
+@router.get("/api/scope3/harbor_crafts")
+async def get_harbor_crafts(db: Session = Depends(get_db)):
+    items = harbor_craft_service.get_all_harbor_crafts(db)
+    return {"items": items, "count": len(items)}
+
+@router.post("/api/scope3/harbor_crafts")
+async def create_harbor_craft(payload: HarborCraftCreate, request: Request, db: Session = Depends(get_db)):
+    try:
+        return harbor_craft_service.create_harbor_craft(payload, db, actor=_actor_from_request(request))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.put("/api/scope3/harbor_crafts/{record_id}")
+async def update_harbor_craft(record_id: int, payload: HarborCraftUpdate, request: Request, db: Session = Depends(get_db)):
+    try:
+        return harbor_craft_service.update_harbor_craft(record_id, payload, db, actor=_actor_from_request(request))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete("/api/scope3/harbor_crafts/{record_id}")
+async def delete_harbor_craft(record_id: int, request: Request, db: Session = Depends(get_db)):
+    try:
+        return harbor_craft_service.delete_harbor_craft(record_id, db, actor=_actor_from_request(request))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 # ─── COMBINED SUMMARY & AUDIT API ENDPOINTS ──────────────────
 
 @router.get("/api/scope3/summary")
 async def get_summary(db: Session = Depends(get_db)):
     """Get combined Scope 3 emissions summary"""
     container_summary = container_service.get_scope3_summary(db)
-    ships = ship_service.get_all_ships(db)
-    ship_total_co2 = sum(s.total_co2 for s in ships if s.total_co2)
     
-    total_co2e = container_summary.get("total_co2e", 0.0) + ship_total_co2
+    ships = ship_service.get_all_ships(db)
+    ship_total_co2 = sum(s.get("e_total", 0.0) if isinstance(s, dict) else getattr(s, "total_co2", getattr(s, "e_total", 0.0)) for s in ships)
+    
+    harbor_crafts = harbor_craft_service.get_all_harbor_crafts(db)
+    harbor_total_co2 = sum(h.get("e_total", 0.0) for h in harbor_crafts)
+    
+    total_co2e = container_summary.get("total_co2", 0.0) + ship_total_co2 + harbor_total_co2
+    total_trips = container_summary.get("total_trips", 0) + len(ships) + len(harbor_crafts)
+
     return {
         **container_summary,
-        "container_co2e": container_summary.get("total_co2e", 0.0),
+        "container_co2e": container_summary.get("total_co2", 0.0),
         "ship_co2e": ship_total_co2,
+        "harbor_co2e": harbor_total_co2,
         "total_co2e": total_co2e,
-        "total_ships": len(ships)
+        "total_trips": total_trips
     }
 
 
@@ -451,4 +573,3 @@ async def delete_audit_activity(
         return ship_activity_service.delete_ship_activity(db, activity_id)
     else:
         return container_activity_service.delete_scope3_activity(db, activity_id)
-    
