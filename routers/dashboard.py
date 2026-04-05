@@ -179,23 +179,25 @@ async def dashboard_page(
     s1_total = 0.0
     s1_breakdown = {}
     try:
-        for m in range(1, 13):
-            if mf is not None and m not in mf:
-                continue
-            acts = scope1_services.ActivityDataService.get_by_period(db, current_year, m)
-            month_co2 = 0.0
-            for a in acts:
-                val = float(getattr(a, 'total_co2e', 0.0) or 0.0)
-                month_co2 += val
-                cat = getattr(a, 'category', None)
-                dtype = cat.device_type.value if cat and hasattr(cat.device_type, 'value') else "Thiết bị S1 Khác"
-                s1_breakdown[dtype] = s1_breakdown.get(dtype, 0.0) + val
+        # Gọi thẳng 1 lần lấy toàn bộ dữ liệu 12 tháng của năm hiện tại
+        acts = scope1_services.ActivityDataService.get_by_record_time(db, current_year, list(range(1, 13)))
+        
+        for a in acts:
+            val = float(getattr(a, 'total_co2e', 0.0) or 0.0)
+            m = a.record_time.month
+            
+            # Cộng dồn vào xu hướng tháng
+            if 1 <= m <= 12:
+                s1_trend[m - 1] += val
                 
-            s1_trend[m - 1] = month_co2
-            s1_total += month_co2
+            s1_total += val
+            
+            # Đọc trực tiếp loại thiết bị từ ActivityData
+            dtype = a.device_type.value if getattr(a, 'device_type', None) else "Thiết bị S1 Khác"
+            s1_breakdown[dtype] = s1_breakdown.get(dtype, 0.0) + val
+            
     except Exception as e: 
-        print("Lỗi Scope 1:", e)
-
+        print("Lỗi Dashboard Scope 1:", e)
     # ─── 2. SCOPE 2 (Tính từ kWh * EF) ───
     s2_trend = [0.0] * 12
     s2_total = 0.0

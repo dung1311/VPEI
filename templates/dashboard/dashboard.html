@@ -89,7 +89,7 @@
     <div class="charts-row">
       <div class="chart-card">
         <div class="chart-title" style="display: flex; justify-content: space-between; align-items: center;">
-          <span>Xu hướng phát thải hàng tháng – {{ data.period_label }}</span>
+          <span>Xu hướng phát thải hàng tháng – Năm <span id="displayYear"></span></span>
           <div style="font-weight:500; font-size:0.75rem; color:#4a5a7b; display:flex; gap:14px; align-items:center;">
             <span style="display:flex; align-items:center; gap:4px;"><span style="color:#0d1f3c; font-size:1.2rem; line-height:0;">•</span> Scope 1</span>
             <span style="display:flex; align-items:center; gap:4px;"><span style="color:#2e7df7; font-size:1.2rem; line-height:0;">•</span> Scope 2</span>
@@ -100,7 +100,8 @@
           <canvas id="trendChart"></canvas>
         </div>
       </div>
-    </div> <div class="bottom-row">
+    </div> 
+    <div class="bottom-row">
       <div class="chart-card">
         <div class="chart-title">Cấu trúc Phát thải theo Quý (tCO₂e)</div>
         <div style="position: relative; height: 200px; width: 100%;">
@@ -132,8 +133,8 @@
                 <strong>{{ "{:,.1f}".format(data.scope1_total) }} tCO₂e</strong>
             </div>
             <div style="display:flex; justify-content:space-between; padding-bottom:4px;">
-                <span>📅 Kỳ báo cáo:</span>
-                <strong>{{ data.period_label }}</strong>
+                <span>📅 Năm Báo cáo:</span>
+                <strong id="summaryYear"></strong>
             </div>
           </div>
         </div>
@@ -141,9 +142,45 @@
           <i class="fa-solid fa-clock-rotate-left"></i> Cập nhật lần cuối: {{ data.last_updated }}
         </div>
       </div>
-    </div> </div> </div> <script>
+    </div> 
+  </div> 
+</div> 
+
+<script>
 // --- INJECT DỮ LIỆU TỪ PYTHON VÀO JAVASCRIPT ---
 const dbData = {{ data | tojson }};
+
+// --- LOGIC LỌC URL CHO TOPBAR (Tương tự Scope 1) ---
+document.addEventListener("DOMContentLoaded", function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentYear = urlParams.get('year') || new Date().getFullYear();
+    
+    document.getElementById('displayYear').innerText = currentYear;
+    document.getElementById('summaryYear').innerText = currentYear;
+
+    // Bơm danh sách năm vào selectbox ở Topbar
+    const topbarSelects = document.querySelectorAll('.topbar-right select');
+    topbarSelects.forEach(select => {
+        select.innerHTML = ''; 
+        select.removeAttribute('onchange'); 
+        
+        for (let y = 2030; y >= 2020; y--) {
+            const opt = document.createElement('option');
+            opt.value = y;
+            opt.text = `Năm ${y}`; 
+            if (y === parseInt(currentYear)) opt.selected = true;
+            select.appendChild(opt);
+        }
+        
+        select.addEventListener('change', function() {
+            urlParams.set('year', this.value);
+            // Xóa các param rác nếu có
+            urlParams.delete('month');
+            urlParams.delete('quarter');
+            window.location.href = window.location.pathname + '?' + urlParams.toString();
+        });
+    });
+});
 
 // 1. BIỂU ĐỒ XU HƯỚNG THEO THÁNG (Trend Line Chart)
 const trendCtx = document.getElementById('trendChart').getContext('2d');
@@ -222,6 +259,7 @@ new Chart(trendCtx, {
       }
   }
 });
+
 // 2. BIỂU ĐỒ CẤU TRÚC THEO QUÝ (Stacked Bar Chart)
 const scopeCtx = document.getElementById('scopeBar').getContext('2d');
 new Chart(scopeCtx, {
@@ -244,8 +282,8 @@ new Chart(scopeCtx, {
   }
 });
 
-// 3. BIỂU ĐỒ TOP NGUỒN PHÁT THẢI ĐÃ ĐƯỢC CHIA NHỎ (Doughnut Chart)
-const colors = ['#0d1f3c', '#152850', '#1e3a6e', '#2e7df7', '#5a9bff', '#8bb4f6', '#dbeafe']; // Đủ 7 màu cho Top 6 + 1 Khác
+// 3. BIỂU ĐỒ TOP NGUỒN PHÁT THẢI (Doughnut Chart)
+const colors = ['#0d1f3c', '#152850', '#1e3a6e', '#2e7df7', '#5a9bff', '#8bb4f6', '#dbeafe']; // Đủ 7 màu
 const doughCtx = document.getElementById('equipDoughnut').getContext('2d');
 new Chart(doughCtx, {
   type: 'doughnut',
@@ -273,15 +311,6 @@ new Chart(doughCtx, {
       maintainAspectRatio: false
   }
 });
-
-// Nút chọn kỳ báo cáo
-document.querySelectorAll('.period-btn').forEach(btn => {
-  btn.addEventListener('click', function() {
-    document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
-    this.classList.add('active');
-  });
-});
-
 </script>
 </body>
 </html>

@@ -9,7 +9,9 @@ from datetime import date, datetime, time
 from typing import Optional, Set, Tuple, List
 from sqlalchemy.orm import Session
 from sqlalchemy import extract, or_, and_
-from models.device import ActivityData, DeviceCategory
+
+# [UPDATED] Import Device thay cho DeviceCategory
+from models.device import ActivityData, Device 
 from models.electrical_item import ElectricalItem
 from models.ship import Ship
 from models.container import Container
@@ -24,7 +26,6 @@ def _report_months(month: Optional[int], quarter: Optional[int]) -> Optional[Set
         return set(range((q - 1) * 3 + 1, q * 3 + 1))
     return None
 
-
 def _parse_period_value_date(raw: Optional[str]) -> Optional[date]:
     s = (raw or "").strip()
     if not s:
@@ -35,7 +36,6 @@ def _parse_period_value_date(raw: Optional[str]) -> Optional[date]:
         except ValueError:
             continue
     return None
-
 
 def _year_month_pairs_in_range(d_start: date, d_end: date) -> List[Tuple[int, int]]:
     out: List[Tuple[int, int]] = []
@@ -100,20 +100,21 @@ class ReportService:
         # ==========================================
 
         # --- Scope 1: ActivityData ---
+        # [UPDATED] JOIN với Device thay vì DeviceCategory
         if use_range:
             pairs = _year_month_pairs_in_range(date_start, date_end)
             if pairs:
-                q_s1 = db.query(ActivityData).join(DeviceCategory).filter(
+                q_s1 = db.query(ActivityData).join(Device).filter(
                     or_(*[and_(ActivityData.period_year == py, ActivityData.period_month == pm) for py, pm in pairs])
                 )
             else:
-                q_s1 = db.query(ActivityData).join(DeviceCategory).filter(ActivityData.id == -1)
+                q_s1 = db.query(ActivityData).join(Device).filter(ActivityData.id == -1)
             scope1_activities = q_s1.all()
         else:
-            q_s1 = db.query(ActivityData).join(DeviceCategory).filter(ActivityData.period_year == year)
+            q_s1 = db.query(ActivityData).join(Device).filter(ActivityData.period_year == year)
             if mf is not None:
                 q_s1 = q_s1.filter(ActivityData.period_month.in_(mf))
-            scope1_activities = q_s1.all()
+            scope1_activities = q_s1.order_by(ActivityData.record_time.desc()).all()
 
         s1_co2e = sum(act.total_co2e for act in scope1_activities) if scope1_activities else 0.0
         s1_co2 = s1_co2e
@@ -122,11 +123,16 @@ class ReportService:
 
         data_scope1 = []
         for idx, act in enumerate(scope1_activities, 1):
-            device_name = act.category.name if act.category else "Unknown Device"
+            # [UPDATED] Lấy tên từ bảng Device
+            device_name = act.device.name if act.device else "Unknown Device"
             operating_hours = act.operating_hours
             power = act.recorded_power
             co2 = round(act.total_co2e, 2)
-            data_scope1.append([idx, device_name, "N/A", power, operating_hours, co2])
+            
+            # Thay vì "N/A", hiển thị Thời gian ghi nhận để báo cáo chi tiết hơn
+            record_time_str = act.record_time.strftime("%d/%m/%Y") if getattr(act, 'record_time', None) else "N/A"
+            
+            data_scope1.append([idx, device_name, record_time_str, power, operating_hours, co2])
 
         # --- Scope 2: Electricity ---
         all_elec = db.query(ElectricalItem).all()
@@ -190,7 +196,6 @@ class ReportService:
         data_tau_bien = []
         data_tau_cang = []
         for idx, ship in enumerate(ships, 1):
-            # calculate_ship_co2 returns total_co2e as float
             co2 = calculate_ship_co2(ship)
             s3_co2e_ships += co2
             
@@ -213,7 +218,6 @@ class ReportService:
             data_xe_cont.append([idx, con.license_plate, start_str, end_str, con.journey_type, round(co2, 2)])
 
         s3_co2e_other = 0.0
-        # For data_phuong_tien, we separate xe may and oto
         xe_may_count = 0
         xe_may_co2 = 0.0
         oto_count = 0
@@ -237,10 +241,8 @@ class ReportService:
         sum_co2e = s1_co2e + s2_co2e + s3_co2e
         
         if sum_co2e == 0:
-            # Fallback to prevent divide by zero
             sum_co2e = 1.0
 
-        # Calculate percentages
         s1_w = f"{round((s1_co2e / sum_co2e) * 100, 2)}%"
         s2_w = f"{round((s2_co2e / sum_co2e) * 100, 2)}%"
         s3_w = f"{round((s3_co2e / sum_co2e) * 100, 2)}%"
