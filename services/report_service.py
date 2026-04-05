@@ -6,7 +6,7 @@ import os
 import math
 from calendar import monthrange
 from datetime import date, datetime, time
-from typing import Optional, Set, Tuple, List
+from typing import Any, Optional, Set, Tuple, List
 from sqlalchemy.orm import Session
 from sqlalchemy import extract, or_, and_
 
@@ -17,7 +17,9 @@ from models.device import ActivityData, Device
 from models.electrical_item import ElectricalItem
 from models.ship import Ship
 from models.container import Container
+from models.harbor_craft import HarborCraft
 from services.ship_service import calculate_ship_co2
+from services.scope3_period_service import compute_scope3_period
 
 def _report_months(month: Optional[int], quarter: Optional[int]) -> Optional[Set[int]]:
     if month is not None:
@@ -46,6 +48,36 @@ def _scope2_period_display(raw: Optional[str]) -> str:
         t = (raw or "").strip()
         return t if t else "N/A"
     return d.strftime("%d/%m/%Y")
+
+
+def _dt_sort_key(dt: Optional[datetime]) -> datetime:
+    """Dùng khi sắp xếp giảm dần: bản ghi không có ngày xếp cuối."""
+    return dt if dt is not None else datetime.min
+
+
+def _sort_rows_by_dt(
+    parts: List[Tuple[datetime, List[Any]]],
+    reverse: bool = True,
+) -> List[List[Any]]:
+    parts_sorted = sorted(parts, key=lambda x: x[0], reverse=reverse)
+    return [[i + 1, *row] for i, (_, row) in enumerate(parts_sorted)]
+
+
+def _year_built_sort_key(yb: Any) -> int:
+    """Năm đóng tàu để sort giảm dần (mới nhất trên); thiếu/không hợp lệ → 0 (xếp cuối)."""
+    try:
+        y = int(yb)
+        return y if y > 0 else 0
+    except (TypeError, ValueError):
+        return 0
+
+
+def _sort_rows_by_year_built(
+    parts: List[Tuple[int, List[Any]]],
+    reverse: bool = True,
+) -> List[List[Any]]:
+    parts_sorted = sorted(parts, key=lambda x: x[0], reverse=reverse)
+    return [[i + 1, *row] for i, (_, row) in enumerate(parts_sorted)]
 
 
 def _year_month_pairs_in_range(d_start: date, d_end: date) -> List[Tuple[int, int]]:
@@ -120,7 +152,7 @@ class ReportService:
                 )
             else:
                 q_s1 = db.query(ActivityData).join(Device).filter(ActivityData.id == -1)
-            scope1_activities = q_s1.all()
+            scope1_activities = q_s1.order_by(ActivityData.record_time.desc()).all()
         else:
             q_s1 = db.query(ActivityData).join(Device).filter(ActivityData.period_year == year)
             if mf is not None:
@@ -156,6 +188,11 @@ class ReportService:
         else:
             scope2_items = [e for e in all_elec if e.period_value and str(year) in e.period_value]
 
+        scope2_items.sort(
+            key=lambda e: _parse_period_value_date(e.period_value) or date.min,
+            reverse=True,
+        )
+
         s2_co2e = 0.0
         data_scope2 = []
         for idx, item in enumerate(scope2_items, 1):
@@ -176,8 +213,8 @@ class ReportService:
             t1 = datetime.combine(date_end, time.max)
             q_sh = db.query(Ship).filter(Ship.start_time.isnot(None), Ship.start_time >= t0, Ship.start_time <= t1)
             q_ct = db.query(Container).filter(Container.start_time.isnot(None), Container.start_time >= t0, Container.start_time <= t1)
-            ships = q_sh.all()
-            containers = q_ct.all()
+            ships = q_sh.order_by(Ship.start_time.desc()).all()
+            containers = q_ct.order_by(Container.start_time.desc()).all()
         else:
             q_sh = db.query(Ship).filter(extract("year", Ship.start_time) == year)
             q_ct = db.query(Container).filter(extract("year", Container.start_time) == year)
@@ -185,35 +222,82 @@ class ReportService:
                 mlist = list(mf)
                 q_sh = q_sh.filter(extract("month", Ship.start_time).in_(mlist))
                 q_ct = q_ct.filter(extract("month", Container.start_time).in_(mlist))
-            ships = q_sh.all()
-            containers = q_ct.all()
+            ships = q_sh.order_by(Ship.start_time.desc()).all()
+            containers = q_ct.order_by(Container.start_time.desc()).all()
+
+        if use_range:
+            harbor_crafts = (
+                db.query(HarborCraft)
+                .filter(
+                    HarborCraft.record_time.isnot(None),
+                    HarborCraft.record_time >= t0,
+                    HarborCraft.record_time <= t1,
+                )
+                .order_by(HarborCraft.record_time.desc())
+                .all()
+            )
+        else:
+            q_hc = db.query(HarborCraft).filter(extract("year", HarborCraft.record_time) == year)
+            if mf is not None:
+                q_hc = q_hc.filter(extract("month", HarborCraft.record_time).in_(list(mf)))
+            harbor_crafts = q_hc.order_by(HarborCraft.record_time.desc()).all()
 
         s3_co2e_ships = 0.0
-        data_tau_bien = []
-        data_tau_cang = []
-        for idx, ship in enumerate(ships, 1):
+        parts_tau_bien: List[Tuple[datetime, List[Any]]] = []
+        parts_tau_cang: List[Tuple[int, List[Any]]] = []
+        for ship in ships:
             co2 = calculate_ship_co2(ship)
             s3_co2e_ships += co2
-            
+
             start_str = ship.start_time.strftime("%d/%m/%Y %H:%M") if ship.start_time else ""
             end_str = ship.end_time.strftime("%d/%m/%Y %H:%M") if ship.end_time else ""
-            
+            st = _dt_sort_key(ship.start_time)
+
             if "lai dắt" in ship.name.lower() or "hoa tiêu" in ship.name.lower() or ship.ship_type == "Tàu cảng":
-                data_tau_cang.append([len(data_tau_cang)+1, ship.name, ship.year_built, ship.P_main, ship.P_aux, round(co2, 2)])
+                yk = _year_built_sort_key(ship.year_built)
+                parts_tau_cang.append(
+                    (yk, [ship.name, ship.year_built, ship.P_main, ship.P_aux, round(co2, 2)])
+                )
             else:
-                data_tau_bien.append([len(data_tau_bien)+1, ship.name, start_str, end_str, ship.deadweight_tonnage, ship.P_main, round(co2, 2)])
+                parts_tau_bien.append(
+                    (
+                        st,
+                        [
+                            ship.name,
+                            start_str,
+                            end_str,
+                            ship.deadweight_tonnage,
+                            ship.P_main,
+                            round(co2, 2),
+                        ],
+                    )
+                )
 
         s3_co2e_containers = 0.0
         data_xe_cont = []
         for idx, con in enumerate(containers, 1):
             co2 = con.e_total if con.e_total else 0.0
             s3_co2e_containers += co2
-            
+
             start_str = con.start_time.strftime("%d/%m/%Y %H:%M") if con.start_time else ""
             end_str = con.end_time.strftime("%d/%m/%Y %H:%M") if con.end_time else ""
             data_xe_cont.append(
                 [idx, con.license_plate, start_str, end_str, journey_type_label_vn(con.journey_type), round(co2, 2)]
             )
+
+        for h in harbor_crafts:
+            co2_h = float(h.e_total or 0.0)
+            eng = h.engine_type.value if hasattr(h.engine_type, "value") else str(h.engine_type)
+            eng_l = str(eng).lower()
+            if eng_l == "aux":
+                p_main, p_aux = "-", round(h.power, 2)
+            else:
+                p_main, p_aux = round(h.power, 2), "-"
+            yk = _year_built_sort_key(h.year_built)
+            parts_tau_cang.append((yk, [h.device_name, h.year_built, p_main, p_aux, round(co2_h, 2)]))
+
+        data_tau_bien = _sort_rows_by_dt(parts_tau_bien)
+        data_tau_cang = _sort_rows_by_year_built(parts_tau_cang)
 
         s3_co2e_other = 0.0
         xe_may_count = 0
@@ -221,7 +305,13 @@ class ReportService:
         oto_count = 0
         oto_co2 = 0.0
 
-        s3_co2e = s3_co2e_ships + s3_co2e_containers + s3_co2e_other
+        # Tổng Scope 3 khớp dashboard / trang Scope 3: gồm tàu biển + xe container + tàu cảng (harbor craft).
+        s3_co2e_harbor = sum(float(h.e_total or 0.0) for h in harbor_crafts)
+        if use_range:
+            s3_co2e = s3_co2e_ships + s3_co2e_containers + s3_co2e_harbor + s3_co2e_other
+        else:
+            s3p = compute_scope3_period(db, year, month, quarter)
+            s3_co2e = float(s3p.get("total_co2e") or 0.0)
         s3_co2 = s3_co2e
         s3_ch4 = 0.0
         s3_n2o = 0.0
