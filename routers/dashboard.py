@@ -177,7 +177,6 @@ async def dashboard_page(
     # ─── 1. SCOPE 1 ───
     s1_trend = [0.0] * 12
     s1_total = 0.0
-    s1_breakdown = {}
     try:
         for m in range(1, 13):
             if mf is not None and m not in mf:
@@ -187,10 +186,6 @@ async def dashboard_page(
             for a in acts:
                 val = float(getattr(a, 'total_co2e', 0.0) or 0.0)
                 month_co2 += val
-                cat = getattr(a, 'category', None)
-                dtype = cat.device_type.value if cat and hasattr(cat.device_type, 'value') else "Thiết bị S1 Khác"
-                s1_breakdown[dtype] = s1_breakdown.get(dtype, 0.0) + val
-                
             s1_trend[m - 1] = month_co2
             s1_total += month_co2
     except Exception as e: 
@@ -199,7 +194,6 @@ async def dashboard_page(
     # ─── 2. SCOPE 2 (Tính từ kWh * EF) ───
     s2_trend = [0.0] * 12
     s2_total = 0.0
-    s2_breakdown = {}
     try:
         s2_items = electrical_items_service.get_scope2_categories(db)
         
@@ -213,19 +207,15 @@ async def dashboard_page(
 
             raw_date = item.get("entry_date", None) if isinstance(item, dict) else getattr(item, "entry_date", None)
             dt = parse_date(raw_date)
-            if mf is not None:
-                if not (dt and dt.year == current_year and dt.month in mf):
-                    continue
+            # Luôn khớp năm với bộ lọc; chế độ "Năm" trước đây bỏ qua năm nên KPI S2 sai và không đổi khi đổi year
+            if not (dt and dt.year == current_year):
+                continue
+            if mf is not None and dt.month not in mf:
+                continue
 
             val_co2 = kwh * GRID_EF
             s2_total += val_co2
-
-            name = item.get("name", "Thiết bị điện (S2)") if isinstance(item, dict) else getattr(item, "name", "Thiết bị điện (S2)")
-            s2_breakdown[str(name)] = s2_breakdown.get(str(name), 0.0) + val_co2
-
-            if dt and dt.year == current_year:
-                if mf is None or dt.month in mf:
-                    s2_trend[dt.month - 1] += val_co2
+            s2_trend[dt.month - 1] += val_co2
 
     except Exception as e: 
         print("Lỗi Scope 2:", e)
@@ -252,24 +242,22 @@ async def dashboard_page(
         for c in containers:
             val = float(get_val(c, 'total_co2') or get_val(c, 'e_total'))
             dt = parse_date(c.get('start_time') if isinstance(c, dict) else getattr(c, 'start_time', None))
-            if mf is None:
-                c_co2 += val
-                if dt and dt.year == current_year:
-                    s3_trend[dt.month - 1] += val
-            elif dt and dt.year == current_year and dt.month in mf:
-                c_co2 += val
-                s3_trend[dt.month - 1] += val
+            if not (dt and dt.year == current_year):
+                continue
+            if mf is not None and dt.month not in mf:
+                continue
+            c_co2 += val
+            s3_trend[dt.month - 1] += val
 
         for s in ships:
             val = float(get_val(s, 'total_co2'))
             dt = parse_date(s.get('start_time') if isinstance(s, dict) else getattr(s, 'start_time', None))
-            if mf is None:
-                s_co2 += val
-                if dt and dt.year == current_year:
-                    s3_trend[dt.month - 1] += val
-            elif dt and dt.year == current_year and dt.month in mf:
-                s_co2 += val
-                s3_trend[dt.month - 1] += val
+            if not (dt and dt.year == current_year):
+                continue
+            if mf is not None and dt.month not in mf:
+                continue
+            s_co2 += val
+            s3_trend[dt.month - 1] += val
 
         s3_total = c_co2 + s_co2
         if mf is None:
@@ -295,19 +283,14 @@ async def dashboard_page(
     else:
         ai_insight = "Cần thêm các bản ghi có dữ liệu đa dạng (các tàu/xe có công suất, vận tốc khác nhau...) để hệ thống AI có thể phân tích xu hướng."
 
-    # ─── 5. TỔNG HỢP TOP THIẾT BỊ ───
+    # ─── 5. BIỂU ĐỒ TRÒN: CHỈ CƠ CẤU THEO SCOPE 1 / 2 / 3 (không tách thiết bị con) ───
     equip_list = []
-    for k, v in s1_breakdown.items():
-        if v > 0: equip_list.append({"label": f"{k} (S1)", "value": v})
-    for k, v in s2_breakdown.items():
-        if v > 0: equip_list.append({"label": f"{k} (S2)", "value": v})
-    if c_co2 > 0: equip_list.append({"label": "Xe Container (S3)", "value": c_co2})
-    if s_co2 > 0: equip_list.append({"label": "Tàu Biển (S3)", "value": s_co2})
-
-    equip_list.sort(key=lambda x: x["value"], reverse=True)
-    if len(equip_list) > 6:
-        other_val = sum(x["value"] for x in equip_list[6:])
-        equip_list = equip_list[:6] + [{"label": "Khác", "value": other_val}]
+    if s1_total > 0:
+        equip_list.append({"label": "Scope 1", "value": s1_total})
+    if s2_total > 0:
+        equip_list.append({"label": "Scope 2", "value": s2_total})
+    if s3_total > 0:
+        equip_list.append({"label": "Scope 3", "value": s3_total})
 
     top_labels = [x["label"] for x in equip_list] or ["Chưa có dữ liệu"]
     top_values = [x["value"] for x in equip_list] or [1]
