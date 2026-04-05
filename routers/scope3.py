@@ -13,6 +13,7 @@ from core.security import decode_token, get_token_payload
 
 # Container Services & Schemas
 from services import container_service, container_activity_service, scope3_other_vehicle_service
+from services.scope3_period_service import compute_scope3_period
 from schemas.container import ContainerCreate, ContainerUpdate
 from schemas.scope3_other_vehicle import Scope3OtherVehicleCreate
 
@@ -33,7 +34,13 @@ def _actor_from_request(request: Request) -> str:
 # ─── UI PAGES (HTML) ───────────────────────────────────────
 
 @router.get("/scope3", response_class=HTMLResponse)
-async def scope3_page(request: Request, db: Session = Depends(get_db)):
+async def scope3_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    year: int | None = Query(default=None),
+    month: int | None = Query(default=None),
+    quarter: int | None = Query(default=None),
+):
     """Render Scope 3 main page (Combined Summary)"""
     token = request.cookies.get("access_token")
     if not token:
@@ -45,23 +52,15 @@ async def scope3_page(request: Request, db: Session = Depends(get_db)):
         resp.delete_cookie("access_token")
         return resp
 
-    # 1. Lấy summary của Container
-    container_summary = container_service.get_scope3_summary(db)
-    
-    # 2. Lấy summary của Ship
-    ships = ship_service.get_all_ships(db)
-    ship_total_co2 = sum(s.total_co2 for s in ships if s.total_co2)
-    
-    # 3. Gộp dữ liệu Summary
-    # (Tùy thuộc vào cấu trúc dict trả về của container_summary, ta cộng thêm ship_total_co2 vào)
-    total_co2e = container_summary.get("total_co2e", 0.0) + ship_total_co2
-    
+    y = year or datetime.now().year
+    s3 = compute_scope3_period(db, y, month, quarter)
     summary = {
-        **container_summary,
-        "container_co2e": container_summary.get("total_co2e", 0.0),
-        "ship_co2e": ship_total_co2,
-        "total_co2e": total_co2e,
-        "total_ships": len(ships)
+        "total_co2": round(s3["total_co2e"], 2),
+        "total_co2e": round(s3["total_co2e"], 2),
+        "container_co2e": round(s3["container_co2e"], 2),
+        "ship_co2e": round(s3["ship_co2e"], 2),
+        "total_trips": s3["record_count"],
+        "total_ships": s3["n_ships"],
     }
 
     return templates.TemplateResponse(
@@ -375,19 +374,30 @@ async def delete_ship_endpoint(ship_id: int, request: Request, db: Session = Dep
 # ─── COMBINED SUMMARY & AUDIT API ENDPOINTS ──────────────────
 
 @router.get("/api/scope3/summary")
-async def get_summary(db: Session = Depends(get_db)):
-    """Get combined Scope 3 emissions summary"""
-    container_summary = container_service.get_scope3_summary(db)
-    ships = ship_service.get_all_ships(db)
-    ship_total_co2 = sum(s.total_co2 for s in ships if s.total_co2)
-    
-    total_co2e = container_summary.get("total_co2e", 0.0) + ship_total_co2
+async def get_summary(
+    db: Session = Depends(get_db),
+    year: int | None = Query(default=None),
+    month: int | None = Query(default=None),
+    quarter: int | None = Query(default=None),
+):
+    """Tổng hợp Scope 3 theo kỳ — cùng logic với dashboard."""
+    y = year or datetime.now().year
+    s3 = compute_scope3_period(db, y, month, quarter)
     return {
-        **container_summary,
-        "container_co2e": container_summary.get("total_co2e", 0.0),
-        "ship_co2e": ship_total_co2,
-        "total_co2e": total_co2e,
-        "total_ships": len(ships)
+        "total_co2": round(s3["total_co2e"], 2),
+        "total_co2e": round(s3["total_co2e"], 2),
+        "container_co2e": round(s3["container_co2e"], 2),
+        "ship_co2e": round(s3["ship_co2e"], 2),
+        "truck_co2e": round(s3["truck_co2e"], 2),
+        "other_vehicle_co2e": round(s3["other_vehicle_co2e"], 2),
+        "record_count": s3["record_count"],
+        "total_trips": s3["record_count"],
+        "total_ships": s3["n_ships"],
+        "n_containers": s3["n_containers"],
+        "n_other_vehicles": s3["n_other_vehicles"],
+        "trend_container_monthly": s3["trend_container_monthly"],
+        "trend_ship_monthly": s3["trend_ship_monthly"],
+        "trend_monthly": s3["trend_monthly"],
     }
 
 

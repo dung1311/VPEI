@@ -1,5 +1,4 @@
 # routers/dashboard.py
-import json
 import pandas as pd
 from fastapi import APIRouter, Request, Depends, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -14,8 +13,7 @@ from core.security import decode_token
 # Import các services
 from services import scope1 as scope1_services
 from services import electrical_items_service
-from services import scope2_activity_service
-from services import container_service, ship_service
+from services.scope3_period_service import compute_scope3_period
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -231,40 +229,21 @@ async def dashboard_page(
 
     def _s3_included(obj, is_dict: bool):
         dt = parse_date(obj.get("start_time") if is_dict else getattr(obj, "start_time", None))
-        if mf is None:
-            return True
-        return bool(dt and dt.year == current_year and dt.month in mf)
+        if not (dt and dt.year == current_year):
+            return False
+        if mf is not None and dt.month not in mf:
+            return False
+        return True
 
     try:
-        containers = container_service.get_all_containers(db)
-        ships = ship_service.get_all_ships(db)
-
-        for c in containers:
-            val = float(get_val(c, 'total_co2') or get_val(c, 'e_total'))
-            dt = parse_date(c.get('start_time') if isinstance(c, dict) else getattr(c, 'start_time', None))
-            if not (dt and dt.year == current_year):
-                continue
-            if mf is not None and dt.month not in mf:
-                continue
-            c_co2 += val
-            s3_trend[dt.month - 1] += val
-
-        for s in ships:
-            val = float(get_val(s, 'total_co2'))
-            dt = parse_date(s.get('start_time') if isinstance(s, dict) else getattr(s, 'start_time', None))
-            if not (dt and dt.year == current_year):
-                continue
-            if mf is not None and dt.month not in mf:
-                continue
-            s_co2 += val
-            s3_trend[dt.month - 1] += val
-
-        s3_total = c_co2 + s_co2
-        if mf is None:
-            total_trips = len(ships) + len(containers)
-        else:
-            total_trips = sum(1 for c in containers if _s3_included(c, isinstance(c, dict)))
-            total_trips += sum(1 for s in ships if _s3_included(s, isinstance(s, dict)))
+        s3_payload = compute_scope3_period(db, current_year, month, quarter)
+        containers = s3_payload["containers"]
+        ships = s3_payload["ships"]
+        s3_trend = s3_payload["trend_monthly"]
+        s3_total = s3_payload["total_co2e"]
+        c_co2 = s3_payload["container_co2e"]
+        s_co2 = s3_payload["ship_co2e"]
+        total_trips = s3_payload["record_count"]
     except Exception as e:
         print("Lỗi Scope 3:", e)
 
