@@ -342,13 +342,10 @@ def delete_container(
 
 
 def get_scope3_summary(db: Session) -> Dict[str, Any]:
-    """Get Scope 3 emissions summary"""
+    """Get Scope 3 emissions summary (chỉ xe container)."""
     containers = db.query(Container).all()
-    from models.scope3_other_vehicle import Scope3OtherVehicle
 
-    others = db.query(Scope3OtherVehicle).all()
-
-    if not containers and not others:
+    if not containers:
         return {
             "total_co2": 0.0,
             "total_trips": 0,
@@ -358,10 +355,9 @@ def get_scope3_summary(db: Session) -> Dict[str, Any]:
         }
 
     total_co2 = sum(c.e_total for c in containers)
-    total_co2 += sum(o.e_total for o in others)
     total_distance = sum((c.distance_1 + c.distance_2 + c.distance_3) for c in containers)
-    total_trips = len(containers) + sum(int(o.trips or 0) for o in others)
-    count = len(containers) + len(others)
+    total_trips = len(containers)
+    count = len(containers)
 
     return {
         "total_co2": round(total_co2, 2),

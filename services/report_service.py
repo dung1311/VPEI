@@ -15,7 +15,6 @@ from models.device import ActivityData, Device
 from models.electrical_item import ElectricalItem
 from models.ship import Ship
 from models.container import Container
-from models.scope3_other_vehicle import Scope3OtherVehicle
 from services.ship_service import calculate_ship_co2
 
 def _report_months(month: Optional[int], quarter: Optional[int]) -> Optional[Set[int]]:
@@ -159,7 +158,7 @@ class ReportService:
         s2_ch4 = 0.0
         s2_n2o = 0.0
 
-        # --- Scope 3: Ships, Containers, Other Vehicles ---
+        # --- Scope 3: Ships, Containers ---
         if use_range:
             t0 = datetime.combine(date_start, time.min)
             t1 = datetime.combine(date_end, time.max)
@@ -167,19 +166,6 @@ class ReportService:
             q_ct = db.query(Container).filter(Container.start_time.isnot(None), Container.start_time >= t0, Container.start_time <= t1)
             ships = q_sh.all()
             containers = q_ct.all()
-            all_ov = db.query(Scope3OtherVehicle).all()
-
-            def _ov_in_range(v: Scope3OtherVehicle) -> bool:
-                d = _parse_period_value_date(v.period)
-                if d is not None:
-                    return date_start <= d <= date_end
-                p = v.period or ""
-                for yy in range(date_start.year, date_end.year + 1):
-                    if str(yy) in p:
-                        return True
-                return False
-
-            other_vehicles = [v for v in all_ov if _ov_in_range(v)]
         else:
             q_sh = db.query(Ship).filter(extract("year", Ship.start_time) == year)
             q_ct = db.query(Container).filter(extract("year", Container.start_time) == year)
@@ -189,8 +175,6 @@ class ReportService:
                 q_ct = q_ct.filter(extract("month", Container.start_time).in_(mlist))
             ships = q_sh.all()
             containers = q_ct.all()
-            other_vehicles = db.query(Scope3OtherVehicle).all()
-            other_vehicles = [v for v in other_vehicles if v.period and str(year) in v.period]
 
         s3_co2e_ships = 0.0
         data_tau_bien = []
@@ -222,16 +206,6 @@ class ReportService:
         xe_may_co2 = 0.0
         oto_count = 0
         oto_co2 = 0.0
-        
-        for v in other_vehicles:
-            co2 = v.e_total if v.e_total else 0.0
-            s3_co2e_other += co2
-            if "máy" in v.vehicle_type.lower():
-                xe_may_count += v.trips if v.trips else 1
-                xe_may_co2 += co2
-            else:
-                oto_count += v.trips if v.trips else 1
-                oto_co2 += co2
 
         s3_co2e = s3_co2e_ships + s3_co2e_containers + s3_co2e_other
         s3_co2 = s3_co2e

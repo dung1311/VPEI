@@ -128,27 +128,6 @@
   .chart-title { font-size: 0.88rem; font-weight: 600; color: var(--navy); margin-bottom: 14px; }
   .chart-full { grid-column: span 2; }
 
-  /* SHAP CHART */
-  .shap-card {
-    background: white; border-radius: 14px;
-    padding: 20px; border: 1px solid var(--gray-border);
-  }
-  .shap-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-  .shap-label { font-size: 0.72rem; color: #4a5a7b; width: 220px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .shap-bar-wrap { flex: 1; display: flex; align-items: center; position: relative; height: 14px; }
-  .shap-bar { height: 10px; border-radius: 3px; }
-  .shap-bar.pos { background: var(--red); margin-left: 2px; }
-  .shap-bar.neg { background: var(--green); margin-right: 2px; margin-left: auto; }
-
-  /* AI INSIGHT */
-  .ai-insight {
-    background: #f0f5ff; border: 1px solid #c5d8ff;
-    border-radius: 10px; padding: 14px 18px;
-    font-size: 0.82rem; color: #2a3a6b; line-height: 1.6;
-    margin-top: 12px;
-  }
-  .ai-insight strong { color: var(--accent); }
-
   /* Bottom row */
   .bottom-row { display: grid; grid-template-columns: 1.5fr 1.5fr 1fr; gap: 16px; }
 
@@ -230,9 +209,7 @@
       <div class="intensity-val">0.82 tCO<sub>2</sub>e / 1,000 TEU</div>
     </div>
 
-    <!-- CHARTS + SHAP -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
-      <!-- Emission Trend -->
+    <div style="display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:16px;">
       <div class="chart-card">
         <div class="chart-title">
           Emission Trend – 2026
@@ -241,17 +218,6 @@
           </span>
         </div>
         <canvas id="trendChart" height="150"></canvas>
-      </div>
-
-      <!-- SHAP -->
-      <div class="shap-card">
-        <div class="chart-title">Key Drivers (SHAP Analysis)</div>
-        <div id="shapRows"></div>
-        <div class="ai-insight">
-          <strong>AI Insight:</strong> Emissions increased 3.8% in Q1 2026. Primary driver is increased
-          <strong>Scope 3 shipping activity</strong> (+12% impact due to longer dwelling time). Scope 2
-          showed reduction due to energy optimization in STS cranes.
-        </div>
       </div>
     </div>
 
@@ -329,34 +295,6 @@ new Chart(doughCtx, {
     datasets:[{ data:[28,22,18,16,16], backgroundColor:['#0d1f3c','#1e3a6e','#2e7df7','#5a9bff','#b8ceff'], borderWidth:2, borderColor:'#fff' }]
   },
   options: { plugins:{legend:{position:'bottom', labels:{font:{size:10},boxWidth:12,padding:10}}}, cutout:'60%' }
-});
-
-// SHAP Rows
-const shapData = [
-  { label:'Thời gian neo tàu container (+4.2 t)', val:4.2 },
-  { label:'Tàu tàu (+4.2 t)', val:3.8 },
-  { label:'Thời gian neo tàu container (+4.2 t)', val:3.5 },
-  { label:'Giảm điện STS (-1.5 t)', val:-1.5 },
-  { label:'Thời gian neo to (-1.5 t)', val:2.8 },
-  { label:'Giảm điện neo tot (-1.5 t)', val:-1.2 },
-  { label:'Giảm điện STS (-1.5 t)', val:-1.0 },
-  { label:'Thời gian neo tàu container (+2.2 t)', val:1.8 },
-];
-const maxVal = Math.max(...shapData.map(d=>Math.abs(d.val)));
-const shapContainer = document.getElementById('shapRows');
-shapData.forEach(d => {
-  const pct = (Math.abs(d.val)/maxVal)*80;
-  const isPos = d.val > 0;
-  shapContainer.innerHTML += `
-    <div class="shap-row">
-      <div class="shap-label">${d.label}</div>
-      <div class="shap-bar-wrap">
-        ${isPos
-          ? `<div class="shap-bar pos" style="width:${pct}%"></div>`
-          : `<div class="shap-bar neg" style="width:${pct}%"></div>`
-        }
-      </div>
-    </div>`;
 });
 
 // Period buttons

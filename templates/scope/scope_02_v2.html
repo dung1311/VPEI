@@ -454,32 +454,48 @@ function getBucketsForMode(mode) {
   return Array.from(map.entries()).map(([value,label])=>({value,label})).sort((a,b)=>a.value>b.value?-1:1);
 }
 function getMode() {
-  const params = new URLSearchParams(window.location.search);
-  if (params.has('quarter')) return 'quarter';
-  if (params.has('month')) return 'month';
-  return 'year';
+  return currentGlobalMode;
 }
+
 function getCurrentBucketValue() {
+  if (currentGlobalBucket != null && currentGlobalBucket !== '') {
+    return currentGlobalBucket;
+  }
   const params = new URLSearchParams(window.location.search);
-  const m = getMode();
+  const m = params.has('quarter') ? 'quarter' : params.has('month') ? 'month' : 'year';
   let y = params.get('year') || (window.defaultData ? window.defaultData.default_year : new Date().getFullYear());
   y = String(y);
-  
   if (m === 'day') {
-    return params.get('day') || "all";
+    return params.get('day') || 'all';
   }
   if (m === 'quarter') {
-    const q = params.get('quarter') || "1";
+    const q = params.get('quarter') || '1';
     return `${y}-Q${q}`;
   }
   if (m === 'month') {
-    const mo = String(params.get('month') || "1").padStart(2, '0');
+    const mo = String(params.get('month') || '1').padStart(2, '0');
     return `${y}-${mo}`;
   }
   return y;
 }
 
-window.onGlobalFilterChange = function(mode, params) { updateAll(); buildCatList(); };
+window.onGlobalFilterChange = function(mode, searchParams) {
+  const year =
+    searchParams.get('year') ||
+    String(window.defaultData ? window.defaultData.default_year : new Date().getFullYear());
+  const qr = searchParams.get('quarter');
+  const mo = searchParams.get('month');
+  let newBucket = year;
+  if (mode === 'month') {
+    newBucket = `${year}-${String(mo || '1').padStart(2, '0')}`;
+  } else if (mode === 'quarter') {
+    newBucket = `${year}-Q${qr || '1'}`;
+  }
+  currentGlobalMode = mode;
+  currentGlobalBucket = newBucket;
+  updateAll();
+  buildCatList();
+};
 
 function getSelectedRows() {
   const mode=getMode(), bucket=getCurrentBucketValue();
