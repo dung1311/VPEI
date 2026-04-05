@@ -70,19 +70,19 @@
     <div class="kpi-row">
       <div class="kpi-card">
         <div class="kpi-label">Tổng Phát thải CO<sub>2</sub>e</div>
-        <div class="kpi-value">{{ "{:,.1f}".format(data.total_emissions) }} <span class="kpi-unit">tCO<sub>2</sub>e</span></div>
+        <div class="kpi-value">{{ "{:,.2f}".format(data.total_emissions) }} <span class="kpi-unit">tCO<sub>2</sub>e</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">Scope 1</div>
-        <div class="kpi-value" style="font-size:1.6rem">{{ "{:,.1f}".format(data.scope1_total) }}</div>
+        <div class="kpi-value" style="font-size:1.6rem">{{ "{:,.2f}".format(data.scope1_total) }}</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">Scope 2</div>
-        <div class="kpi-value" style="font-size:1.6rem">{{ "{:,.1f}".format(data.scope2_total) }}</div>
+        <div class="kpi-value" style="font-size:1.6rem">{{ "{:,.2f}".format(data.scope2_total) }}</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">Scope 3</div>
-        <div class="kpi-value" style="font-size:1.6rem">{{ "{:,.1f}".format(data.scope3_total) }}</div>
+        <div class="kpi-value" style="font-size:1.6rem">{{ "{:,.2f}".format(data.scope3_total) }}</div>
       </div>
     </div>
 
@@ -109,7 +109,7 @@
       </div>
       
       <div class="chart-card">
-        <div class="chart-title">Top Phân bổ Nguồn phát thải</div>
+        <div class="chart-title">Cơ cấu phát thải theo Scope</div>
         <div style="position: relative; height: 200px; width: 100%;">
           <canvas id="equipDoughnut"></canvas>
         </div>
@@ -125,11 +125,11 @@
             </div>
             <div style="display:flex; justify-content:space-between; border-bottom:1px dashed #e2e8f0; padding-bottom:4px;">
                 <span>⚡ Từ Điện năng (S2):</span>
-                <strong>{{ "{:,.1f}".format(data.scope2_total) }} tCO₂e</strong>
+                <strong>{{ "{:,.2f}".format(data.scope2_total) }} tCO₂e</strong>
             </div>
             <div style="display:flex; justify-content:space-between; border-bottom:1px dashed #e2e8f0; padding-bottom:4px;">
                 <span>🏭 Hoạt động Trực tiếp (S1):</span>
-                <strong>{{ "{:,.1f}".format(data.scope1_total) }} tCO₂e</strong>
+                <strong>{{ "{:,.2f}".format(data.scope1_total) }} tCO₂e</strong>
             </div>
             <div style="display:flex; justify-content:space-between; padding-bottom:4px;">
                 <span>📅 Kỳ báo cáo:</span>
@@ -203,8 +203,13 @@ new Chart(trendCtx, {
               boxPadding: 4,
               callbacks: {
                   label: function(context) {
-                      let val = context.parsed.y || 0;
-                      return ` ${context.dataset.label}: ${val.toLocaleString('vi-VN', {maximumFractionDigits: 1})} tCO₂e`;
+                      const val = context.parsed.y || 0;
+                      const idx = context.dataIndex;
+                      const dss = context.chart.data.datasets;
+                      const monthTotal = dss.reduce((s, ds) => s + (Number(ds.data[idx]) || 0), 0);
+                      const pct = monthTotal > 0 ? (val / monthTotal) * 100 : 0;
+                      const valStr = val.toLocaleString('vi-VN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                      return ` ${context.dataset.label}: ${valStr} tCO₂e (${pct.toFixed(1)}% tháng)`;
                   }
               }
           }
@@ -235,7 +240,22 @@ new Chart(scopeCtx, {
     ]
   },
   options: { 
-      plugins:{legend:{position:'bottom', labels:{font:{size:10, family:'DM Sans'},boxWidth:12,padding:10}}}, 
+      plugins:{
+          legend:{position:'bottom', labels:{font:{size:10, family:'DM Sans'},boxWidth:12,padding:10}},
+          tooltip:{
+              callbacks:{
+                  label:function(ctx){
+                      const val = ctx.parsed.y || 0;
+                      const idx = ctx.dataIndex;
+                      const dss = ctx.chart.data.datasets;
+                      const stackTotal = dss.reduce((s, ds) => s + (Number(ds.data[idx]) || 0), 0);
+                      const pct = stackTotal > 0 ? (val / stackTotal) * 100 : 0;
+                      const valStr = val.toLocaleString('vi-VN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                      return ` ${ctx.dataset.label}: ${valStr} tCO₂e (${pct.toFixed(1)}% cột)`;
+                  }
+              }
+          }
+      }, 
       scales:{ 
           x:{grid:{display:false}, stacked:true, ticks:{font:{size:10, family:'DM Sans'}}}, 
           y:{stacked:true, ticks:{font:{size:10, family:'DM Sans'}}} 
@@ -244,8 +264,13 @@ new Chart(scopeCtx, {
   }
 });
 
-// 3. BIỂU ĐỒ TOP NGUỒN PHÁT THẢI ĐÃ ĐƯỢC CHIA NHỎ (Doughnut Chart)
-const colors = ['#0d1f3c', '#152850', '#1e3a6e', '#2e7df7', '#5a9bff', '#8bb4f6', '#dbeafe']; // Đủ 7 màu cho Top 6 + 1 Khác
+// 3. BIỂU ĐỒ TRÒN — CHỈ 3 SCOPE (màu cố định theo nhãn, tông sáng)
+const scopeDonutColors = {
+  'Scope 1': '#bfdbfe',
+  'Scope 2': '#7dd3fc',
+  'Scope 3': '#c4b5fd',
+  'Chưa có dữ liệu': '#e2e8f0'
+};
 const doughCtx = document.getElementById('equipDoughnut').getContext('2d');
 new Chart(doughCtx, {
   type: 'doughnut',
@@ -253,7 +278,7 @@ new Chart(doughCtx, {
     labels: dbData.top_equipment.labels,
     datasets:[{ 
         data: dbData.top_equipment.values, 
-        backgroundColor: colors.slice(0, dbData.top_equipment.labels.length), 
+        backgroundColor: dbData.top_equipment.labels.map(l => scopeDonutColors[l] || '#cbd5e1'), 
         borderWidth: 2, borderColor: '#fff' 
     }]
   },
@@ -263,8 +288,12 @@ new Chart(doughCtx, {
           tooltip: {
             callbacks: {
               label: function(context) {
-                let value = context.raw || 0;
-                return ' ' + value.toLocaleString('vi-VN', {maximumFractionDigits: 1}) + ' tCO₂e';
+                const value = Number(context.raw) || 0;
+                const arr = context.dataset.data;
+                const total = arr.reduce((s, v) => s + (Number(v) || 0), 0);
+                const pct = total > 0 ? (value / total) * 100 : 0;
+                const valStr = value.toLocaleString('vi-VN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                return ' ' + valStr + ' tCO₂e (' + pct.toFixed(1) + '%)';
               }
             }
           }
