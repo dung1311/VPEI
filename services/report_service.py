@@ -10,6 +10,8 @@ from typing import Optional, Set, Tuple, List
 from sqlalchemy.orm import Session
 from sqlalchemy import extract, or_, and_
 
+from core.vn_format import journey_type_label_vn
+
 # [UPDATED] Import Device thay cho DeviceCategory
 from models.device import ActivityData, Device 
 from models.electrical_item import ElectricalItem
@@ -35,6 +37,16 @@ def _parse_period_value_date(raw: Optional[str]) -> Optional[date]:
         except ValueError:
             continue
     return None
+
+
+def _scope2_period_display(raw: Optional[str]) -> str:
+    """period_value trong DB thường là yyyy-mm-dd — báo cáo chỉ hiển thị ngày dd/mm/yyyy."""
+    d = _parse_period_value_date(raw)
+    if d is None:
+        t = (raw or "").strip()
+        return t if t else "N/A"
+    return d.strftime("%d/%m/%Y")
+
 
 def _year_month_pairs_in_range(d_start: date, d_end: date) -> List[Tuple[int, int]]:
     out: List[Tuple[int, int]] = []
@@ -152,7 +164,7 @@ class ReportService:
                 e_total *= 12
 
             s2_co2e += e_total
-            data_scope2.append([idx, item.name, item.period_value, f"{item.power} kW", round(e_total, 2)])
+            data_scope2.append([idx, item.name, _scope2_period_display(item.period_value), f"{item.power} kW", round(e_total, 2)])
 
         s2_co2 = s2_co2e
         s2_ch4 = 0.0
@@ -183,8 +195,8 @@ class ReportService:
             co2 = calculate_ship_co2(ship)
             s3_co2e_ships += co2
             
-            start_str = ship.start_time.strftime("%d/%m %H:%M") if ship.start_time else ""
-            end_str = ship.end_time.strftime("%d/%m %H:%M") if ship.end_time else ""
+            start_str = ship.start_time.strftime("%d/%m/%Y %H:%M") if ship.start_time else ""
+            end_str = ship.end_time.strftime("%d/%m/%Y %H:%M") if ship.end_time else ""
             
             if "lai dắt" in ship.name.lower() or "hoa tiêu" in ship.name.lower() or ship.ship_type == "Tàu cảng":
                 data_tau_cang.append([len(data_tau_cang)+1, ship.name, ship.year_built, ship.P_main, ship.P_aux, round(co2, 2)])
@@ -197,9 +209,11 @@ class ReportService:
             co2 = con.e_total if con.e_total else 0.0
             s3_co2e_containers += co2
             
-            start_str = con.start_time.strftime("%d/%m %H:%M") if con.start_time else ""
-            end_str = con.end_time.strftime("%d/%m %H:%M") if con.end_time else ""
-            data_xe_cont.append([idx, con.license_plate, start_str, end_str, con.journey_type, round(co2, 2)])
+            start_str = con.start_time.strftime("%d/%m/%Y %H:%M") if con.start_time else ""
+            end_str = con.end_time.strftime("%d/%m/%Y %H:%M") if con.end_time else ""
+            data_xe_cont.append(
+                [idx, con.license_plate, start_str, end_str, journey_type_label_vn(con.journey_type), round(co2, 2)]
+            )
 
         s3_co2e_other = 0.0
         xe_may_count = 0
