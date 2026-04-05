@@ -1130,6 +1130,20 @@ function downloadExcelTemplate() {
     window.location.href = url;
 }
 
+function scope3FormatApiDetail(detail) {
+    if (detail == null) return 'Lỗi Import Excel';
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail)) {
+        return detail.map(function (x) {
+            if (typeof x === 'string') return x;
+            if (x && x.msg) return x.msg;
+            return JSON.stringify(x);
+        }).join(' ');
+    }
+    if (typeof detail === 'object' && detail.msg) return detail.msg;
+    return String(detail);
+}
+
 async function submitImportExcel() {
     const fileInput = document.getElementById('import-file');
     const file = fileInput.files[0];
@@ -1151,15 +1165,32 @@ async function submitImportExcel() {
     try {
         const res = await fetch(endpoint, { method: 'POST', body: fd });
         const data = await res.json().catch(() => ({}));
-        
-        if (!res.ok) throw new Error(data.detail || 'Lỗi Import Excel');
-        
-        document.getElementById('importModal').classList.remove('show'); 
+
+        if (!res.ok) {
+            showToast('❌ ' + scope3FormatApiDetail(data.detail), 'error');
+            return;
+        }
+
+        const imported = typeof data.imported === 'number' ? data.imported : 0;
+        const total = typeof data.total_rows === 'number' ? data.total_rows : imported;
+        const failed = typeof data.failed_rows === 'number' ? data.failed_rows : Math.max(0, total - imported);
+
+        if (imported === 0 && total > 0) {
+            showToast('Không import được dòng nào. Kiểm tra dữ liệu hoặc đúng mẫu Excel.', 'error');
+            return;
+        }
+
+        document.getElementById('importModal').classList.remove('show');
         fileInput.value = '';
-        await loadAllRecords(); 
-        showToast('✓ Import thành công!', 'success'); 
-    } catch(e) { 
-        showToast('❌ ' + e.message, 'error'); 
+        await loadAllRecords();
+
+        if (failed > 0) {
+            showToast('Đã import ' + imported + '/' + total + ' dòng. ' + failed + ' dòng bỏ qua do lỗi dữ liệu.', 'warn');
+        } else {
+            showToast('✓ Import thành công ' + imported + ' dòng!', 'success');
+        }
+    } catch (e) {
+        showToast('❌ ' + (e.message || 'Lỗi kết nối'), 'error');
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-upload"></i> Bắt đầu Import';
