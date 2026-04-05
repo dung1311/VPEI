@@ -82,6 +82,23 @@ body { font-family:'Montserrat',sans-serif; background:var(--gray-soft); color:v
 .kpi-label { font-size:0.68rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; }
 .kpi-value { font-size:1.4rem; font-weight:800; color:var(--navy); line-height:1.1; }
 .kpi-unit { font-size:0.72rem; font-weight:500; color:var(--text-muted); }
+.kpi-change { font-size:0.73rem; font-weight:700; margin-top:4px; }
+.kpi-change.up   { color:var(--red); }
+.kpi-change.down { color:var(--green); }
+.kpi-change.neutral { color:var(--text-muted); }
+.kpi-card.active-kpi { border-color:var(--accent); box-shadow:0 4px 20px rgba(46,125,247,.12); }
+.kpi-card.active-kpi::after { content:''; position:absolute; bottom:0; left:0; right:0; height:3px; background:var(--accent); }
+.kpi-card--static { cursor:default!important; }
+.kpi-card--static:hover { transform:none!important; box-shadow:none!important; border-color:var(--gray-border)!important; }
+.kpi-detail { background:white; border-radius:13px; border:1px solid var(--gray-border); padding:18px; display:none; margin-bottom:14px; }
+.kpi-detail.show { display:block; }
+.kpi-detail-title { font-size:0.82rem; font-weight:700; color:var(--navy); margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.close-detail { cursor:pointer; color:var(--text-muted); font-size:0.75rem; font-weight:600; }
+.close-detail:hover { color:var(--accent); }
+.detail-toggle { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+.dtbtn { padding:5px 12px; border-radius:6px; font-size:0.72rem; font-weight:600; border:1px solid var(--gray-border); background:white; color:#4a5a7b; cursor:pointer; font-family:'Montserrat',sans-serif; transition:all .15s; }
+.dtbtn:hover { border-color:var(--accent); color:var(--accent); }
+.dtbtn.active { background:var(--navy); color:white; border-color:var(--navy); }
 
 /* ─── CHARTS ─── */
 .charts-row { display:grid; grid-template-columns:1.3fr 1fr; gap:14px; }
@@ -229,30 +246,43 @@ window.onclick = function(event) {
   <div class="content">
     <div id="page-overview">
       <div class="kpi-row">
-        <div class="kpi-card">
+        <div class="kpi-card" onclick="toggleKpiDetailScope3('total')" id="kpi-card-total">
           <div class="kpi-icon" style="background:rgba(46,125,247,.1);color:#0d1f3c"><i class="fa-solid fa-cloud"></i></div>
           <div class="kpi-label">Tổng CO₂e</div>
-          <div class="kpi-value" id="kpi-total">0<span class="kpi-unit"> tCO₂e</span></div>
+          <div class="kpi-value" id="kpi-total">{{ "{:,.2f}".format(summary.total_co2e|default(0)) }}<span class="kpi-unit"> tCO₂e</span></div>
+          <div class="kpi-change neutral" id="kpi-total-chg"><i class="fa-solid fa-hand-pointer" style="font-size:0.6rem;margin-right:4px"></i>Nhấn xem xu hướng</div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card" onclick="toggleKpiDetailScope3('container')" id="kpi-card-container">
           <div class="kpi-icon" style="background:rgba(34,197,94,.1);color:#22c55e"><i class="fa-solid fa-truck"></i></div>
-          <div class="kpi-label">Phát thải Xe Container</div>
-          <div class="kpi-value" id="kpi-container">0<span class="kpi-unit"> t</span></div>
+          <div class="kpi-label">Phát thải Xe (+ PT khác)</div>
+          <div class="kpi-value" id="kpi-container">{{ "{:,.2f}".format(summary.container_co2e|default(0)) }}<span class="kpi-unit"> t</span></div>
+          <div class="kpi-change neutral" id="kpi-container-chg"><i class="fa-solid fa-hand-pointer" style="font-size:0.6rem;margin-right:4px"></i>Nhấn xem xu hướng</div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card" onclick="toggleKpiDetailScope3('ship')" id="kpi-card-ship">
           <div class="kpi-icon" style="background:rgba(15,172,233,.1);color:#0ea5e9"><i class="fa-solid fa-ship"></i></div>
           <div class="kpi-label">Phát thải Tàu biển</div>
-          <div class="kpi-value" id="kpi-ship">0<span class="kpi-unit"> t</span></div>
+          <div class="kpi-value" id="kpi-ship">{{ "{:,.2f}".format(summary.ship_co2e|default(0)) }}<span class="kpi-unit"> t</span></div>
+          <div class="kpi-change neutral" id="kpi-ship-chg"><i class="fa-solid fa-hand-pointer" style="font-size:0.6rem;margin-right:4px"></i>Nhấn xem xu hướng</div>
         </div>
-        <div class="kpi-card">
-          <div class="kpi-icon" style="background:rgba(139,92,246,.1);color:#8b5cf6"><i class="fa-solid fa-anchor"></i></div>
-          <div class="kpi-label">Phát thải Tàu cảng</div>
-          <div class="kpi-value" id="kpi-harbor">0<span class="kpi-unit"> t</span></div>
+        <div class="kpi-card kpi-card--static">
+          <div class="kpi-icon" style="background:rgba(139,92,246,.1);color:#8b5cf6"><i class="fa-solid fa-route"></i></div>
+          <div class="kpi-label">Số bản ghi trong kỳ</div>
+          <div class="kpi-value" id="kpi-trips">{{ summary.total_trips|default(0) }}</div>
+          <div class="kpi-unit">lượt</div>
         </div>
-        <div class="kpi-card">
-          <div class="kpi-icon" style="background:rgba(249,115,22,.1);color:#f97316"><i class="fa-solid fa-route"></i></div>
-          <div class="kpi-label">Số chuyến / Lượt hoạt động</div>
-          <div class="kpi-value" id="kpi-trips">0</div>
+      </div>
+
+      <div class="kpi-detail" id="kpiDetailPanelS3">
+        <div class="kpi-detail-title">
+          <span id="kpiDetailTitleS3"><i class="fa-solid fa-chart-line" style="margin-right:6px;color:var(--accent)"></i>Phân tích theo kỳ</span>
+          <span class="close-detail" onclick="closeKpiDetailS3()"><i class="fa-solid fa-xmark"></i> Đóng</span>
+        </div>
+        <div class="detail-toggle">
+          <button type="button" class="dtbtn active" id="dtbtn-s3-abs" onclick="setScope3DetailView('abs', this)">Phát thải (tCO₂e)</button>
+          <button type="button" class="dtbtn" id="dtbtn-s3-pct" onclick="setScope3DetailView('pct', this)">% so với kỳ liền kề</button>
+        </div>
+        <div style="position:relative;height:220px;width:100%;">
+          <canvas id="kpiDetailChartS3"></canvas>
         </div>
       </div>
 
@@ -568,6 +598,10 @@ let editingContainerId = null;
 let editingHarborCraftId = null;
 let toastTimer;
 let recordsDonutRef = null;
+let scope3Comparison = null;
+let kpiDetailChartS3Ref = null;
+let kpiDetailModeS3 = null;
+let kpiDetailViewS3 = 'abs';
 let selectedRecordsFilter = 'all';
 let selectedRecordsMonth = 'all';
 let selectedRecordsYear = 'all';
@@ -671,17 +705,18 @@ function syncGlobalPeriodFromParams(searchParams) {
 
 function recordInGlobalPeriod(record) {
   const when = getRecordMonthYear(record);
-  const y = globalFilterYear ? parseInt(globalFilterYear, 10) : NaN;
-  if (!globalFilterYear || Number.isNaN(y)) return true;
-  if (when.year !== y) return false;
+  const y = defaultReportYear();
+  if (when.year == null || when.year !== y) return false;
   if (globalPeriodMode === 'year') return true;
   if (globalPeriodMode === 'month') {
     const m = globalFilterMonth ? parseInt(globalFilterMonth, 10) : NaN;
-    return !Number.isNaN(m) && when.month === m;
+    if (Number.isNaN(m) || when.month == null) return false;
+    return when.month === m;
   }
   if (globalPeriodMode === 'quarter') {
     const q = globalFilterQuarter ? parseInt(globalFilterQuarter, 10) : NaN;
     if (Number.isNaN(q)) return true;
+    if (when.month == null) return false;
     const start = (q - 1) * 3 + 1;
     return when.month >= start && when.month < start + 3;
   }
@@ -867,16 +902,89 @@ async function saveContainerData() {
     showToast('✓ Lữu xe container thành công', 'success');
   } catch (e) { showToast('Lỗi', 'error'); }
 }
-function startEditContainer(id) { editingContainerId = id; setMainTab('input'); }
-function cancelEditContainer() { editingContainerId = null; }
 
-// ─── BẢNG & DANH SÁCH BẢN GHI ───
+function getRecordVehicleType(record) {
+  return record.ui_type || 'truck';
+}
+
+function getRecordEmission(record) {
+  const value = parseFloat(record.total_co2 || record.e_total || record.eTotal || record.co2 || 0);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function getRecordMonthYear(record) {
+  if (record.start_time) {
+    const d = new Date(record.start_time);
+    if (!Number.isNaN(d.getTime())) return { month: d.getMonth() + 1, year: d.getFullYear() };
+  }
+  if (record.period) {
+    const p = String(record.period).trim();
+    let m = p.match(/^(\d{4})-(\d{1,2})(?:$|[-/])/);
+    if (m) return { month: parseInt(m[2], 10), year: parseInt(m[1], 10) };
+    m = p.match(/^(\d{1,2})[\/\-](\d{4})$/);
+    if (m) return { month: parseInt(m[1], 10), year: parseInt(m[2], 10) };
+    m = p.match(/^(\d{4})$/);
+    if (m) return { month: null, year: parseInt(m[1], 10) };
+  }
+  return { month: null, year: null };
+}
+
+function defaultReportYear() {
+  const params = new URLSearchParams(window.location.search);
+  const py = params.get('year');
+  if (py) {
+    const n = parseInt(py, 10);
+    if (!Number.isNaN(n)) return n;
+  }
+  const el = document.getElementById('select-year');
+  if (el && el.value) {
+    const n = parseInt(el.value, 10);
+    if (!Number.isNaN(n)) return n;
+  }
+  if (window.defaultData && window.defaultData.default_year) return window.defaultData.default_year;
+  return new Date().getFullYear();
+}
+
+function formatPortEntryDate(record) {
+  if (!record.start_time) return '—';
+  const d = new Date(record.start_time);
+  if (Number.isNaN(d.getTime())) return '—';
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function refreshYearFilterOptions() {
+  const sel = document.getElementById('recordsYearFilter');
+  if (!sel) return;
+  const years = [...new Set(containerRecords.map((r) => getRecordMonthYear(r).year).filter(Boolean))].sort((a, b) => b - a);
+  sel.innerHTML = '<option value="all">Tất cả năm</option>' + years.map((y) => `<option value="${y}">${y}</option>`).join('');
+}
+
+function getRecordsByFilter() {
+  return containerRecords.filter((r) => {
+    const type = getRecordVehicleType(r);
+    if (selectedRecordsFilter !== 'all' && type !== selectedRecordsFilter) return false;
+    return recordInGlobalPeriod(r);
+  });
+}
+
 function setRecordsFilter(filterKey, btn) {
   selectedRecordsFilter = filterKey;
   document.querySelectorAll('#recordsFilterTabs .vtab').forEach((b) => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   renderRecordsTable();
 }
+
+function setRecordsTimeFilter() {
+  renderRecordsTable();
+}
+
+window.onGlobalFilterChange = async function(mode, searchParams) {
+  syncGlobalPeriodFromParams(searchParams);
+  selectedRecordsYear = searchParams.get('year') || 'all';
+  selectedRecordsMonth = searchParams.get('month') || 'all';
+  renderRecordsTable();
+  await updateOverview();
+};
 
 function renderRecordsEmissionChart(filteredRecords) {
   const canvas = document.getElementById('recordsEmissionDonut');
@@ -1200,11 +1308,325 @@ function exportRecordsPdf() {
       }, layout: 'lightHorizontalLines', fontSize: 8
     });
   });
-  window.pdfMake.createPdf({ pageOrientation: 'landscape', pageSize: 'A4', pageMargins: [24,24,24,24], defaultStyle: { fontSize: 9 }, styles: { header: { fontSize: 13, bold: true }, subheader: { fontSize: 9, color: '#475569' }, sectionTitle: { fontSize: 10, bold: true, color: '#0d1f3c' } }, content }).download(`scope3_${getSafeFilenameSuffix()}.pdf`);
+
+  const docDefinition = {
+    pageOrientation: 'landscape',
+    pageSize: 'A4',
+    pageMargins: [24, 24, 24, 24],
+    defaultStyle: { font: 'Roboto', fontSize: 9 },
+    styles: {
+      header: { fontSize: 13, bold: true },
+      subheader: { fontSize: 9, color: '#475569' },
+      sectionTitle: { fontSize: 10, bold: true, color: '#0d1f3c' }
+    },
+    content
+  };
+
+  const ymPart = getPeriodLabelForExport();
+  const filename = `scope3_records_${getSafeFilenameSuffix()}_${ymPart}.pdf`;
+  window.pdfMake.createPdf(docDefinition).download(filename);
+  showToast('Đã xuất PDF thành công', 'success');
 }
 
-// Khởi tạo
-init();
+
+function deleteRecord(id, type) {
+  deleteTarget = { id, type };
+  document.getElementById('deleteModal').classList.add('show');
+}
+
+async function confirmDelete() {
+  if (!deleteTarget.id) return;
+  const endpoint = deleteTarget.type === 'container-ship' ? `/api/scope3/ships/${deleteTarget.id}` : `/api/scope3/containers/${deleteTarget.id}`;
+  try {
+    const res = await fetch(endpoint, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Lỗi xóa');
+    cancelDelete();
+    await loadAllRecords();
+    showToast('✓ Đã xóa bản ghi', 'success');
+  } catch (err) { showToast('❌ Lỗi xóa', 'error'); }
+}
+
+function cancelDelete() {
+  deleteTarget = { id: null, type: null };
+  document.getElementById('deleteModal').classList.remove('show');
+}
+
+function clearContainerForm() {
+  ['c-license-plate', 'c-start-time', 'c-end-time', 'c-velocity-1', 'c-velocity-2', 'c-velocity-3', 'c-update-reason'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+
+async function loadAllRecords() {
+  try {
+    const [resCont, resShip] = await Promise.all([fetch('/api/scope3/containers'), fetch('/api/scope3/ships')]);
+    const contData = await resCont.json();
+    const shipData = await resShip.json();
+
+    const cItems = (contData.items || []).map(i => ({...i, ui_type: 'truck'}));
+    const sItems = (shipData.items || []).map(i => ({...i, ui_type: 'container-ship'}));
+    
+    containerRecords = [...cItems, ...sItems];
+    refreshYearFilterOptions();
+    renderRecordsTable();
+    await updateOverview();
+  } catch (err) { showToast('⚠️ Không thể tải dữ liệu', 'warn'); }
+}
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  const icons = { success: 'fa-circle-check', warn: 'fa-triangle-exclamation', error: 'fa-circle-xmark' };
+  t.className = 'toast ' + type + ' show';
+  document.getElementById('toast-icon').className = 'fa-solid ' + (icons[type] || icons.success);
+  document.getElementById('toast-text').textContent = msg;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+let vehicleBarChartRef = null;
+let trendLineChartRef = null;
+
+
+
+function fmtCo2Vi(n) {
+  return Number(n).toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function closeKpiDetailS3() {
+  const panel = document.getElementById('kpiDetailPanelS3');
+  if (panel) panel.classList.remove('show');
+  ['kpi-card-total', 'kpi-card-container', 'kpi-card-ship'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('active-kpi');
+  });
+  kpiDetailModeS3 = null;
+  if (kpiDetailChartS3Ref) {
+    kpiDetailChartS3Ref.destroy();
+    kpiDetailChartS3Ref = null;
+  }
+}
+
+function setScope3DetailView(mode, btn) {
+  kpiDetailViewS3 = mode;
+  document.querySelectorAll('#kpiDetailPanelS3 .dtbtn').forEach((b) => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (kpiDetailModeS3) renderKpiDetailChartS3(kpiDetailModeS3);
+}
+
+function toggleKpiDetailScope3(metric) {
+  const panel = document.getElementById('kpiDetailPanelS3');
+  if (!panel) return;
+  if (kpiDetailModeS3 === metric && panel.classList.contains('show')) {
+    closeKpiDetailS3();
+    return;
+  }
+  kpiDetailModeS3 = metric;
+  panel.classList.add('show');
+  const t = document.getElementById('kpi-card-total');
+  const c = document.getElementById('kpi-card-container');
+  const s = document.getElementById('kpi-card-ship');
+  if (t) t.classList.toggle('active-kpi', metric === 'total');
+  if (c) c.classList.toggle('active-kpi', metric === 'container');
+  if (s) s.classList.toggle('active-kpi', metric === 'ship');
+  kpiDetailViewS3 = 'abs';
+  const bAbs = document.getElementById('dtbtn-s3-abs');
+  const bPct = document.getElementById('dtbtn-s3-pct');
+  if (bAbs) bAbs.classList.add('active');
+  if (bPct) bPct.classList.remove('active');
+  renderKpiDetailChartS3(metric);
+}
+
+function renderKpiDetailChartS3(metric) {
+  if (!scope3Comparison || !scope3Comparison.series || !scope3Comparison.series[metric]) return;
+  const ser = scope3Comparison.series[metric];
+  const labels = scope3Comparison.display_labels || scope3Comparison.labels;
+  let data;
+  let label;
+  let color;
+  let titleHtml;
+  if (kpiDetailViewS3 === 'pct') {
+    data = ser.pct_vs_prev.map((v, i) => (i === 0 ? 0 : v));
+    label = '% thay đổi';
+    color = '#ef4444';
+    titleHtml = '<i class="fa-solid fa-arrow-trend-up" style="margin-right:6px;color:#ef4444"></i>Biến động % so với kỳ liền kề';
+  } else {
+    data = ser.values;
+    label = 'tCO₂e';
+    color = metric === 'ship' ? '#0d1f3c' : metric === 'container' ? '#0ea5e9' : '#2e7df7';
+    const titles = {
+      total: '<i class="fa-solid fa-cloud" style="margin-right:6px;color:#2e7df7"></i>Xu hướng tổng CO₂e',
+      container: '<i class="fa-solid fa-truck" style="margin-right:6px;color:#22c55e"></i>Phát thải xe (+ PT khác)',
+      ship: '<i class="fa-solid fa-ship" style="margin-right:6px;color:#0ea5e9"></i>Phát thải tàu biển',
+    };
+    titleHtml = titles[metric] || titles.total;
+  }
+  const titleEl = document.getElementById('kpiDetailTitleS3');
+  if (titleEl) titleEl.innerHTML = titleHtml;
+  const canvas = document.getElementById('kpiDetailChartS3');
+  if (!canvas) return;
+  if (kpiDetailChartS3Ref) kpiDetailChartS3Ref.destroy();
+  kpiDetailChartS3Ref = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label,
+          data,
+          borderColor: color,
+          borderWidth: 2,
+          pointRadius: 3,
+          backgroundColor: color + '22',
+          fill: true,
+          tension: 0.4,
+        },
+      ],
+    },
+    options: {
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label(ctx) {
+              const v = ctx.parsed.y;
+              if (kpiDetailViewS3 === 'pct') return ` ${v.toFixed(1)}%`;
+              return ` ${Number(v).toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} tCO₂e`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 9, family: 'Montserrat' } } },
+        y: { grid: { color: '#f0f2f8' }, ticks: { font: { size: 9, family: 'Montserrat' } } },
+      },
+      maintainAspectRatio: false,
+    },
+  });
+}
+
+function applyScope3KpiChg() {
+  if (!scope3Comparison || scope3Comparison.current_index == null) {
+    ['kpi-total-chg', 'kpi-container-chg', 'kpi-ship-chg'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.innerHTML = '<i class="fa-solid fa-hand-pointer" style="font-size:0.6rem;margin-right:4px"></i>Nhấn xem xu hướng';
+        el.className = 'kpi-change neutral';
+      }
+    });
+    return;
+  }
+  const idx = scope3Comparison.current_index;
+  const map = [
+    { metric: 'total', id: 'kpi-total-chg' },
+    { metric: 'container', id: 'kpi-container-chg' },
+    { metric: 'ship', id: 'kpi-ship-chg' },
+  ];
+  map.forEach(({ metric, id }) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const ser = scope3Comparison.series[metric];
+    if (!ser || idx <= 0) {
+      el.innerHTML = '<i class="fa-solid fa-hand-pointer" style="font-size:0.6rem;margin-right:4px"></i>Nhấn xem xu hướng';
+      el.className = 'kpi-change neutral';
+      return;
+    }
+    const p = ser.pct_vs_prev[idx];
+    const prevV = ser.values[idx - 1];
+    const curV = ser.values[idx];
+    if (prevV === 0 && curV === 0) {
+      el.textContent = '0% với kỳ liền kề';
+      el.className = 'kpi-change neutral';
+      return;
+    }
+    if (prevV === 0 && curV > 0) {
+      el.textContent = '↑ mới phát sinh';
+      el.className = 'kpi-change up';
+      return;
+    }
+    const up = p > 0;
+    const down = p < 0;
+    el.textContent = `${up ? '↑' : down ? '↓' : '→'} ${Math.abs(p).toFixed(1)}% với kỳ liền kề`;
+    el.className = 'kpi-change ' + (up ? 'up' : down ? 'down' : 'neutral');
+  });
+}
+
+async function updateOverview() {
+  const params = new URLSearchParams(window.location.search);
+  const qs = new URLSearchParams();
+  qs.set('year', params.get('year') || String(defaultReportYear()));
+  const mq = params.get('month');
+  const qq = params.get('quarter');
+  if (mq) qs.set('month', mq);
+  if (qq) qs.set('quarter', qq);
+
+  let totalCo2e = 0, containerCo2e = 0, shipCo2e = 0, tripCount = 0;
+  let trendCont = Array(12).fill(0), trendShip = Array(12).fill(0);
+  try {
+    const res = await fetch('/api/scope3/summary?' + qs.toString());
+    if (!res.ok) return;
+    const s = await res.json();
+    totalCo2e = Number(s.total_co2e) || 0;
+    containerCo2e = Number(s.container_co2e) || 0;
+    shipCo2e = Number(s.ship_co2e) || 0;
+    tripCount = Number(s.record_count) || 0;
+    trendCont = s.trend_container_monthly || trendCont;
+    trendShip = s.trend_ship_monthly || trendShip;
+
+    const resCmp = await fetch('/api/scope3/comparison-series?' + qs.toString());
+    if (resCmp.ok) {
+      scope3Comparison = await resCmp.json();
+    } else {
+      scope3Comparison = null;
+    }
+    applyScope3KpiChg();
+    const panelS3 = document.getElementById('kpiDetailPanelS3');
+    if (kpiDetailModeS3 && panelS3 && panelS3.classList.contains('show')) {
+      renderKpiDetailChartS3(kpiDetailModeS3);
+    }
+  } catch (e) {
+    return;
+  }
+
+  const elTotal = document.getElementById('kpi-total');
+  if (elTotal) elTotal.innerHTML = `${fmtCo2Vi(totalCo2e)}<span class="kpi-unit"> tCO₂e</span>`;
+  const elCont = document.getElementById('kpi-container');
+  if (elCont) elCont.innerHTML = `${fmtCo2Vi(containerCo2e)}<span class="kpi-unit"> t</span>`;
+  const elShip = document.getElementById('kpi-ship');
+  if (elShip) elShip.innerHTML = `${fmtCo2Vi(shipCo2e)}<span class="kpi-unit"> t</span>`;
+  const elTrips = document.getElementById('kpi-trips');
+  if (elTrips) elTrips.innerText = String(tripCount);
+
+  if (vehicleBarChartRef) vehicleBarChartRef.destroy();
+  const ctxBar = document.getElementById('vehicleBar');
+  if (ctxBar) {
+    vehicleBarChartRef = new Chart(ctxBar.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: ['Xe Container (+ PT khác)', 'Tàu Biển'],
+        datasets: [{ data: [containerCo2e, shipCo2e], backgroundColor: ['#0ea5e9', '#0d1f3c'], borderRadius: 6 }]
+      },
+      options: { plugins: { legend: { display: false } }, maintainAspectRatio: false }
+    });
+  }
+
+  if (trendLineChartRef) trendLineChartRef.destroy();
+  const ctxLine = document.getElementById('trendLine');
+  if (ctxLine) {
+    trendLineChartRef = new Chart(ctxLine.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'],
+        datasets: [
+          { label: 'Xe Container (+ PT khác)', data: trendCont, borderColor: '#0ea5e9', borderWidth: 2, tension: 0.4 },
+          { label: 'Tàu Biển', data: trendShip, borderColor: '#0d1f3c', borderWidth: 2, tension: 0.4 }
+        ]
+      },
+      options: { plugins: { legend: { position: 'bottom'} }, maintainAspectRatio: false }
+    });
+  }
+}
+
 async function init() {
   syncGlobalPeriodFromParams(new URLSearchParams(window.location.search));
   await loadAllRecords();

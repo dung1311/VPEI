@@ -14,6 +14,7 @@ from core.security import decode_token, get_token_payload
 
 # Container Services & Schemas
 from services import container_service, container_activity_service, scope3_other_vehicle_service
+from services.scope3_period_service import compute_scope3_period, build_scope3_comparison_payload
 from schemas.container import ContainerCreate, ContainerUpdate
 from schemas.scope3_other_vehicle import Scope3OtherVehicleCreate
 
@@ -41,7 +42,13 @@ def _actor_from_request(request: Request) -> str:
 # =====================================================================
 
 @router.get("/scope3", response_class=HTMLResponse)
-async def scope3_page(request: Request, db: Session = Depends(get_db)):
+async def scope3_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    year: int | None = Query(default=None),
+    month: int | None = Query(default=None),
+    quarter: int | None = Query(default=None),
+):
     """Render Scope 3 main page (Combined Summary)"""
     token = request.cookies.get("access_token")
     if not token:
@@ -75,6 +82,15 @@ async def scope3_page(request: Request, db: Session = Depends(get_db)):
         "harbor_co2e": harbor_total_co2,
         "total_co2e": total_co2e,
         "total_trips": total_trips
+    y = year or datetime.now().year
+    s3 = compute_scope3_period(db, y, month, quarter)
+    summary = {
+        "total_co2": round(s3["total_co2e"], 2),
+        "total_co2e": round(s3["total_co2e"], 2),
+        "container_co2e": round(s3["container_co2e"], 2),
+        "ship_co2e": round(s3["ship_co2e"], 2),
+        "total_trips": s3["record_count"],
+        "total_ships": s3["n_ships"],
     }
 
     return templates.TemplateResponse(
@@ -509,8 +525,45 @@ async def get_summary(db: Session = Depends(get_db)):
         "ship_co2e": ship_total_co2,
         "harbor_co2e": harbor_total_co2,
         "total_co2e": total_co2e,
-        "total_trips": total_trips
+        "total_trips": total_trips}
+
+async def get_summary(
+    db: Session = Depends(get_db),
+    year: int | None = Query(default=None),
+    month: int | None = Query(default=None),
+    quarter: int | None = Query(default=None),
+):
+    """Tổng hợp Scope 3 theo kỳ — cùng logic với dashboard."""
+    y = year or datetime.now().year
+    s3 = compute_scope3_period(db, y, month, quarter)
+    return {
+        "total_co2": round(s3["total_co2e"], 2),
+        "total_co2e": round(s3["total_co2e"], 2),
+        "container_co2e": round(s3["container_co2e"], 2),
+        "ship_co2e": round(s3["ship_co2e"], 2),
+        "truck_co2e": round(s3["truck_co2e"], 2),
+        "other_vehicle_co2e": round(s3["other_vehicle_co2e"], 2),
+        "record_count": s3["record_count"],
+        "total_trips": s3["record_count"],
+        "total_ships": s3["n_ships"],
+        "n_containers": s3["n_containers"],
+        "n_other_vehicles": s3["n_other_vehicles"],
+        "trend_container_monthly": s3["trend_container_monthly"],
+        "trend_ship_monthly": s3["trend_ship_monthly"],
+        "trend_monthly": s3["trend_monthly"],
     }
+
+
+@router.get("/api/scope3/comparison-series")
+async def scope3_comparison_series(
+    db: Session = Depends(get_db),
+    year: int | None = Query(default=None),
+    month: int | None = Query(default=None),
+    quarter: int | None = Query(default=None),
+):
+    """Chuỗi giá trị nhiều kỳ (năm/tháng/quý) để biểu đồ so sánh — cùng logic tổng hợp Scope 3."""
+    y = year or datetime.now().year
+    return build_scope3_comparison_payload(db, y, month, quarter)
 
 
 @router.get("/api/scope3/manager/audit")
