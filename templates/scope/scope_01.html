@@ -7,6 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -41,28 +42,6 @@
 
   /* MAIN */
   .main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
-  .topbar { background:var(--white); border-bottom:1px solid var(--gray-border); padding:0 28px; height:60px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
-  .topbar-left { display:flex; flex-direction:column; gap:1px; }
-  .topbar-title { font-family:'Sora',sans-serif; font-weight:800; font-size:1.15rem; color:var(--navy); }
-  .topbar-right { display:flex; align-items:center; gap:10px; }
-  
-  /* CÁC NÚT TABS THỜI GIAN */
-  .time-tabs { display:flex; border:1.5px solid var(--gray-border); border-radius:8px; overflow:hidden; margin-right: 8px;}
-  .time-tab { padding:6px 14px; font-size:0.78rem; font-weight:600; cursor:pointer; background:white; color:#4a5a7b; border:none; transition:all 0.18s; font-family:'Sora',sans-serif; }
-  .time-tab.active { background:var(--navy); color:white; }
-  .time-tab:hover:not(.active) { background:var(--gray-soft); }
-  .select-pill { padding:6px 14px; border-radius:8px; border:1.5px solid var(--gray-border); font-size:0.83rem; font-weight:600; color:var(--navy); background:white; cursor:pointer; }
-
-  /* PROFILE DROPDOWN */
-  .profile-container { position: relative; display: flex; align-items: center; gap: 8px; cursor: pointer; margin-left: 12px; }
-  .avatar-circle { width: 32px; height: 32px; border-radius: 50%; background: #2e7df7; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; }
-  .profile-name { font-size: 0.85rem; font-weight: 600; color: var(--navy); }
-  .profile-dropdown { position: absolute; top: calc(100% + 10px); right: 0; background: white; border: 1px solid var(--gray-border); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 160px; display: none; flex-direction: column; z-index: 100; overflow: hidden; }
-  .profile-dropdown.show { display: flex; }
-  .profile-item { padding: 12px 16px; display: flex; align-items: center; gap: 10px; font-size: 0.85rem; font-weight: 500; color: var(--navy); text-decoration: none; transition: background 0.2s; }
-  .profile-item:hover { background: var(--gray-soft); }
-  .profile-item.logout { color: var(--red); border-top: 1px solid var(--gray-border); }
-  
   .content { flex:1; overflow-y:auto; padding:24px 28px; }
 
   /* KPI */
@@ -103,32 +82,8 @@
 {% include 'components/sidebar.html' %}
 
 <div class="main">
-  <div class="topbar">
-    <div class="topbar-left">
-      <div class="topbar-title">Scope 1 – Direct Emissions</div>
-    </div>
-    <div class="topbar-right">
-        <div class="time-tabs">
-            <button class="time-tab" id="btn-year">Năm</button>
-            <button class="time-tab" id="btn-quarter">Quý</button>
-            <button class="time-tab" id="btn-month">Tháng</button>
-        </div>
-        <select class="select-pill" id="timeSelect"></select>
-
-        <div class="profile-container" onclick="toggleProfileMenu(event)">
-            <div class="avatar-circle">V</div>
-            <div class="profile-name">vpeiadmin <i class="fa-solid fa-chevron-down" style="font-size:0.7rem; color:var(--text-muted); margin-left:4px;"></i></div>
-            <div class="profile-dropdown" id="profileMenu">
-                <a href="#" class="profile-item"><i class="fa-solid fa-user-pen"></i> Xem thông tin</a>
-                <form action="/logout" method="POST" style="margin: 0;">
-                    <button type="submit" class="profile-item logout" style="width: 100%; background: transparent; border: none; border-top: 1px solid var(--gray-border); font-family: inherit; cursor: pointer; text-align: left;">
-                        <i class="fa-solid fa-arrow-right-from-bracket"></i> Đăng xuất
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-  </div>
+  {% set topbar_title = '<i class="fa-solid fa-fire-flame-simple" style="color:var(--accent);margin-right:6px;font-size:0.9rem"></i>Scope 1 – Phát thải trực tiếp' %}
+  {% include 'components/topbar.html' %}
 
   {% set total_hours = dashboard_json.table_data | map(attribute='operating_hours') | sum %}
 
@@ -232,96 +187,7 @@ function toggleMenu(id){
   }
 }
 
-function toggleProfileMenu(e) {
-    e.stopPropagation();
-    document.getElementById('profileMenu').classList.toggle('show');
-}
-
-window.onclick = function(event) {
-  if (!event.target.closest('.profile-container')) {
-      const menu = document.getElementById('profileMenu');
-      if (menu && menu.classList.contains('show')) {
-          menu.classList.remove('show');
-      }
-  }
-}
-
-// Hàm tạo danh sách Option cho Select Box
-function getBuckets(mode) {
-    if (mode === 'month') return Array.from({length: 12}, (_, i) => ({val: i+1, label: `Tháng ${String(i+1).padStart(2,'0')}`}));
-    if (mode === 'quarter') return Array.from({length: 4}, (_, i) => ({val: i+1, label: `Quý ${i+1}`}));
-    if (mode === 'year') {
-        let years = [];
-        for(let y=2030; y>=2020; y--) years.push({val: y, label: `Năm ${y}`});
-        return years;
-    }
-    return [];
-}
-
-// Xử lý set giao diện Tab
-function setTimeMode(mode, btn, autoReload) {
-    window.currentMode = mode;
-    document.querySelectorAll('.time-tab').forEach(b => b.classList.remove('active'));
-    if(btn) btn.classList.add('active');
-
-    const sel = document.getElementById('timeSelect');
-    const buckets = getBuckets(mode);
-    sel.innerHTML = buckets.map(b => `<option value="${b.val}">${b.label}</option>`).join('');
-
-    const urlParams = new URLSearchParams(window.location.search);
-    if (mode === 'month' && urlParams.has('month')) sel.value = urlParams.get('month');
-    else if (mode === 'quarter' && urlParams.has('quarter')) sel.value = urlParams.get('quarter');
-    else if (mode === 'year' && urlParams.has('year')) sel.value = urlParams.get('year');
-    else sel.value = buckets[0].val;
-}
-
 document.addEventListener("DOMContentLoaded", function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    window.currentYear = urlParams.get('year') || new Date().getFullYear().toString();
-    window.currentMode = 'year'; 
-
-    if (urlParams.has('month')) window.currentMode = 'month';
-    else if (urlParams.has('quarter')) window.currentMode = 'quarter';
-
-    // Highlight Tab đang active
-    const activeTab = document.getElementById('btn-' + window.currentMode);
-    setTimeMode(window.currentMode, activeTab, false);
-
-    // Lắng nghe khi đổi SelectBox -> Load lại trang có Query
-    document.getElementById('timeSelect').addEventListener('change', function() {
-        const val = this.value;
-        const params = new URLSearchParams();
-        
-        if (window.currentMode === 'year') {
-            params.set('year', val);
-        } else {
-            params.set('year', window.currentYear);
-            params.set(window.currentMode, val);
-        }
-
-        window.location.href = window.location.pathname + '?' + params.toString();
-    });
-
-    // Lắng nghe nút bấm Tab
-    document.querySelectorAll('.time-tab').forEach(tab => {
-        tab.addEventListener('click', function(e) {
-            e.preventDefault();
-            let newUrl = window.location.pathname + '?year=' + window.currentYear;
-            const text = this.innerText.toLowerCase().trim();
-            
-            if (text === 'năm') {
-                window.location.href = newUrl;
-            } else if (text === 'quý') {
-                let q = urlParams.get('quarter') || 1;
-                window.location.href = newUrl + '&quarter=' + q;
-            } else if (text === 'tháng') {
-                let m = urlParams.get('month') || 1;
-                window.location.href = newUrl + '&month=' + m;
-            }
-        });
-    });
-
-    // Render Biểu đồ
     const rawData = JSON.parse(document.getElementById('chart-data').textContent);
     fullTrendData = rawData.line_chart;
     

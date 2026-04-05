@@ -150,36 +150,14 @@
 // --- INJECT DỮ LIỆU TỪ PYTHON VÀO JAVASCRIPT ---
 const dbData = {{ data | tojson }};
 
-// --- LOGIC LỌC URL CHO TOPBAR (Tương tự Scope 1) ---
+// Nhãn biểu đồ / tóm tắt theo năm từ URL (topbar do components/topbar.html quản lý — không gắn listener lên mọi select để tránh coi tháng/quý là năm).
 document.addEventListener("DOMContentLoaded", function() {
     const urlParams = new URLSearchParams(window.location.search);
-    const currentYear = urlParams.get('year') || new Date().getFullYear();
-    
-    document.getElementById('displayYear').innerText = currentYear;
-    document.getElementById('summaryYear').innerText = currentYear;
-
-    // Bơm danh sách năm vào selectbox ở Topbar
-    const topbarSelects = document.querySelectorAll('.topbar-right select');
-    topbarSelects.forEach(select => {
-        select.innerHTML = ''; 
-        select.removeAttribute('onchange'); 
-        
-        for (let y = 2030; y >= 2020; y--) {
-            const opt = document.createElement('option');
-            opt.value = y;
-            opt.text = `Năm ${y}`; 
-            if (y === parseInt(currentYear)) opt.selected = true;
-            select.appendChild(opt);
-        }
-        
-        select.addEventListener('change', function() {
-            urlParams.set('year', this.value);
-            // Xóa các param rác nếu có
-            urlParams.delete('month');
-            urlParams.delete('quarter');
-            window.location.href = window.location.pathname + '?' + urlParams.toString();
-        });
-    });
+    const currentYear = urlParams.get("year") || String(new Date().getFullYear());
+    const elY = document.getElementById("displayYear");
+    const elS = document.getElementById("summaryYear");
+    if (elY) elY.innerText = currentYear;
+    if (elS) elS.innerText = currentYear;
 });
 
 // 1. BIỂU ĐỒ XU HƯỚNG THEO THÁNG (Trend Line Chart)

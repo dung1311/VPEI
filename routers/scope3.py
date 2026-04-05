@@ -82,6 +82,8 @@ async def scope3_page(
         "harbor_co2e": harbor_total_co2,
         "total_co2e": total_co2e,
         "total_trips": total_trips
+    }
+    
     y = year or datetime.now().year
     s3 = compute_scope3_period(db, y, month, quarter)
     summary = {
@@ -89,6 +91,7 @@ async def scope3_page(
         "total_co2e": round(s3["total_co2e"], 2),
         "container_co2e": round(s3["container_co2e"], 2),
         "ship_co2e": round(s3["ship_co2e"], 2),
+        "harbor_co2e": round(s3["harbor_co2e"], 2),
         "total_trips": s3["record_count"],
         "total_ships": s3["n_ships"],
     }
@@ -506,34 +509,13 @@ async def delete_harbor_craft(record_id: int, request: Request, db: Session = De
 # ─── COMBINED SUMMARY & AUDIT API ENDPOINTS ──────────────────
 
 @router.get("/api/scope3/summary")
-async def get_summary(db: Session = Depends(get_db)):
-    """Get combined Scope 3 emissions summary"""
-    container_summary = container_service.get_scope3_summary(db)
-    
-    ships = ship_service.get_all_ships(db)
-    ship_total_co2 = sum(s.get("e_total", 0.0) if isinstance(s, dict) else getattr(s, "total_co2", getattr(s, "e_total", 0.0)) for s in ships)
-    
-    harbor_crafts = harbor_craft_service.get_all_harbor_crafts(db)
-    harbor_total_co2 = sum(h.get("e_total", 0.0) for h in harbor_crafts)
-    
-    total_co2e = container_summary.get("total_co2", 0.0) + ship_total_co2 + harbor_total_co2
-    total_trips = container_summary.get("total_trips", 0) + len(ships) + len(harbor_crafts)
-
-    return {
-        **container_summary,
-        "container_co2e": container_summary.get("total_co2", 0.0),
-        "ship_co2e": ship_total_co2,
-        "harbor_co2e": harbor_total_co2,
-        "total_co2e": total_co2e,
-        "total_trips": total_trips}
-
-async def get_summary(
+async def get_scope3_summary(
     db: Session = Depends(get_db),
     year: int | None = Query(default=None),
     month: int | None = Query(default=None),
     quarter: int | None = Query(default=None),
 ):
-    """Tổng hợp Scope 3 theo kỳ — cùng logic với dashboard."""
+    """Tổng hợp Scope 3 theo kỳ (năm/tháng/quý) — cùng logic trang /scope3 và dashboard."""
     y = year or datetime.now().year
     s3 = compute_scope3_period(db, y, month, quarter)
     return {
@@ -541,6 +523,7 @@ async def get_summary(
         "total_co2e": round(s3["total_co2e"], 2),
         "container_co2e": round(s3["container_co2e"], 2),
         "ship_co2e": round(s3["ship_co2e"], 2),
+        "harbor_co2e": round(s3["harbor_co2e"], 2),
         "truck_co2e": round(s3["truck_co2e"], 2),
         "other_vehicle_co2e": round(s3["other_vehicle_co2e"], 2),
         "record_count": s3["record_count"],
@@ -548,8 +531,10 @@ async def get_summary(
         "total_ships": s3["n_ships"],
         "n_containers": s3["n_containers"],
         "n_other_vehicles": s3["n_other_vehicles"],
+        "n_harbor_crafts": s3["n_harbor_crafts"],
         "trend_container_monthly": s3["trend_container_monthly"],
         "trend_ship_monthly": s3["trend_ship_monthly"],
+        "trend_harbor_monthly": s3["trend_harbor_monthly"],
         "trend_monthly": s3["trend_monthly"],
     }
 

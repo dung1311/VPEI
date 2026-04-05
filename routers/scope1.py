@@ -15,6 +15,17 @@ from models.device import DeviceTypeEnum, FuelTypeEnum
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
+
+def _user_from_request(request: Request):
+    token = request.cookies.get("access_token")
+    if not token:
+        return None
+    try:
+        return decode_token(token)
+    except Exception:
+        return None
+
+
 def _resolve_scope1_months(month: Optional[int], quarter: Optional[int]) -> List[int]:
     if month is not None:
         return [month]
@@ -47,6 +58,7 @@ async def scope1_dashboard_page(
 
     return templates.TemplateResponse("scope/scope_01.html", {
         "request": request,
+        "user": _user_from_request(request),
         "dashboard_json": dashboard,
         "current_year": y,
         "current_month": month if month is not None else min(months),
@@ -103,6 +115,7 @@ async def scope1_emission_source_page(
 
     return templates.TemplateResponse("scope/scope_01_emission_source.html", {
         "request": request,
+        "user": _user_from_request(request),
         "categories": categories_for_ui,
         "activities": acts_ui,
         "device_types": [d.value for d in DeviceTypeEnum],
