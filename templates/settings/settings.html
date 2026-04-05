@@ -291,7 +291,7 @@ tr:hover td{background:#f8f9fd;}
                       </td>
                       <td style="color:var(--text-muted)">{{ u.email }}</td>
                       <td>
-                        {% if u.username == super_admin_username %}
+                        {% if u.is_super_admin %}
                           <span style="font-size:.70rem;font-weight:700;color:#d69e2e;background:#fffff0;border:1px solid #f6e05e;padding:4px 8px;border-radius:6px;display:inline-flex;align-items:center;gap:4px;"><i class="fa-solid fa-crown" style="font-size:.65rem"></i> Super Admin</span>
                         {% elif u.is_admin %}
                           <span class="badge role-admin">Admin</span>
@@ -311,11 +311,11 @@ tr:hover td{background:#f8f9fd;}
                       </td>
                       <td>
                         <div style="display:flex;gap:6px;justify-content:flex-start">
-                          {% if u.username != super_admin_username or is_super_admin %}
+                          {% if not u.is_super_admin or is_super_admin %}
                           <a href="#" onclick="openResetModal({{ u.id }}, '{{ u.username }}'); return false;" class="tbl-action-btn" title="Reset Mật khẩu"><i class="fa-solid fa-key" style="color:var(--amber)"></i></a>
                           {% endif %}
 
-                          {% set can_toggle = (u.username != admin.sub and u.username != super_admin_username and (not u.is_admin or is_super_admin)) %}
+                          {% set can_toggle = (u.username != admin.sub and not u.is_super_admin and (not u.is_admin or is_super_admin)) %}
                           {% if can_toggle %}
                           <form method="POST" action="/admin/toggle/{{ u.id }}?next=/settings" style="display:inline">
                             {% if u.is_active %}
@@ -326,7 +326,7 @@ tr:hover td{background:#f8f9fd;}
                           </form>
                           {% endif %}
 
-                          {% set can_delete = (u.username != admin.sub and u.username != super_admin_username and (not u.is_admin or is_super_admin)) %}
+                          {% set can_delete = (u.username != admin.sub and not u.is_super_admin and (not u.is_admin or is_super_admin)) %}
                           {% if can_delete %}
                           <form method="POST" action="/admin/delete/{{ u.id }}?next=/settings" style="display:inline">
                             <button type="submit" class="tbl-action-btn del" title="Xóa" onclick="return confirm('Xóa @{{ u.username }}? Không thể hoàn tác.')"><i class="fa-solid fa-trash"></i></button>

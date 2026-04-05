@@ -37,6 +37,25 @@ def init_db():
     Base.metadata.create_all(bind=engine)
 
     inspector = inspect(engine)
+    uname = settings.vpei_superadmin_username
+
+    if "users" in inspector.get_table_names():
+        ucols = [c["name"] for c in inspector.get_columns("users")]
+        if "is_super_admin" not in ucols:
+            with engine.begin() as conn:
+                conn.execute(
+                    text(
+                        "ALTER TABLE users ADD COLUMN is_super_admin BOOLEAN NOT NULL DEFAULT 0"
+                    )
+                )
+            with engine.begin() as conn:
+                conn.execute(
+                    text(
+                        "UPDATE users SET is_super_admin = 1, is_admin = 1 WHERE username = :u"
+                    ),
+                    {"u": uname},
+                )
+
     if "audit_logs" in inspector.get_table_names():
         columns = [col["name"] for col in inspector.get_columns("audit_logs")]
         if "scope" not in columns:
@@ -47,7 +66,6 @@ def init_db():
     from models.user import User
     from core.security import hash_password
 
-    uname = settings.vpei_superadmin_username
     db = SessionLocal()
     try:
         exists = db.query(User).filter(User.username == uname).first()
@@ -59,6 +77,7 @@ def init_db():
                 full_name=settings.vpei_superadmin_full_name,
                 is_active=True,
                 is_admin=True,
+                is_super_admin=True,
             )
             db.add(admin)
             db.commit()

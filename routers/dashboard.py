@@ -29,9 +29,9 @@ def _month_filter_set(month: Optional[int], quarter: Optional[int]) -> Optional[
 @router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard_page(
     request: Request,
-    year: int = Query(None),
-    quarter: int = Query(None),
-    month: int = Query(None),
+    year: Optional[int] = Query(None),
+    quarter: Optional[int] = Query(None),
+    month: Optional[int] = Query(None),
     db: Session = Depends(get_db),
 ):
     token = request.cookies.get("access_token")

@@ -4,8 +4,6 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import Boolean, Column, DateTime, Integer, String
 from core.database import Base
 
-# The one and only super admin — cannot be deleted or locked by anyone
-SUPER_ADMIN_USERNAME = "vpeiadmin"
 VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
 
 
@@ -23,6 +21,7 @@ class User(Base):
     full_name       = Column(String, nullable=True)
     is_active       = Column(Boolean, default=True)
     is_admin        = Column(Boolean, default=False)
+    is_super_admin  = Column(Boolean, default=False, nullable=False)
     created_at      = Column(DateTime(timezone=True), default=vn_now)
     last_login      = Column(DateTime(timezone=True), nullable=True)
 

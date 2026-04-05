@@ -51,7 +51,11 @@ async def login_submit(
         else settings.access_token_expire_minutes        # 60 min default
     )
     token = create_access_token(
-        data={"sub": user.username, "is_admin": user.is_admin},
+        data={
+            "sub": user.username,
+            "is_admin": user.is_admin,
+            "is_super_admin": bool(user.is_super_admin),
+        },
         expires_delta=timedelta(minutes=expire_minutes),
     )
 

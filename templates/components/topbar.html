@@ -103,6 +103,36 @@ document.addEventListener('click', () => {
 
 {% if not hide_period_filter %}
 <script>
+(function syncStoredPeriodIntoUrl() {
+    try {
+        var params = new URLSearchParams(window.location.search);
+        if (params.get("year") != null && params.get("year") !== "") return;
+
+        var raw = sessionStorage.getItem("vpei_global_period");
+        if (!raw) return;
+        var o = JSON.parse(raw);
+        if (!o || o.year == null || o.year === "") return;
+
+        var u = new URL(window.location.href);
+        u.searchParams.set("year", String(o.year));
+
+        if (o.mode === "quarter" && o.quarter != null && o.quarter !== "") {
+            u.searchParams.set("quarter", String(o.quarter));
+            u.searchParams.delete("month");
+        } else if (o.mode === "month" && o.month != null && o.month !== "") {
+            u.searchParams.set("month", String(o.month));
+            u.searchParams.delete("quarter");
+        } else {
+            u.searchParams.delete("quarter");
+            u.searchParams.delete("month");
+        }
+
+        if (u.href !== window.location.href) {
+            window.location.replace(u.href);
+        }
+    } catch (e) {}
+})();
+
 function yearOptionExists(sY, yr) {
     if (!sY || yr == null || yr === "") return false;
     const v = String(yr);
