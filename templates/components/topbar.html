@@ -20,10 +20,12 @@
   .user-menu-item:hover { background: var(--gray-soft); color: var(--accent); }
   .user-menu-item.text-red { color: var(--red); border-bottom: none; }
   .user-menu-item.text-red:hover { background: #fef2f2; color: #dc2626; }
+  @media (max-width: 900px) {
+    .topbar { padding: 0 14px; }
+  }
 </style>
 
 <div class="topbar">
-  <!-- Customize title if defined, otherwise default -->
   <div class="topbar-title">
     {% if topbar_title %}
       {{ topbar_title|safe }}
@@ -46,16 +48,12 @@
     {% endif %}
 
     {% if not hide_period_filter %}
-    <!-- Nút chọn kiểu lọc -->
-    {% if not hide_period_btn_year %}<button class="period-btn" id="btn-year" onclick="setPeriodMode('year')">Năm</button>{% endif %}
-    {% if not hide_period_btn_quarter %}<button class="period-btn" id="btn-quarter" onclick="setPeriodMode('quarter')">Quý</button>{% endif %}
-    {% if not hide_period_btn_month %}<button class="period-btn" id="btn-month" onclick="setPeriodMode('month')">Tháng</button>{% endif %}
+    {% if not hide_period_btn_year %}<button type="button" class="period-btn" id="btn-year" onclick="setPeriodMode('year', true)">Năm</button>{% endif %}
+    {% if not hide_period_btn_quarter %}<button type="button" class="period-btn" id="btn-quarter" onclick="setPeriodMode('quarter', true)">Quý</button>{% endif %}
+    {% if not hide_period_btn_month %}<button type="button" class="period-btn" id="btn-month" onclick="setPeriodMode('month', true)">Tháng</button>{% endif %}
 
-    <!-- Các Dropdown -->
     {% if not hide_period_btn_year %}<select class="period-select" id="select-year" onchange="applyPeriodFilter()"></select>{% endif %}
-    
     {% if not hide_period_btn_quarter %}<select class="period-select" id="select-quarter" style="display: none;" onchange="applyPeriodFilter()"></select>{% endif %}
-    
     {% if not hide_period_btn_month %}<select class="period-select" id="select-month" style="display: none;" onchange="applyPeriodFilter()"></select>{% endif %}
     {% endif %}
 
@@ -63,7 +61,6 @@
         {{ extra_right_html | safe }}
     {% endif %}
 
-    <!-- Avatar & User Menu -->
     {% set first_char = 'U' %}
     {% set u_name = 'User' %}
     {% if user is defined and user and user.sub %}
@@ -73,11 +70,11 @@
       {% set first_char = request.state.user.sub[0] %}
       {% set u_name = request.state.user.sub %}
     {% endif %}
-    
+
     <div class="user-wrap" onclick="toggleUserDropdown(event)">
       <div class="avatar" style="margin-left:0;">{{ first_char | upper }}</div>
       <div class="user-name">{{ u_name }} <i class="fa-solid fa-chevron-down" style="font-size:0.6rem; color:var(--text-muted); margin-left:4px;"></i></div>
-      
+
       <div class="user-menu" id="topbarUserDropdown">
         <a href="/profile" class="user-menu-item">
           <i class="fa-solid fa-user-pen"></i> Xem thông tin
@@ -93,7 +90,6 @@
 </div>
 
 <script>
-// Logic for Profile Dropdown
 function toggleUserDropdown(e) {
   e.stopPropagation();
   const m = document.getElementById('topbarUserDropdown');
@@ -107,6 +103,88 @@ document.addEventListener('click', () => {
 
 {% if not hide_period_filter %}
 <script>
+(function syncStoredPeriodIntoUrl() {
+    try {
+        var params = new URLSearchParams(window.location.search);
+        if (params.get("year") != null && params.get("year") !== "") return;
+
+        var raw = sessionStorage.getItem("vpei_global_period");
+        if (!raw) return;
+        var o = JSON.parse(raw);
+        if (!o || o.year == null || o.year === "") return;
+
+        var u = new URL(window.location.href);
+        u.searchParams.set("year", String(o.year));
+
+        if (o.mode === "quarter" && o.quarter != null && o.quarter !== "") {
+            u.searchParams.set("quarter", String(o.quarter));
+            u.searchParams.delete("month");
+        } else if (o.mode === "month" && o.month != null && o.month !== "") {
+            u.searchParams.set("month", String(o.month));
+            u.searchParams.delete("quarter");
+        } else {
+            u.searchParams.delete("quarter");
+            u.searchParams.delete("month");
+        }
+
+        if (u.href !== window.location.href) {
+            window.location.replace(u.href);
+        }
+    } catch (e) {}
+})();
+
+function yearOptionExists(sY, yr) {
+    if (!sY || yr == null || yr === "") return false;
+    const v = String(yr);
+    return Array.from(sY.options).some((o) => o.value === v);
+}
+
+function ensureYearOption(sY, yr) {
+    if (!sY || yr == null || yr === "") return;
+    const v = String(yr);
+    if (yearOptionExists(sY, v)) return;
+    const opt = document.createElement("option");
+    opt.value = v;
+    opt.textContent = v;
+    sY.insertBefore(opt, sY.firstChild);
+}
+
+function resolveSelectYearValue(sY, desiredYear, data) {
+    if (!sY || !sY.options.length) return null;
+    ensureYearOption(sY, desiredYear);
+    if (desiredYear != null && desiredYear !== "" && yearOptionExists(sY, desiredYear)) {
+        return String(desiredYear);
+    }
+    if (data && data.default_year != null && yearOptionExists(sY, data.default_year)) {
+        return String(data.default_year);
+    }
+    return sY.options[0] ? sY.options[0].value : null;
+}
+
+const VPEI_GLOBAL_PERIOD_KEY = "vpei_global_period";
+
+function readStoredPeriod() {
+    try {
+        const raw = sessionStorage.getItem(VPEI_GLOBAL_PERIOD_KEY);
+        if (!raw) return null;
+        const o = JSON.parse(raw);
+        if (!o || typeof o !== "object") return null;
+        return o;
+    } catch (_) {
+        return null;
+    }
+}
+
+function persistPeriodFromDom() {
+    try {
+        const { mode, searchParams } = buildPeriodParamsFromDom();
+        const payload = { mode: mode || "year", year: searchParams.get("year") };
+        if (mode === "quarter") payload.quarter = searchParams.get("quarter");
+        if (mode === "month") payload.month = searchParams.get("month");
+        sessionStorage.setItem(VPEI_GLOBAL_PERIOD_KEY, JSON.stringify(payload));
+    } catch (_) {}
+}
+
 function renderPeriodSelectOptions(data) {
     const selYear = document.getElementById("select-year");
     if (selYear) {
@@ -122,29 +200,49 @@ function renderPeriodSelectOptions(data) {
     }
 }
 
-/** Chỉ đồng bộ UI (nút + select + hiển thị) với URL / data — không gọi onGlobalFilterChange. */
 function applyPeriodControlsFromUrl(data) {
     const params = new URLSearchParams(window.location.search);
-    let yr = params.get("year");
-    let qr = params.get("quarter");
-    let mo = params.get("month");
+    const stored = readStoredPeriod();
+    const noPeriodInUrl =
+        (params.get("year") == null || params.get("year") === "") &&
+        (params.get("quarter") == null || params.get("quarter") === "") &&
+        (params.get("month") == null || params.get("month") === "");
 
-    if (!yr && data && data.default_year) {
-        yr = String(data.default_year);
+    let yr = params.get("year");
+    if (yr == null || yr === "") {
+        if (stored && stored.year != null && stored.year !== "") {
+            yr = String(stored.year);
+        } else if (data && data.default_year) {
+            yr = String(data.default_year);
+        }
     }
 
     const sY = document.getElementById("select-year");
     if (yr && sY) {
-        sY.value = yr;
+        const resolved = resolveSelectYearValue(sY, yr, data);
+        if (resolved) sY.value = resolved;
     }
 
     const sQ = document.getElementById("select-quarter");
     const sM = document.getElementById("select-month");
 
-    if (qr && sQ) {
+    let qr = params.get("quarter");
+    let mo = params.get("month");
+    if (noPeriodInUrl && stored) {
+        if (stored.mode === "quarter" && stored.quarter != null && String(stored.quarter) !== "") {
+            qr = String(stored.quarter);
+        } else if (stored.mode === "month" && stored.month != null && String(stored.month) !== "") {
+            mo = String(stored.month);
+        }
+    }
+
+    const urlHasQuarter = qr != null && qr !== "";
+    const urlHasMonth = mo != null && mo !== "";
+
+    if (urlHasQuarter && sQ) {
         sQ.value = qr;
         setPeriodMode("quarter", false);
-    } else if (mo && sM) {
+    } else if (urlHasMonth && sM) {
         sM.value = mo;
         setPeriodMode("month", false);
     } else {
@@ -183,6 +281,7 @@ function notifyGlobalPeriodChange() {
 
 function syncFilterFromUrl(data, options) {
     applyPeriodControlsFromUrl(data);
+    persistPeriodFromDom();
     if (options && options.skipNotify) return;
     notifyGlobalPeriodChange();
 }
@@ -205,7 +304,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     let data = defaultData;
     window.defaultData = data;
 
-    // Điền option ngay (không chờ fetch) để tránh topbar co giãn / nháy khi tải trang hoặc F5.
     renderPeriodSelectOptions(data);
     applyPeriodControlsFromUrl(data);
 
@@ -222,10 +320,10 @@ document.addEventListener("DOMContentLoaded", async function () {
     renderPeriodSelectOptions(data);
     applyPeriodControlsFromUrl(data);
     notifyGlobalPeriodChange();
+    persistPeriodFromDom();
 });
 
 function setPeriodMode(mode, executeRedirect=false) {
-    // Reset active buttons
     ['year', 'quarter', 'month'].forEach(m => {
         const btn = document.getElementById('btn-' + m);
         if(btn) btn.classList.remove('active');
@@ -233,14 +331,12 @@ function setPeriodMode(mode, executeRedirect=false) {
     const activeBtn = document.getElementById('btn-' + mode);
     if(activeBtn) activeBtn.classList.add('active');
 
-    // Show/hide selectors
     const selQ = document.getElementById('select-quarter');
     const selM = document.getElementById('select-month');
-    
+
     if(selQ) selQ.style.display = mode === 'quarter' ? 'inline-block' : 'none';
     if(selM) selM.style.display = mode === 'month' ? 'inline-block' : 'none';
 
-    // Xoá param phụ nếu đổi chế độ (nếu auto execute)
     if(executeRedirect) {
         applyPeriodFilter(mode);
     }
@@ -249,12 +345,11 @@ function setPeriodMode(mode, executeRedirect=false) {
 function applyPeriodFilter(forceMode=null) {
     const ySel = document.getElementById("select-year");
     if(!ySel) return;
-    
+
     const year = ySel.value;
     const url = new URL(window.location.href);
     url.searchParams.set('year', year);
 
-    // Xác định mode hiện tại
     let mode = forceMode;
     if(!mode) {
         const btnQ = document.getElementById('btn-quarter');
@@ -276,11 +371,13 @@ function applyPeriodFilter(forceMode=null) {
         if(mSel) url.searchParams.set('month', mSel.value);
         url.searchParams.delete('quarter');
     }
-    
+
     if (typeof window.onGlobalFilterChange === 'function') {
         window.history.pushState({}, '', url);
         window.onGlobalFilterChange(mode, url.searchParams);
+        persistPeriodFromDom();
     } else {
+        persistPeriodFromDom();
         window.location.href = url.toString();
     }
 }

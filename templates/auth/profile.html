@@ -93,7 +93,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--gray-soft);color:var(-
           </div>
           <div class="form-group">
             <label class="form-label">Vai trò</label>
-            <input type="text" class="form-input" value="{{ 'Quản trị viên (Admin)' if user_obj.is_admin else 'Người dùng' }}" disabled>
+            <input type="text" class="form-input" value="{% if user_obj.is_super_admin %}Super Admin{% elif user_obj.is_admin %}Quản trị viên (Admin){% else %}Người dùng{% endif %}" disabled>
           </div>
         </div>
         

@@ -65,7 +65,7 @@ def require_auth(request: Request) -> dict:
 
 def require_admin(request: Request) -> dict:
     """Redirect to /login if not authenticated, 403 if not admin."""
-    payload = get_token_payload(request)
+    payload = getattr(request.state, "user", None) or get_token_payload(request)
     if not payload:
         raise HTTPException(status_code=302, headers={"Location": "/login"})
     if not payload.get("is_admin"):

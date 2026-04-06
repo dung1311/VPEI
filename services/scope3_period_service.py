@@ -11,7 +11,6 @@ from services import (
     container_service,
     harbor_craft_service,
     ship_service,
-    scope3_other_vehicle_service,
 )
 
 
@@ -34,26 +33,6 @@ def parse_datetime(dt_val: Any) -> Optional[datetime]:
             return datetime.fromisoformat(dt_val.replace("Z", "+00:00").split(".")[0])
         except ValueError:
             return None
-    return None
-
-
-def parse_other_vehicle_period(period: Optional[str]) -> Optional[Tuple[int, Optional[int]]]:
-    """(year, month) hoặc (year, None) nếu chỉ có năm; None nếu không parse được."""
-    if period is None or not str(period).strip():
-        return None
-    p = str(period).strip()
-    for fmt in ("%Y-%m", "%Y/%m", "%m/%Y", "%d/%m/%Y"):
-        try:
-            d = datetime.strptime(p, fmt)
-            return (d.year, d.month)
-        except ValueError:
-            continue
-    try:
-        y = int(p)
-        if 1990 <= y <= 2100:
-            return (y, None)
-    except ValueError:
-        pass
     return None
 
 
@@ -95,32 +74,6 @@ def row_in_period_start_time(
     return True
 
 
-def other_row_in_period(row: Dict[str, Any], year: int, mf: Optional[Set[int]]) -> bool:
-    parsed = parse_other_vehicle_period(row.get("period"))
-    if not parsed:
-        return False
-    y, mo = parsed
-    if y != year:
-        return False
-    if mf is None:
-        return True
-    if mo is None:
-        return False
-    return mo in mf
-
-
-def trend_month_for_other(row: Dict[str, Any], year: int) -> Optional[int]:
-    parsed = parse_other_vehicle_period(row.get("period"))
-    if not parsed:
-        return None
-    y, mo = parsed
-    if y != year:
-        return None
-    if mo is not None:
-        return mo
-    return 1
-
-
 def compute_scope3_period(
     db: Session,
     year: int,
@@ -128,14 +81,12 @@ def compute_scope3_period(
     quarter: Optional[int] = None,
 ) -> Dict[str, Any]:
     """
-    truck_co2: chỉ xe container (bảng Container).
-    other_vehicle_co2: bản ghi scope3_other_vehicles.
-    container_co2e: truck + other (khớp KPI «Xe» trên UI Scope 3 khi gộp other vào truck).
+    container_co2e: xe container (bảng Container).
+    other_vehicle_co2e / n_other_vehicles luôn 0 (đã bỏ bảng PT khác).
     """
     mf = month_filter_set(month, quarter)
     containers = container_service.get_all_containers(db)
     ships = ship_service.get_all_ships(db)
-    others = scope3_other_vehicle_service.get_all_other_vehicle_records(db)
 
     truck_co2 = 0.0
     other_ve_co2 = 0.0
@@ -172,17 +123,6 @@ def compute_scope3_period(
         if dt:
             s3_trend[dt.month - 1] += val
             ship_trend[dt.month - 1] += val
-
-    for o in others:
-        if not other_row_in_period(o, year, mf):
-            continue
-        val = float(o.get("e_total") or 0.0)
-        other_ve_co2 += val
-        n_other += 1
-        tm = trend_month_for_other(o, year)
-        if tm is not None and 1 <= tm <= 12:
-            s3_trend[tm - 1] += val
-            other_trend[tm - 1] += val
 
     harbors = harbor_craft_service.get_all_harbor_crafts(db)
     for h in harbors:
@@ -248,9 +188,6 @@ def build_scope3_comparison_payload(
     month: Optional[int] = None,
     quarter: Optional[int] = None,
 ) -> Dict[str, Any]:
-    """
-    Chuỗi giá trị theo kỳ để so sánh (5 năm / 12 tháng / 4 quý) + % so với điểm liền trước.
-    """
     if month is not None:
         mode = "month"
         buckets: List[Tuple[int, Optional[int], Optional[int]]] = [(year, m, None) for m in range(1, 13)]

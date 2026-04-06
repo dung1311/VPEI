@@ -13,10 +13,9 @@ from core.database import get_db
 from core.security import decode_token, get_token_payload
 
 # Container Services & Schemas
-from services import container_service, container_activity_service, scope3_other_vehicle_service
+from services import container_service, container_activity_service
 from services.scope3_period_service import compute_scope3_period, build_scope3_comparison_payload
 from schemas.container import ContainerCreate, ContainerUpdate
-from schemas.scope3_other_vehicle import Scope3OtherVehicleCreate
 
 # Ship Services & Schemas
 from services import ship_service, ship_activity_service
@@ -589,9 +588,8 @@ async def create_container(container: ContainerCreate, request: Request, db: Ses
 @router.get("/api/scope3/containers")
 async def list_containers(db: Session = Depends(get_db)):
     containers = container_service.get_all_containers(db)
-    others = scope3_other_vehicle_service.get_all_other_vehicle_records(db)
     items = sorted(
-        [*containers, *others],
+        containers,
         key=lambda x: x.get("start_time") or x.get("created_at") or "",
         reverse=True,
     )

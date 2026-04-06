@@ -2,7 +2,7 @@
 UserService — business logic for user management.
 
 Rules enforced here (not in the router):
-  - Cannot delete / lock / reset-password of SUPER_ADMIN
+  - Cannot delete / lock / reset-password of super admin (is_super_admin)
   - Only super admin can act on other admins
   - Cannot act on yourself (delete/lock)
 """
@@ -12,7 +12,7 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from models.user import User, SUPER_ADMIN_USERNAME, vn_now
+from models.user import User, vn_now
 from schemas.user import UserCreate, UserUpdate
 from core.security import hash_password, verify_password
 
@@ -164,7 +164,7 @@ class UserService:
         """Return an error string if the action is not permitted, else None."""
         if target.username == actor_username:
             return f"Không thể {action} tài khoản của chính mình."
-        if target.username == SUPER_ADMIN_USERNAME:
+        if target.is_super_admin:
             return f"Không thể {action} tài khoản Super Admin."
         if target.is_admin and not actor_is_super:
             return f"Chỉ Super Admin mới có thể {action} tài khoản Admin khác."

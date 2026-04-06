@@ -18,6 +18,12 @@ class Settings(BaseSettings):
     smtp_from_name: str
     smtp_enabled: bool
 
+    # Seed super admin khi khởi tạo DB (chỉ tạo nếu chưa có user trùng username)
+    vpei_superadmin_username: str = "vpeiadmin"
+    vpei_superadmin_password: str = "123123123"
+    vpei_superadmin_email: str = "vpeiadmin@gmail.com"
+    vpei_superadmin_full_name: str = "VPEI Super Administrator"
+
     class Config:
         env_file = ".env"
 

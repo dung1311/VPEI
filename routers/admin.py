@@ -4,7 +4,6 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from core.database import get_db
-from models.user import SUPER_ADMIN_USERNAME
 from schemas.user import UserCreate
 from core.security import require_admin
 from services.user_service import UserService
@@ -17,7 +16,7 @@ templates = Jinja2Templates(directory="templates")
 def _ctx(request: Request, db: Session) -> tuple[dict, bool]:
     """Return (admin_payload, is_super_admin). Raises 302/403 if not admin."""
     admin = require_admin(request)
-    return admin, admin.get("sub") == SUPER_ADMIN_USERNAME
+    return admin, bool(admin.get("is_super_admin"))
 
 
 # ── GET /admin — user list ────────────────────────────────────────────────────
@@ -32,7 +31,6 @@ async def admin_home(request: Request, db: Session = Depends(get_db)):
         "admin":                admin,
         "users":                users,
         "is_super_admin":       is_super,
-        "super_admin_username": SUPER_ADMIN_USERNAME,
         "flash":                request.query_params.get("flash"),
         "flash_type":           request.query_params.get("flash_type", "success"),
     })

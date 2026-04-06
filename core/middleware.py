@@ -36,7 +36,6 @@ class SessionValidationMiddleware(BaseHTTPMiddleware):
 
         try:
             payload = decode_token(token)
-            request.state.user = payload
         except Exception:
             resp = RedirectResponse(url="/login", status_code=302)
             resp.delete_cookie("access_token")
@@ -50,6 +49,10 @@ class SessionValidationMiddleware(BaseHTTPMiddleware):
                 resp = RedirectResponse(url="/login", status_code=302)
                 resp.delete_cookie("access_token")
                 return resp
+            merged = dict(payload)
+            merged["is_admin"] = user.is_admin
+            merged["is_super_admin"] = bool(user.is_super_admin)
+            request.state.user = merged
         finally:
             db.close()
 

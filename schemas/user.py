@@ -51,6 +51,7 @@ class UserRead(BaseModel):
     full_name: Optional[str]
     is_active: bool
     is_admin: bool
+    is_super_admin: bool = False
     created_at: datetime
     last_login: Optional[datetime]
 
