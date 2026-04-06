@@ -16,19 +16,17 @@ jobs:
           password: ${{ secrets.PASSWORD }}
           port: 22
           script: |
-            # Activate virtualenv
-            source /home/VPEI/.venv/bin/activate
+            set -e
 
-            # Go to project
-            cd /home/VPEI
+            WORKING_DIR=${{ secrets.WORKING_DIR }}
+            echo "Deploying to $WORKING_DIR"
 
-            # Pull latest code
+            cd $WORKING_DIR
             git fetch origin
-            git checkout production
-            git pull
+            git reset --hard origin/production
+            # activate venv
+            source $WORKING_DIR/.venv/bin/activate
 
-            # Install/update dependencies
             pip install -r requirements.txt
 
-            # Reload PM2 process
             pm2 reload VPEI
