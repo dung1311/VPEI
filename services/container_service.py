@@ -97,8 +97,8 @@ def _compute_fields(data: Dict[str, Any]) -> Dict[str, Any]:
     e_3 = distance_3 * ef3
     waited_time = max(0.0, duration - (time1 + time2 + time3))
     active_waited_time = round(waited_time * 0.22, 5)
-    e_total = round(e_1 + e_2 + e_3 + active_waited_time * 6.688605, 5)
-
+    e_total_kg = e_1 + e_2 + e_3 + active_waited_time * 6.688605
+    e_total = round(e_total_kg / 1000.0, 5)
     return {
         "duration": round(duration, 5),
         "max_weight": max_weight,

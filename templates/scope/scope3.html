@@ -193,19 +193,19 @@ window.addEventListener('click', function (event) {
         </div>
         <div class="kpi-card" onclick="toggleKpiDetailScope3('container')" id="kpi-card-container">
           <div class="kpi-icon" style="background:rgba(34,197,94,.1);color:#22c55e"><i class="fa-solid fa-truck"></i></div>
-          <div class="kpi-label">Phát thải Xe (+ PT khác)</div>
+          <div class="kpi-label">Container</div>
           <div class="kpi-value" id="kpi-container">{{ "{:,.2f}".format(summary.container_co2e|default(0)) }}<span class="kpi-unit"> t</span></div>
           <div class="kpi-change neutral" id="kpi-container-chg"><i class="fa-solid fa-hand-pointer" style="font-size:0.6rem;margin-right:4px"></i>Nhấn xem xu hướng</div>
         </div>
         <div class="kpi-card" onclick="toggleKpiDetailScope3('ship')" id="kpi-card-ship">
           <div class="kpi-icon" style="background:rgba(15,172,233,.1);color:#0ea5e9"><i class="fa-solid fa-ship"></i></div>
-          <div class="kpi-label">Phát thải Tàu biển</div>
+          <div class="kpi-label">Tàu biển</div>
           <div class="kpi-value" id="kpi-ship">{{ "{:,.2f}".format(summary.ship_co2e|default(0)) }}<span class="kpi-unit"> t</span></div>
           <div class="kpi-change neutral" id="kpi-ship-chg"><i class="fa-solid fa-hand-pointer" style="font-size:0.6rem;margin-right:4px"></i>Nhấn xem xu hướng</div>
         </div>
         <div class="kpi-card" onclick="toggleKpiDetailScope3('harbor')" id="kpi-card-harbor">
           <div class="kpi-icon" style="background:rgba(139,92,246,.1);color:#8b5cf6"><i class="fa-solid fa-anchor"></i></div>
-          <div class="kpi-label">Phát thải Tàu trong cảng</div>
+          <div class="kpi-label">Tàu cảng</div>
           <div class="kpi-value" id="kpi-harbor">{{ "{:,.2f}".format(summary.harbor_co2e|default(0)) }}<span class="kpi-unit"> t</span></div>
           <div class="kpi-change neutral" id="kpi-harbor-chg"><i class="fa-solid fa-hand-pointer" style="font-size:0.6rem;margin-right:4px"></i>Nhấn xem xu hướng</div>
         </div>
@@ -1140,7 +1140,7 @@ function renderRecordsTable() {
           <td><strong>${label}</strong></td>
           <td>${vGroup.icon} ${specificTypeLabel}</td>
           <td>${timeStr}</td>
-          <td style="font-weight:700;color:${vGroup.color}">${emission.toLocaleString('vi-VN', { maximumFractionDigits: 2 })} tCO₂e</td>
+          <td style="font-weight:700;color:${vGroup.color}">${emission.toLocaleString('vi-VN', { maximumFractionDigits: 5 })} tCO₂e</td>
           <td style="display:flex; gap:4px;">
             ${canEdit ? `<button class="tbl-action-btn edit" onclick="${editFn}" style="color:var(--amber);"><i class="fa-solid fa-pencil"></i></button>` : ''}
             <button class="tbl-action-btn del" onclick="deleteRecord(${r.id}, '${type}')" style="color:var(--red)"><i class="fa-solid fa-trash"></i></button>
@@ -1282,7 +1282,7 @@ function getGroupedExportRows() {
         'Biển số / Tên': r.license_plate || r.device_name || r.name || '—',
         'Loại chi tiết': getRecordSpecificType(r),
         'Thời gian': formatDisplayDate(r.start_time || r.record_time),
-        'CO2e (tCO2e)': Number(getRecordEmission(r).toFixed(4)),
+        'CO2e (tCO2e)': Number(getRecordEmission(r).toFixed(5)),
         'Ghi chú': r.note || '—'
     })),
   })).filter((g) => g.rows.length > 0);
@@ -1477,9 +1477,9 @@ function renderKpiDetailChartS3(metric) {
     color = colors[metric] || '#2e7df7';
     const titles = {
       total: '<i class="fa-solid fa-cloud" style="margin-right:6px;color:#2e7df7"></i>Xu hướng tổng CO₂e',
-      container: '<i class="fa-solid fa-truck" style="margin-right:6px;color:#22c55e"></i>Phát thải xe (+ PT khác)',
-      ship: '<i class="fa-solid fa-ship" style="margin-right:6px;color:#0ea5e9"></i>Phát thải tàu biển',
-      harbor: '<i class="fa-solid fa-anchor" style="margin-right:6px;color:#8b5cf6"></i>Phát thải tàu trong cảng',
+      container: '<i class="fa-solid fa-truck" style="margin-right:6px;color:#22c55e"></i>Container',
+      ship: '<i class="fa-solid fa-ship" style="margin-right:6px;color:#0ea5e9"></i>Tàu biển',
+      harbor: '<i class="fa-solid fa-anchor" style="margin-right:6px;color:#8b5cf6"></i>Tàu cảng',
     };
     titleHtml = titles[metric] || titles.total;
   }
@@ -1624,7 +1624,7 @@ async function updateOverview() {
     vehicleBarChartRef = new Chart(ctxBar.getContext('2d'), {
       type: 'bar',
       data: {
-        labels: ['Xe (+ PT khác)', 'Tàu biển', 'Tàu trong cảng'],
+        labels: ['Container', 'Tàu biển', 'Tàu cảng'],
         datasets: [{ data: [containerCo2e, shipCo2e, harborCo2e], backgroundColor: ['#0ea5e9', '#0d1f3c', '#8b5cf6'], borderRadius: 6 }]
       },
       options: { plugins: { legend: { display: false } }, maintainAspectRatio: false }
@@ -1639,9 +1639,9 @@ async function updateOverview() {
       data: {
         labels: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'],
         datasets: [
-          { label: 'Xe (+ PT khác)', data: trendCont, borderColor: '#0ea5e9', borderWidth: 2, tension: 0.4 },
+          { label: 'Container', data: trendCont, borderColor: '#0ea5e9', borderWidth: 2, tension: 0.4 },
           { label: 'Tàu biển', data: trendShip, borderColor: '#0d1f3c', borderWidth: 2, tension: 0.4 },
-          { label: 'Tàu trong cảng', data: trendHarbor, borderColor: '#8b5cf6', borderWidth: 2, tension: 0.4 }
+          { label: 'Tàu cảng', data: trendHarbor, borderColor: '#8b5cf6', borderWidth: 2, tension: 0.4 }
         ]
       },
       options: { plugins: { legend: { position: 'bottom'} }, maintainAspectRatio: false }
