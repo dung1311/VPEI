@@ -13,6 +13,9 @@ app.add_middleware(SessionValidationMiddleware)
 if os.path.isdir("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
+if os.path.isdir("templates/assets"):
+    app.mount("/assets", StaticFiles(directory="templates/assets"), name="assets")
+
 app.include_router(auth.router)
 app.include_router(dashboard.router)
 app.include_router(admin.router)

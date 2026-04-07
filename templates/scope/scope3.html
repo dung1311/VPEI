@@ -193,19 +193,19 @@ window.addEventListener('click', function (event) {
         </div>
         <div class="kpi-card" onclick="toggleKpiDetailScope3('container')" id="kpi-card-container">
           <div class="kpi-icon" style="background:rgba(34,197,94,.1);color:#22c55e"><i class="fa-solid fa-truck"></i></div>
-          <div class="kpi-label">Phát thải Xe (+ PT khác)</div>
+          <div class="kpi-label">Container</div>
           <div class="kpi-value" id="kpi-container">{{ "{:,.2f}".format(summary.container_co2e|default(0)) }}<span class="kpi-unit"> t</span></div>
           <div class="kpi-change neutral" id="kpi-container-chg"><i class="fa-solid fa-hand-pointer" style="font-size:0.6rem;margin-right:4px"></i>Nhấn xem xu hướng</div>
         </div>
         <div class="kpi-card" onclick="toggleKpiDetailScope3('ship')" id="kpi-card-ship">
           <div class="kpi-icon" style="background:rgba(15,172,233,.1);color:#0ea5e9"><i class="fa-solid fa-ship"></i></div>
-          <div class="kpi-label">Phát thải Tàu biển</div>
+          <div class="kpi-label">Tàu biển</div>
           <div class="kpi-value" id="kpi-ship">{{ "{:,.2f}".format(summary.ship_co2e|default(0)) }}<span class="kpi-unit"> t</span></div>
           <div class="kpi-change neutral" id="kpi-ship-chg"><i class="fa-solid fa-hand-pointer" style="font-size:0.6rem;margin-right:4px"></i>Nhấn xem xu hướng</div>
         </div>
         <div class="kpi-card" onclick="toggleKpiDetailScope3('harbor')" id="kpi-card-harbor">
           <div class="kpi-icon" style="background:rgba(139,92,246,.1);color:#8b5cf6"><i class="fa-solid fa-anchor"></i></div>
-          <div class="kpi-label">Phát thải Tàu trong cảng</div>
+          <div class="kpi-label">Tàu cảng</div>
           <div class="kpi-value" id="kpi-harbor">{{ "{:,.2f}".format(summary.harbor_co2e|default(0)) }}<span class="kpi-unit"> t</span></div>
           <div class="kpi-change neutral" id="kpi-harbor-chg"><i class="fa-solid fa-hand-pointer" style="font-size:0.6rem;margin-right:4px"></i>Nhấn xem xu hướng</div>
         </div>
@@ -279,10 +279,26 @@ window.addEventListener('click', function (event) {
               <div class="form-group"><label class="form-label">Trọng lượng nhập (tấn)</label><input type="number" id="c-input-weight" class="form-input"></div>
               <div class="form-group"><label class="form-label">Trọng lượng xuất (tấn)</label><input type="number" id="c-output-weight" class="form-input"></div>
             </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                <span class="form-label" style="margin-bottom:0">QUÃNG ĐƯỜNG (KM)</span>
+                <button type="button" class="btn-outline" onclick="openNdvModal()"
+                    style="padding:4px 10px; font-size:0.72rem; white-space:nowrap; display:flex; align-items:center; gap:5px;">
+                    <i class="fa-solid fa-map-location-dot"></i> NDV
+                </button>
+            </div>
             <div class="form-row-3">
-              <div class="form-group"><label class="form-label">Quãng đường 1 (km)</label><input type="number" id="c-distance-1" class="form-input"></div>
-              <div class="form-group"><label class="form-label">Quãng đường 2 (km)</label><input type="number" id="c-distance-2" class="form-input"></div>
-              <div class="form-group"><label class="form-label">Quãng đường 3 (km)</label><input type="number" id="c-distance-3" class="form-input"></div>
+                <div class="form-group">
+                    <label class="form-label">Chặng 1 (km)</label>
+                    <input type="number" id="c-distance-1" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Chặng 2 (km)</label>
+                    <input type="number" id="c-distance-2" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Chặng 3 (km)</label>
+                    <input type="number" id="c-distance-3" class="form-input">
+                </div>
             </div>
             <div class="form-group"><label class="form-label">Ghi chú</label><input type="text" id="c-note" class="form-input"></div>
             <div id="update-reason-group" class="form-group hidden"><label class="form-label">Lý do cập nhật (bắt buộc)</label><input type="text" id="c-update-reason" class="form-input"></div>
@@ -493,6 +509,35 @@ window.addEventListener('click', function (event) {
 <div id="toast" class="toast">
   <i id="toast-icon" class="fa-solid fa-check-circle"></i>
   <span id="toast-text">Thành công!</span>
+</div>
+
+<!-- NDV Modal -->
+<div id="ndvModal" style="
+    display:none; position:fixed; inset:0; z-index:9999;
+    background:rgba(0,0,0,0.78); backdrop-filter:blur(4px);
+    align-items:center; justify-content:center;
+">
+    <div style="
+        position:relative; width:96vw; height:93vh;
+        background:#1a1a1a; border-radius:14px;
+        overflow:hidden; box-shadow:0 24px 80px rgba(0,0,0,0.6);
+        display:flex; flex-direction:column;
+    ">
+        <div style="
+            display:flex; align-items:center; justify-content:space-between;
+            padding:10px 16px; background:rgba(0,0,0,0.45);
+            border-bottom:1px solid rgba(255,255,255,0.1); flex-shrink:0;
+        ">
+            <span style="color:#fff; font-weight:700; font-size:0.85rem; font-family:monospace;">
+                🗺️ Bản đồ NDV — Chọn lộ trình 3 chặng
+            </span>
+            <button onclick="closeNdvModal()" style="
+                background:rgba(255,255,255,0.13); border:none; color:#fff;
+                width:30px; height:30px; border-radius:7px; cursor:pointer; font-size:16px;
+            ">✕</button>
+        </div>
+        <iframe id="ndvFrame" src="" style="flex:1; border:none; width:100%;"></iframe>
+    </div>
 </div>
 
 <script>
@@ -1095,7 +1140,7 @@ function renderRecordsTable() {
           <td><strong>${label}</strong></td>
           <td>${vGroup.icon} ${specificTypeLabel}</td>
           <td>${timeStr}</td>
-          <td style="font-weight:700;color:${vGroup.color}">${emission.toLocaleString('vi-VN', { maximumFractionDigits: 2 })} tCO₂e</td>
+          <td style="font-weight:700;color:${vGroup.color}">${emission.toLocaleString('vi-VN', { maximumFractionDigits: 5 })} tCO₂e</td>
           <td style="display:flex; gap:4px;">
             ${canEdit ? `<button class="tbl-action-btn edit" onclick="${editFn}" style="color:var(--amber);"><i class="fa-solid fa-pencil"></i></button>` : ''}
             <button class="tbl-action-btn del" onclick="deleteRecord(${r.id}, '${type}')" style="color:var(--red)"><i class="fa-solid fa-trash"></i></button>
@@ -1237,7 +1282,7 @@ function getGroupedExportRows() {
         'Biển số / Tên': r.license_plate || r.device_name || r.name || '—',
         'Loại chi tiết': getRecordSpecificType(r),
         'Thời gian': formatDisplayDate(r.start_time || r.record_time),
-        'CO2e (tCO2e)': Number(getRecordEmission(r).toFixed(4)),
+        'CO2e (tCO2e)': Number(getRecordEmission(r).toFixed(5)),
         'Ghi chú': r.note || '—'
     })),
   })).filter((g) => g.rows.length > 0);
@@ -1432,9 +1477,9 @@ function renderKpiDetailChartS3(metric) {
     color = colors[metric] || '#2e7df7';
     const titles = {
       total: '<i class="fa-solid fa-cloud" style="margin-right:6px;color:#2e7df7"></i>Xu hướng tổng CO₂e',
-      container: '<i class="fa-solid fa-truck" style="margin-right:6px;color:#22c55e"></i>Phát thải xe (+ PT khác)',
-      ship: '<i class="fa-solid fa-ship" style="margin-right:6px;color:#0ea5e9"></i>Phát thải tàu biển',
-      harbor: '<i class="fa-solid fa-anchor" style="margin-right:6px;color:#8b5cf6"></i>Phát thải tàu trong cảng',
+      container: '<i class="fa-solid fa-truck" style="margin-right:6px;color:#22c55e"></i>Container',
+      ship: '<i class="fa-solid fa-ship" style="margin-right:6px;color:#0ea5e9"></i>Tàu biển',
+      harbor: '<i class="fa-solid fa-anchor" style="margin-right:6px;color:#8b5cf6"></i>Tàu cảng',
     };
     titleHtml = titles[metric] || titles.total;
   }
@@ -1579,7 +1624,7 @@ async function updateOverview() {
     vehicleBarChartRef = new Chart(ctxBar.getContext('2d'), {
       type: 'bar',
       data: {
-        labels: ['Xe (+ PT khác)', 'Tàu biển', 'Tàu trong cảng'],
+        labels: ['Container', 'Tàu biển', 'Tàu cảng'],
         datasets: [{ data: [containerCo2e, shipCo2e, harborCo2e], backgroundColor: ['#0ea5e9', '#0d1f3c', '#8b5cf6'], borderRadius: 6 }]
       },
       options: { plugins: { legend: { display: false } }, maintainAspectRatio: false }
@@ -1594,15 +1639,49 @@ async function updateOverview() {
       data: {
         labels: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'],
         datasets: [
-          { label: 'Xe (+ PT khác)', data: trendCont, borderColor: '#0ea5e9', borderWidth: 2, tension: 0.4 },
+          { label: 'Container', data: trendCont, borderColor: '#0ea5e9', borderWidth: 2, tension: 0.4 },
           { label: 'Tàu biển', data: trendShip, borderColor: '#0d1f3c', borderWidth: 2, tension: 0.4 },
-          { label: 'Tàu trong cảng', data: trendHarbor, borderColor: '#8b5cf6', borderWidth: 2, tension: 0.4 }
+          { label: 'Tàu cảng', data: trendHarbor, borderColor: '#8b5cf6', borderWidth: 2, tension: 0.4 }
         ]
       },
       options: { plugins: { legend: { position: 'bottom'} }, maintainAspectRatio: false }
     });
   }
 }
+
+// ===== NDV MODAL =====
+function openNdvModal() {
+    const modal = document.getElementById('ndvModal');
+    const frame = document.getElementById('ndvFrame');
+    modal.style.display = 'flex';
+    // Chỉ load iframe lần đầu, tránh reload mất dữ liệu bản đồ
+    if (!frame.getAttribute('data-loaded')) {
+        frame.src = '/scope3/ndv'; 
+        frame.setAttribute('data-loaded', '1');
+    }
+}
+
+function closeNdvModal() {
+    // Đóng modal, KHÔNG đụng vào 3 input → giữ nguyên giá trị
+    document.getElementById('ndvModal').style.display = 'none';
+}
+
+// Nhận kết quả khi người dùng bấm "Xác nhận" trong NDV
+window.addEventListener('message', function(e) {
+    if (!e.data || e.data.type !== 'NDV_RESULT') return;
+    const legs = e.data.legs; // [{meters: number}, {meters: number}, {meters: number}]
+    if (Array.isArray(legs)) {
+        if (legs[0] != null && legs[0].meters != null)
+            document.getElementById('c-distance-1').value = (legs[0].meters / 1000).toFixed(3);
+        if (legs[1] != null && legs[1].meters != null)
+            document.getElementById('c-distance-2').value = (legs[1].meters / 1000).toFixed(3);
+        if (legs[2] != null && legs[2].meters != null)
+            document.getElementById('c-distance-3').value = (legs[2].meters / 1000).toFixed(3);
+    }
+    closeNdvModal();
+    showToast('Đã nhập quãng đường từ bản đồ NDV', 'success');
+});
+// ===== END NDV MODAL =====
 
 async function init() {
   const sp = new URLSearchParams(window.location.search);

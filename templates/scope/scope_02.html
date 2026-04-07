@@ -328,7 +328,6 @@ tr:hover td { background:#f8f9fd; }
                 <thead>
                   <tr>
                     <th><i class="fa-solid fa-tag" style="margin-right:4px"></i>Hạng mục</th>
-                    <th>Công suất (kW)</th>
                     <th>Điện tiêu thụ (kWh)</th>
                     <th>Thời gian</th>
                     <th>Ghi chú</th>
@@ -783,7 +782,6 @@ function updateTable(rows) {
   tbody.innerHTML = rows.map(r => `
     <tr>
       <td><span class="device-badge">${r.name}</span></td>
-      <td>${r.capacity} kW</td>
       <td>${Number(r.kwh).toLocaleString('vi-VN')} kWh</td>
       <td>${r.dayLabel}</td>
       <td style="color:var(--text-muted);font-size:0.73rem">${r.note || '–'}</td>
