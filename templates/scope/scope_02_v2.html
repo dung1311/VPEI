@@ -318,7 +318,6 @@ function toggleMenu(id){
                 <thead>
                   <tr>
                     <th><i class="fa-solid fa-tag" style="margin-right:4px"></i>Hạng mục</th>
-                    <th>Công suất (kW)</th>
                     <th>Điện tiêu thụ (kWh)</th>
                     <th>Phát thải (tCO₂e)</th>
                     <th>Ngày nhập</th>
@@ -683,7 +682,6 @@ function updateTable(rows) {
     const co2=calcEmissions(Number(r.kwh||0));
     return `<tr>
       <td><span class="device-badge">${r.name}</span></td>
-      <td>${r.capacity} kW</td>
       <td>${Number(r.kwh).toLocaleString('vi-VN')} kWh</td>
       <td class="co2-cell">${co2.toFixed(3)}</td>
       <td>${r.dayLabel}</td>
