@@ -279,10 +279,26 @@ window.addEventListener('click', function (event) {
               <div class="form-group"><label class="form-label">Trọng lượng nhập (tấn)</label><input type="number" id="c-input-weight" class="form-input"></div>
               <div class="form-group"><label class="form-label">Trọng lượng xuất (tấn)</label><input type="number" id="c-output-weight" class="form-input"></div>
             </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                <span class="form-label" style="margin-bottom:0">QUÃNG ĐƯỜNG (KM)</span>
+                <button type="button" class="btn-outline" onclick="openNdvModal()"
+                    style="padding:4px 10px; font-size:0.72rem; white-space:nowrap; display:flex; align-items:center; gap:5px;">
+                    <i class="fa-solid fa-map-location-dot"></i> NDV
+                </button>
+            </div>
             <div class="form-row-3">
-              <div class="form-group"><label class="form-label">Quãng đường 1 (km)</label><input type="number" id="c-distance-1" class="form-input"></div>
-              <div class="form-group"><label class="form-label">Quãng đường 2 (km)</label><input type="number" id="c-distance-2" class="form-input"></div>
-              <div class="form-group"><label class="form-label">Quãng đường 3 (km)</label><input type="number" id="c-distance-3" class="form-input"></div>
+                <div class="form-group">
+                    <label class="form-label">Chặng 1 (km)</label>
+                    <input type="number" id="c-distance-1" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Chặng 2 (km)</label>
+                    <input type="number" id="c-distance-2" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Chặng 3 (km)</label>
+                    <input type="number" id="c-distance-3" class="form-input">
+                </div>
             </div>
             <div class="form-group"><label class="form-label">Ghi chú</label><input type="text" id="c-note" class="form-input"></div>
             <div id="update-reason-group" class="form-group hidden"><label class="form-label">Lý do cập nhật (bắt buộc)</label><input type="text" id="c-update-reason" class="form-input"></div>
@@ -493,6 +509,35 @@ window.addEventListener('click', function (event) {
 <div id="toast" class="toast">
   <i id="toast-icon" class="fa-solid fa-check-circle"></i>
   <span id="toast-text">Thành công!</span>
+</div>
+
+<!-- NDV Modal -->
+<div id="ndvModal" style="
+    display:none; position:fixed; inset:0; z-index:9999;
+    background:rgba(0,0,0,0.78); backdrop-filter:blur(4px);
+    align-items:center; justify-content:center;
+">
+    <div style="
+        position:relative; width:96vw; height:93vh;
+        background:#1a1a1a; border-radius:14px;
+        overflow:hidden; box-shadow:0 24px 80px rgba(0,0,0,0.6);
+        display:flex; flex-direction:column;
+    ">
+        <div style="
+            display:flex; align-items:center; justify-content:space-between;
+            padding:10px 16px; background:rgba(0,0,0,0.45);
+            border-bottom:1px solid rgba(255,255,255,0.1); flex-shrink:0;
+        ">
+            <span style="color:#fff; font-weight:700; font-size:0.85rem; font-family:monospace;">
+                🗺️ Bản đồ NDV — Chọn lộ trình 3 chặng
+            </span>
+            <button onclick="closeNdvModal()" style="
+                background:rgba(255,255,255,0.13); border:none; color:#fff;
+                width:30px; height:30px; border-radius:7px; cursor:pointer; font-size:16px;
+            ">✕</button>
+        </div>
+        <iframe id="ndvFrame" src="" style="flex:1; border:none; width:100%;"></iframe>
+    </div>
 </div>
 
 <script>
@@ -1603,6 +1648,40 @@ async function updateOverview() {
     });
   }
 }
+
+// ===== NDV MODAL =====
+function openNdvModal() {
+    const modal = document.getElementById('ndvModal');
+    const frame = document.getElementById('ndvFrame');
+    modal.style.display = 'flex';
+    // Chỉ load iframe lần đầu, tránh reload mất dữ liệu bản đồ
+    if (!frame.getAttribute('data-loaded')) {
+        frame.src = '/scope3/ndv'; 
+        frame.setAttribute('data-loaded', '1');
+    }
+}
+
+function closeNdvModal() {
+    // Đóng modal, KHÔNG đụng vào 3 input → giữ nguyên giá trị
+    document.getElementById('ndvModal').style.display = 'none';
+}
+
+// Nhận kết quả khi người dùng bấm "Xác nhận" trong NDV
+window.addEventListener('message', function(e) {
+    if (!e.data || e.data.type !== 'NDV_RESULT') return;
+    const legs = e.data.legs; // [{meters: number}, {meters: number}, {meters: number}]
+    if (Array.isArray(legs)) {
+        if (legs[0] != null && legs[0].meters != null)
+            document.getElementById('c-distance-1').value = (legs[0].meters / 1000).toFixed(3);
+        if (legs[1] != null && legs[1].meters != null)
+            document.getElementById('c-distance-2').value = (legs[1].meters / 1000).toFixed(3);
+        if (legs[2] != null && legs[2].meters != null)
+            document.getElementById('c-distance-3').value = (legs[2].meters / 1000).toFixed(3);
+    }
+    closeNdvModal();
+    showToast('Đã nhập quãng đường từ bản đồ NDV', 'success');
+});
+// ===== END NDV MODAL =====
 
 async function init() {
   const sp = new URLSearchParams(window.location.search);

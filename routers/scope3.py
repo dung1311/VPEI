@@ -1,9 +1,10 @@
 import io
 import random
 import pandas as pd
+from pathlib import Path
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Request, Depends, Query, HTTPException, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from fastapi import File, UploadFile
@@ -272,6 +273,36 @@ async def scope3_manager_page(request: Request, db: Session = Depends(get_db)):
         },
     )
 
+
+@router.get("/scope3/ndv", response_class=HTMLResponse)
+async def scope3_ndv_page(request: Request):
+    token = request.cookies.get("access_token")
+    if not token:
+        return RedirectResponse(url="/login", status_code=302)
+    try:
+        decode_token(token)
+    except Exception:
+        resp = RedirectResponse(url="/login", status_code=302)
+        resp.delete_cookie("access_token")
+        return resp
+
+    return templates.TemplateResponse(
+        "scope/NDV.html",
+        {
+            "request": request,
+        },
+    )
+
+
+@router.get("/scope3/ndv/map_data")
+async def scope3_ndv_data():
+    file_path = Path(__file__).resolve().parent.parent / "templates" / "data" / "ndv_map_data.js"
+    return FileResponse(str(file_path), media_type="application/javascript")
+
+@router.get("/scope3/ndv/zone_data")
+async def scope3_ndv_zone_data():
+    file_path = Path(__file__).resolve().parent.parent / "templates" / "data" / "ndv_zone_data.js"
+    return FileResponse(str(file_path), media_type="application/javascript")
 
 # =====================================================================
 # ─── EXCEL IMPORT & TEMPLATE ENDPOINTS ───────────────────────────────

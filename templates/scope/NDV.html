@@ -1,0 +1,2094 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>NDV Port Map</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            overflow: hidden;
+            background: #e8e8e8;
+            font-family: monospace;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #info {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.82);
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 5px;
+            font-size: 12px;
+            line-height: 1.7;
+            pointer-events: none;
+        }
+
+        #legend {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.82);
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 5px;
+            font-size: 11px;
+            line-height: 1.8;
+        }
+
+        .dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+    </style>
+    <script src="/scope3/ndv/map_data"></script>
+    <script src="/scope3/ndv/zone_data"></script>
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="info">
+        <b>Drag:</b> Di chuyển &nbsp;|&nbsp; <b> Wheel:</b> Zoom &nbsp;|&nbsp;<br>
+        Tọa độ: <span id="pos">0, 0</span> &nbsp;|&nbsp;
+        Ô: <span id="tileInfo">-</span> &nbsp;|&nbsp;
+        Zoom: <span id="scaleEl">0.70</span><br>
+        Chọn: <span id="selectInfo">-</span>
+    </div>
+    <div id="legPanel" style="
+        position: fixed; top: 10px; right: 10px;
+        background: rgba(0,0,0,0.85); color: #fff;
+        padding: 10px 14px; border-radius: 6px;
+        font-size: 12px; font-family: monospace;
+        min-width: 200px; line-height: 1.8;
+        border: 1px solid rgba(255,255,255,0.15);
+    ">
+        <div style="margin-bottom:6px;font-weight:bold;font-size:13px">
+            📦 Lộ trình 3 chặng
+        </div>
+        <div id="legButtons" style="display:flex;gap:6px;margin-bottom:8px"></div>
+        <div id="legStatus"></div>
+        <button id="btnConfirm" style="
+        margin-top:8px; width:100%; padding:5px 0;
+        background:#00c853; color:#fff; border:none;
+        border-radius:4px; font-family:monospace;
+        font-size:12px; cursor:pointer;
+    ">✅ Xác nhận & xuất kết quả</button>
+    </div>
+    <div id="containerTooltip" style="
+        display: none;
+        position: fixed;
+        background: rgba(0,0,0,0.85);
+        color: #fff;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-family: monospace;
+        line-height: 1.8;
+        pointer-events: none;
+        z-index: 100;
+        min-width: 160px;
+        border: 1px solid rgba(255,255,255,0.15);
+    "></div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const COLS = MAP_DATA.width;
+        const ROWS = MAP_DATA.height;
+
+        let scale = 2;
+        const MIN_ZOOM = 1.6;
+        const MAX_ZOOM = 5;
+        let offsetX = 0;
+        let offsetY = 0;
+        let spaceDown = false;
+        let isPanning = false;
+        let lastX = 0, lastY = 0;
+        let offscreen = null;
+
+        let hoverCol = -1, hoverRow = -1;
+        let isSelecting = false;
+        let selStart = null;
+        let selEnd = null;
+
+        let hoverSlot = null;
+
+        let dashOffset = 0;
+        let animFrameId = null;
+
+        let parkingSpot = null;
+
+        let trucks = [];
+        let draggingTruck = null;
+        let truckSnapPreview = null;
+
+        let hoveredTruckId = -1;
+
+        let mouseDownX = 0, mouseDownY = 0;
+        const DRAG_THRESHOLD = 5;
+
+        const truckScreenRects = {};
+
+        // ===== HỆ THỐNG 3 CHẶNG =====
+        const NUM_LEGS = 3;
+        let currentLeg = 0; // 0,1,2
+
+        const TRUCK_STARTS = [
+            { id: 0, col: 320, row: 780, isH: false },
+            { id: 1, col: 718, row: 780, isH: false },
+        ];
+
+        const legs = Array.from({ length: NUM_LEGS }, () => ({
+            trucks: TRUCK_STARTS.map(t => ({ ...t })),
+            path: null,
+            meters: null,
+        }));
+
+        // ===== Hàm tiện ích sync leg ↔ state =====
+
+        // Lưu state hiện tại vào leg đang active
+        function saveCurrentLeg() {
+            const leg = legs[currentLeg];
+            leg.trucks = trucks.map(t => ({ ...t }));
+            leg.path = currentPath;
+            leg.meters = pathToMeters(currentPath);
+        }
+
+        // Load leg vào state toàn cục để vẽ
+        function loadLeg(idx) {
+            const leg = legs[idx];
+            trucks[0] = { ...leg.trucks[0] };
+            trucks[1] = { ...leg.trucks[1] };
+            currentPath = leg.path;
+            if (currentPath) startPathAnimation(); else { stopPathAnimation(); draw(); }
+        }
+
+        function switchLeg(idx) {
+            saveCurrentLeg();
+            currentLeg = idx;
+            loadLeg(idx);
+            updateLegUI();
+            draw();
+        }
+
+        function clearLeg(i) {
+            legs[i].path = null;
+            legs[i].meters = null;
+            legs[i].trucks = TRUCK_STARTS.map(t => ({ ...t }));
+
+            if (i === currentLeg) {
+                currentPath = null;     
+                stopPathAnimation();
+                loadLeg(i);              
+            }
+
+            updateLegUI();
+            draw();
+        }
+
+        function clearAllLegs() {
+            currentPath = null;
+            stopPathAnimation();
+
+            for (let i = 0; i < NUM_LEGS; i++) {
+                legs[i].path = null;
+                legs[i].meters = null;
+                legs[i].trucks = TRUCK_STARTS.map(t => ({ ...t }));
+            }
+            currentLeg = 0;
+            loadLeg(0); 
+
+            updateLegUI();
+            draw();
+        }
+
+        // Đổi path → mét (1 ô = 1 đơn vị khoảng cách, có thể điều chỉnh sau)
+        const METERS_PER_CELL = 1; 
+        function pathToMeters(path) {
+            if (!path || path.length < 2) return null;
+            let total = 0;
+            for (let i = 1; i < path.length; i++) {
+                const dc = path[i].col - path[i - 1].col;
+                const dr = path[i].row - path[i - 1].row;
+                total += Math.sqrt(dc * dc + dr * dr);
+            }
+            return total * METERS_PER_CELL;
+        }
+        // ===================== IMAGE REGISTRY =====================
+        const imageRegistry = {};
+        const slotImageMap = {};
+
+        function loadImage(key, src) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => { imageRegistry[key] = img; resolve(img); };
+                img.onerror = () => { console.warn(`Failed to load image: ${src}`); resolve(null); };
+                img.src = src;
+            });
+        }
+
+        // Load tất cả ảnh cần thiết trước khi render
+        async function loadAllImages() {
+            await Promise.all([
+                loadImage('road', '../assets/road.png'),
+                loadImage('container_1', '../assets/container_1.png'),
+                loadImage('container_2', '../assets/container_2.png'),
+                loadImage('container_3', '../assets/container_3.png'),
+                loadImage('container_4', '../assets/container_4.png'),
+                loadImage('grass_1', '../assets/grass_1.png'),
+                loadImage('bg_1', '../assets/bg_1.png'),
+                loadImage('bg_2', '../assets/bg_2.png'),
+                loadImage('truck1', '../assets/truck_1.png'),
+                loadImage('truck2', '../assets/truck_2.png'),
+                loadImage('crane', '../assets/crane.png'),
+            ]);
+        }
+
+        // ===================== COORDINATE MAPPING =====================
+        // Precompute: pixel bắt đầu của mỗi row/col
+        const rowPx = new Float32Array(ROWS + 1);
+        const colPx = new Float32Array(COLS + 1);
+
+        function buildCoordMap() {
+            // Tính rowPx
+            let py = 0;
+            for (let r = 0; r <= ROWS; r++) {
+                rowPx[r] = py;
+                if (r < ROWS) {
+                    // Tìm scale cho row này
+                    const zone = ZONE_Y.find(z => r >= z.from && r < z.to) || { scale: 1 };
+                    py += zone.scale;
+                }
+            }
+            // Tính colPx
+            let px = 0;
+            for (let c = 0; c <= COLS; c++) {
+                colPx[c] = px;
+                if (c < COLS) {
+                    const zone = ZONE_X.find(z => c >= z.from && c < z.to) || { scale: 1 };
+                    px += zone.scale;
+                }
+            }
+        }
+
+        // Tổng kích thước pixel của map
+        function mapPixelWidth() { return colPx[COLS]; }
+        function mapPixelHeight() { return rowPx[ROWS]; }
+
+        // Logic → Display
+        function logicToPixel(col, row) {
+            return { px: colPx[col], py: rowPx[row] };
+        }
+
+        // Display → Logic (dùng cho screenToWorld)
+        function pixelToLogic(px, py) {
+            // Binary search colPx
+            let col = 0;
+            for (let c = 0; c < COLS; c++) {
+                if (colPx[c + 1] > px) { col = c; break; }
+            }
+            let row = 0;
+            for (let r = 0; r < ROWS; r++) {
+                if (rowPx[r + 1] > py) { row = r; break; }
+            }
+            return { col, row };
+        }
+
+        function getTruckSize(isH) {
+            return isH ? { w: 14, h: 6 } : { w: 7, h: 5 };
+        }
+
+        function getTruckRect(truck) {
+            const { w, h } = getTruckSize(truck.isH);
+            return { col: truck.col, row: truck.row, w, h };
+        }
+
+
+        // ===================== GRID =====================
+        const grid = Array.from({ length: ROWS }, () => new Array(COLS).fill(null));
+
+        function setTile(col, row, tile) {
+            if (col >= 0 && col < COLS && row >= 0 && row < ROWS)
+                grid[row][col] = tile;
+        }
+        function getTile(col, row) {
+            if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return null;
+            return grid[row][col];
+        }
+
+        // ===================== A* PATHFINDING =====================
+        let currentPath = null;
+
+        class MinHeap {
+            constructor() { this.heap = []; }
+            push(node) { this.heap.push(node); this._up(this.heap.length - 1); }
+            pop() {
+                const top = this.heap[0];
+                const last = this.heap.pop();
+                if (this.heap.length > 0) { this.heap[0] = last; this._down(0); }
+                return top;
+            }
+            get size() { return this.heap.length; }
+            _up(i) {
+                while (i > 0) {
+                    const p = (i - 1) >> 1;
+                    if (this.heap[p].f <= this.heap[i].f) break;
+                    [this.heap[p], this.heap[i]] = [this.heap[i], this.heap[p]];
+                    i = p;
+                }
+            }
+            _down(i) {
+                const n = this.heap.length;
+                while (true) {
+                    let s = i, l = 2 * i + 1, r = 2 * i + 2;
+                    if (l < n && this.heap[l].f < this.heap[s].f) s = l;
+                    if (r < n && this.heap[r].f < this.heap[s].f) s = r;
+                    if (s === i) break;
+                    [this.heap[s], this.heap[i]] = [this.heap[i], this.heap[s]];
+                    i = s;
+                }
+            }
+        }
+
+        function findPath(sc, sr, ec, er) {
+            // State: (col, row, laneDir) — laneDir là hướng di chuyển hiện tại trong làn
+            // null = chưa có hướng (điểm bắt đầu)
+
+            const startInfo = getRoadInfo(sc, sr);
+            const endInfo = getRoadInfo(ec, er);
+            if (!startInfo || !endInfo) return null;
+
+            // Key: "col,row,dir" — dir: +1/-1/0(start)
+            const key = (c, r, d) => `${c},${r},${d}`;
+
+            const heap = new MinHeap();
+            const gMap = new Map();
+            const cameFrom = new Map();
+
+            const h = (c, r) => Math.abs(c - ec) + Math.abs(r - er);
+
+            const startKey = key(sc, sr, 0);
+            heap.push({ c: sc, r: sr, dir: 0, f: h(sc, sr), g: 0 });
+            gMap.set(startKey, 0);
+
+            while (heap.size > 0) {
+                const { c, r, dir, g } = heap.pop();
+                const k = key(c, r, dir);
+
+                if (c === ec && r === er) {
+                    // Truy vết path
+                    const path = [];
+                    let cur = k;
+                    while (cur !== undefined) {
+                        const [cc, cr] = cur.split(',').map(Number);
+                        path.unshift({ col: cc, row: cr });
+                        cur = cameFrom.get(cur);
+                    }
+                    return path;
+                }
+
+                const info = getRoadInfo(c, r);
+                if (!info) continue;
+
+                const { isHorizontal, laneDir, rectRef, midH, midV } = info;
+
+                // Xác định các bước đi hợp lệ từ tile (c, r) với dir hiện tại
+                const neighbors = [];
+
+                if (isHorizontal) {
+                    // Đường ngang: di chuyển theo chiều ngang (dc ≠ 0)
+                    // Cho phép đi theo laneDir của tile hiện tại
+                    // Nếu dir === 0 (start), thử cả 2 chiều
+                    const allowedDirs = (dir === 0) ? [-1, +1] : [dir];
+
+                    for (const moveDir of allowedDirs) {
+                        // Chỉ đi nếu laneDir của tile hiện tại khớp với moveDir
+                        if (laneDir !== moveDir) continue;
+
+                        const nc = c + moveDir;
+                        const nr = r;
+                        const nInfo = getRoadInfo(nc, nr);
+                        if (!nInfo) continue;
+
+                        // Tile kế tiếp phải cùng chiều ngang và cùng laneDir
+                        if (nInfo.isHorizontal && nInfo.laneDir === moveDir) {
+                            neighbors.push({ nc, nr, ndir: moveDir });
+                        }
+                    }
+
+                    // Quay đầu tại đầu/cuối rect (col = rect.x hoặc rect.x + rect.w - 1)
+                    const atLeftEnd = (c === rectRef.x);
+                    const atRightEnd = (c === rectRef.x + rectRef.w - 1);
+                    if (atLeftEnd || atRightEnd) {
+                        // Cho phép chuyển sang làn ngược lại (đổi row sang phía kia midV)
+                        const otherRow = (r < midV) ? midV : midV - 1;
+                        if (otherRow !== r && otherRow >= rectRef.y && otherRow < rectRef.y + rectRef.h) {
+                            const turnInfo = getRoadInfo(c, otherRow);
+                            if (turnInfo) {
+                                neighbors.push({ nc: c, nr: otherRow, ndir: turnInfo.laneDir });
+                            }
+                        }
+                    }
+                } else {
+                    // Đường dọc: di chuyển theo chiều dọc (dr ≠ 0)
+                    const allowedDirs = (dir === 0) ? [-1, +1] : [dir];
+
+                    for (const moveDir of allowedDirs) {
+                        if (laneDir !== moveDir) continue;
+
+                        const nc = c;
+                        const nr = r + moveDir;
+                        const nInfo = getRoadInfo(nc, nr);
+                        if (!nInfo) continue;
+
+                        if (!nInfo.isHorizontal && nInfo.laneDir === moveDir) {
+                            neighbors.push({ nc, nr, ndir: moveDir });
+                        }
+                    }
+
+                    // Quay đầu tại đầu/cuối rect (row = rect.y hoặc rect.y + rect.h - 1)
+                    const atTopEnd = (r === rectRef.y);
+                    const atBotEnd = (r === rectRef.y + rectRef.h - 1);
+                    if (atTopEnd || atBotEnd) {
+                        const otherCol = (c < midH) ? midH : midH - 1;
+                        if (otherCol !== c && otherCol >= rectRef.x && otherCol < rectRef.x + rectRef.w) {
+                            const turnInfo = getRoadInfo(otherCol, r);
+                            if (turnInfo) {
+                                neighbors.push({ nc: otherCol, nr: r, ndir: turnInfo.laneDir });
+                            }
+                        }
+                    }
+                }
+
+                // Giao nhau giữa 2 rect: khi tile hiện tại thuộc 1 rect,
+                // tile kế nằm trong rect khác → cho phép chuyển hướng
+                // Xử lý bằng cách thêm neighbor từ rect khác nếu tile kề thuộc road
+                for (const [dc, dr] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
+                    const nc = c + dc;
+                    const nr = r + dr;
+                    const nInfo = getRoadInfo(nc, nr);
+                    if (!nInfo) continue;
+                    if (nInfo.rectId === info.rectId) continue; // cùng rect đã xử lý trên
+                    // Tile kề thuộc rect khác (giao lộ) → cho phép đi vào với hướng của tile đó
+                    neighbors.push({ nc, nr, ndir: nInfo.laneDir });
+                }
+
+                // Loại duplicate neighbors
+                const seen = new Set();
+                for (const { nc, nr, ndir } of neighbors) {
+                    const nk = key(nc, nr, ndir);
+                    if (seen.has(nk)) continue;
+                    seen.add(nk);
+
+                    const ng = g + 1;
+                    if (gMap.has(nk) && gMap.get(nk) <= ng) continue;
+                    gMap.set(nk, ng);
+                    cameFrom.set(nk, k);
+                    heap.push({ c: nc, r: nr, dir: ndir, f: ng + h(nc, nr), g: ng });
+                }
+            }
+
+            return null;
+        }
+
+        function normalizePath(path) {
+            if (!path || path.length < 2) return path;
+
+            const roadLayer = MAP_DATA.layers.find(l => l.type === 'road');
+
+            const snapToSpine = ({ col, row }) => {
+                if (!roadLayer) return { col, row };
+                for (const rect of roadLayer.rects) {
+                    if (col < rect.x || col >= rect.x + rect.w) continue;
+                    if (row < rect.y || row >= rect.y + rect.h) continue;
+                    const isH = rect.w >= rect.h;
+                    if (isH) {
+                        const mid = rect.y + Math.floor(rect.h / 2);
+                        const q1 = rect.y + Math.floor(rect.h / 4);
+                        const q3 = rect.y + Math.floor(rect.h * 3 / 4);
+                        return { col, row: row < mid ? q1 : q3 };
+                    } else {
+                        const mid = rect.x + Math.floor(rect.w / 2);
+                        const q1 = rect.x + Math.floor(rect.w / 4);
+                        const q3 = rect.x + Math.floor(rect.w * 3 / 4);
+                        return { col: col < mid ? q1 : q3, row };
+                    }
+                }
+                return { col, row };
+            };
+
+            // Snap tất cả TRỪ điểm đầu và điểm cuối
+            const snapped = path.map((pt, i) => {
+                if (i === 0 || i === path.length - 1) return { ...pt }; // giữ nguyên
+                return snapToSpine(pt);
+            });
+
+            // Rút gọn waypoints — chỉ giữ điểm gãy hướng
+            const waypoints = [snapped[0]];
+            for (let i = 1; i < snapped.length - 1; i++) {
+                const prev = snapped[i - 1];
+                const curr = snapped[i];
+                const next = snapped[i + 1];
+                const dc1 = Math.sign(curr.col - prev.col);
+                const dr1 = Math.sign(curr.row - prev.row);
+                const dc2 = Math.sign(next.col - curr.col);
+                const dr2 = Math.sign(next.row - curr.row);
+                if (dc1 !== dc2 || dr1 !== dr2) {
+                    waypoints.push(curr);
+                }
+            }
+            waypoints.push(snapped[snapped.length - 1]);
+
+            return waypoints;
+        }
+
+        function findParkingSpot(slotCol, slotRow) {
+            const roadLayer = MAP_DATA.layers.find(l => l.type === 'road');
+            if (!roadLayer) return null;
+
+            let bestSpot = null;
+            let bestDist = Infinity;
+
+            for (const rect of roadLayer.rects) {
+                const isH = rect.w >= rect.h;
+                if (!isH) continue; // Chỉ xét road NGANG
+
+                // Col gần nhất với slot trong phạm vi rect
+                const clampedCol = Math.max(rect.x, Math.min(rect.x + rect.w - 1, slotCol));
+
+                // Chọn làn (q1 hoặc q3) gần slot hơn theo chiều dọc
+                const q1 = rect.y + Math.floor(rect.h / 4);
+                const q3 = rect.y + Math.floor(rect.h * 3 / 4);
+                const spineRow = Math.abs(slotRow - q1) < Math.abs(slotRow - q3) ? q1 : q3;
+
+                // Khoảng cách từ slot đến spine này
+                const dist = Math.abs(slotCol - clampedCol) + Math.abs(slotRow - spineRow);
+
+                if (dist < bestDist) {
+                    bestDist = dist;
+
+                    // Vị trí đỗ 14x6, căn giữa col theo slotCol, căn giữa row theo spine
+                    const spotW = 14, spotH = 6;
+                    const spotCol = Math.max(rect.x, Math.min(rect.x + rect.w - spotW, slotCol - Math.floor(spotW / 2)));
+                    const spotRow = spineRow - Math.floor(spotH / 2);
+
+                    bestSpot = { col: spotCol, row: spotRow, w: spotW, h: spotH, isH: true };
+                }
+            }
+
+            return bestSpot;
+        }
+
+        function findTruckSnapNearMouse(mouseCol, mouseRow) {
+            const roadLayer = MAP_DATA.layers.find(l => l.type === 'road');
+            if (!roadLayer) return null;
+
+            let best = null;
+            let bestDist = Infinity;
+
+            for (const rect of roadLayer.rects) {
+                const isH = rect.w >= rect.h;
+                const { w: sw, h: sh } = getTruckSize(isH);
+
+                if (isH) {
+                    // Snap col theo chuột, clamp trong rect
+                    const snapCol = Math.max(rect.x, Math.min(rect.x + rect.w - sw, mouseCol - Math.floor(sw / 2)));
+                    // Snap row về spine gần nhất
+                    const q1 = rect.y + Math.floor(rect.h / 4);
+                    const q3 = rect.y + Math.floor(rect.h * 3 / 4);
+                    const spineRow = Math.abs(mouseRow - q1) < Math.abs(mouseRow - q3) ? q1 : q3;
+                    const snapRow = spineRow - Math.floor(sh / 2);
+
+                    const dist = Math.abs(mouseCol - (snapCol + sw / 2)) + Math.abs(mouseRow - spineRow);
+                    if (dist < bestDist) {
+                        bestDist = dist;
+                        best = { col: snapCol, row: snapRow, isH };
+                    }
+                } else {
+                    const snapRow = Math.max(rect.y, Math.min(rect.y + rect.h - sh, mouseRow - Math.floor(sh / 2)));
+                    const q1 = rect.x + Math.floor(rect.w / 4);
+                    const q3 = rect.x + Math.floor(rect.w * 3 / 4);
+                    const spineCol = Math.abs(mouseCol - q1) < Math.abs(mouseCol - q3) ? q1 : q3;
+                    const snapCol = spineCol - Math.floor(sw / 2);
+
+                    const dist = Math.abs(mouseCol - spineCol) + Math.abs(mouseRow - (snapRow + sh / 2));
+                    if (dist < bestDist) {
+                        bestDist = dist;
+                        best = { col: snapCol, row: snapRow, isH };
+                    }
+                }
+            }
+
+            return best;
+        }
+
+        function recalcPath() {
+            const t0 = trucks[0], t1 = trucks[1];
+            const { w: w0, h: h0 } = getTruckSize(t0.isH);
+            const { w: w1, h: h1 } = getTruckSize(t1.isH);
+            const raw = findPath(
+                t0.col + Math.floor(w0 / 2), t0.row + Math.floor(h0 / 2),
+                t1.col + Math.floor(w1 / 2), t1.row + Math.floor(h1 / 2)
+            );
+            currentPath = raw ? normalizePath(raw) : null;
+            if (currentPath) startPathAnimation(); else { stopPathAnimation(); draw(); }
+
+            // Lưu kết quả vào leg hiện tại
+            legs[currentLeg].path = currentPath;
+            legs[currentLeg].meters = pathToMeters(currentPath);
+            legs[currentLeg].trucks = trucks.map(t => ({ ...t }));
+            updateLegUI();
+        }
+
+        // ===================== WORLD COORDS =====================
+        // Công thức đúng: world = screen / scale - offset
+        function screenToWorld(sx, sy) {
+            const px = sx / scale - offsetX;
+            const py = sy / scale - offsetY;
+            return pixelToLogic(px, py);
+        }
+
+
+        // ===================== BLOCK GENERATOR =====================
+        function generateBlock(prefix, blockX, blockY, cols, rows, slotW, slotH, borderSize = 2, blockColor = '#8bc34a', startIndex = 1) {
+            // Vẽ nền block (toàn bộ bao gồm border)
+            const totalW = cols * slotW + borderSize * 2;
+            const totalH = rows * slotH + borderSize * 2;
+
+            // Border (bờ cỏ)
+            for (let r = blockY; r < blockY + totalH; r++) {
+                for (let c = blockX; c < blockX + totalW; c++) {
+                    setTile(c, r, { color: '#8bc34a', passable: false, name: 'grass_border', slot: null });
+                }
+            }
+
+            // Slots
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const slotIndex = startIndex + row * cols + col;
+                    const slotName = `${prefix}${slotIndex}`;
+
+                    const x0 = blockX + borderSize + col * slotW;
+                    const y0 = blockY + borderSize + row * slotH;
+
+                    for (let r = y0; r < y0 + slotH; r++) {
+                        for (let c = x0; c < x0 + slotW; c++) {
+                            setTile(c, r, {
+                                color: blockColor,
+                                passable: false,
+                                name: 'container_slot',
+                                slot: slotName,   // Tên slot: AK1, AK2, ...
+                                block: prefix     // Tên block: AK, BK, ...
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        // ===================== LOAD MAP =====================
+        function loadMap() {
+            // Load layers
+            for (const layer of MAP_DATA.layers) {
+                for (const rect of layer.rects) {
+                    for (let r = rect.y; r < rect.y + rect.h; r++) {
+                        for (let c = rect.x; c < rect.x + rect.w; c++) {
+                            setTile(c, r, { color: layer.color, passable: layer.passable, name: layer.name });
+                        }
+                    }
+                }
+            }
+
+            // Load blocks từ MAP_DATA
+            for (const b of MAP_DATA.blocks) {
+                generateBlock(b.prefix, b.x, b.y, b.cols, b.rows, b.slotW, b.slotH, b.border, b.color ?? '#93C47D', b.startIndex ?? 1);
+            }
+            // Assign ảnh container ngẫu nhiên cho mỗi slot trong mỗi block
+            const containerImages = ['container_1', 'container_2', 'container_3', 'container_4'];
+            for (const b of MAP_DATA.blocks) {
+                for (let row = 0; row < b.rows; row++) {
+                    for (let col = 0; col < b.cols; col++) {
+                        const key = `${b.prefix}-${row}-${col}`;
+                        slotImageMap[key] = containerImages[Math.floor(Math.random() * containerImages.length)];
+                    }
+                }
+            }
+            draw();
+        }
+
+
+        // ===================== ROAD METADATA =====================
+        const roadTileInfo = {}; // [col][row] = { rects: [...], dirs: Set }
+
+        function buildRoadMetadata() {
+            const roadLayer = MAP_DATA.layers.find(l => l.type === 'road');
+            if (!roadLayer) return;
+
+            // Pass 1: đăng ký mỗi tile thuộc rect nào
+            // Một tile có thể thuộc nhiều rect (giao lộ)
+            roadLayer.rects.forEach((rect, rectId) => {
+                const isHorizontal = rect.w >= rect.h;
+                const half = isHorizontal
+                    ? Math.floor(rect.h / 2)   // chia theo row
+                    : Math.floor(rect.w / 2);  // chia theo col
+
+                for (let r = rect.y; r < rect.y + rect.h; r++) {
+                    for (let c = rect.x; c < rect.x + rect.w; c++) {
+                        if (!roadTileInfo[c]) roadTileInfo[c] = {};
+                        if (!roadTileInfo[c][r]) roadTileInfo[c][r] = { rectInfos: [] };
+
+                        // Xác định chiều di chuyển hợp lệ của tile này trong rect này
+                        let allowedDirs; // mảng [dc, dr] được phép
+                        if (isHorizontal) {
+                            // road ngang: chia theo row
+                            // nửa trên (r < rect.y + half): đi trái [-1, 0]
+                            // nửa dưới: đi phải [+1, 0]
+                            if (r < rect.y + half) {
+                                allowedDirs = [[-1, 0]]; // đi trái
+                            } else {
+                                allowedDirs = [[+1, 0]]; // đi phải
+                            }
+                            // tại 2 đầu col: cho phép đổi làn (di chuyển theo dr)
+                            if (c === rect.x || c === rect.x + rect.w - 1) {
+                                // cho phép đi sang nửa kia trong cùng rect
+                                allowedDirs = allowedDirs.concat([[0, -1], [0, +1]]);
+                            }
+                        } else {
+                            // road dọc: chia theo col
+                            // nửa trái (c < rect.x + half): đi xuống [0, +1]
+                            // nửa phải: đi lên [0, -1]
+                            if (c < rect.x + half) {
+                                allowedDirs = [[0, +1]]; // đi xuống
+                            } else {
+                                allowedDirs = [[0, -1]]; // đi lên
+                            }
+                            // tại 2 đầu row: cho phép đổi làn
+                            if (r === rect.y || r === rect.y + rect.h - 1) {
+                                allowedDirs = allowedDirs.concat([[-1, 0], [+1, 0]]);
+                            }
+                        }
+
+                        roadTileInfo[c][r].rectInfos.push({
+                            rectId, rect, isHorizontal, allowedDirs
+                        });
+                    }
+                }
+            });
+        }
+
+        function getRoadInfo(col, row) {
+            return roadTileInfo[col]?.[row] ?? null;
+        }
+
+        // ===================== PATHFINDING =====================
+        function findPath(sc, sr, ec, er) {
+            if (!getRoadInfo(sc, sr) || !getRoadInfo(ec, er)) return null;
+
+            const key = (c, r) => c * 10000 + r;
+            const heap = new MinHeap();
+            const gMap = new Map();
+            const cameFrom = new Map();
+            const h = (c, r) => Math.abs(c - ec) + Math.abs(r - er);
+
+            const sk = key(sc, sr);
+            heap.push({ c: sc, r: sr, f: h(sc, sr), g: 0 });
+            gMap.set(sk, 0);
+
+            while (heap.size > 0) {
+                const { c, r, g } = heap.pop();
+                const k = key(c, r);
+
+                if (c === ec && r === er) {
+                    // Truy vết
+                    const path = [];
+                    let cur = k;
+                    while (cur !== undefined) {
+                        path.unshift({ col: cur % 10000, row: Math.floor(cur / 10000) });
+                        // Sửa lại vì key = c*10000+r
+                        const cc = Math.floor(cur / 10000);
+                        const cr = cur % 10000;
+                        path[0] = { col: cc, row: cr };
+                        cur = cameFrom.get(cur);
+                    }
+                    return path;
+                }
+
+                const info = getRoadInfo(c, r);
+                if (!info) continue;
+
+                // Thu thập tất cả hướng được phép từ tile này (union của tất cả rectInfos)
+                const allowedSet = new Set();
+                for (const ri of info.rectInfos) {
+                    for (const [dc, dr] of ri.allowedDirs) {
+                        allowedSet.add(`${dc},${dr}`);
+                    }
+                }
+
+                for (const dirStr of allowedSet) {
+                    const [dc, dr] = dirStr.split(',').map(Number);
+                    const nc = c + dc;
+                    const nr = r + dr;
+                    const nInfo = getRoadInfo(nc, nr);
+                    if (!nInfo) continue;
+
+                    const ng = g + 1;
+                    const nk = key(nc, nr);
+                    if (gMap.has(nk) && gMap.get(nk) <= ng) continue;
+                    gMap.set(nk, ng);
+                    cameFrom.set(nk, k);
+                    heap.push({ c: nc, r: nr, f: ng + h(nc, nr), g: ng });
+                }
+            }
+
+            return null;
+        }
+
+        // ===================== TYPED RECT DRAWING =====================
+        /**
+         * Vẽ một rect có type lên context octx (offscreen).
+         * px1, py1: tọa độ pixel góc trên trái
+         * pw, ph: kích thước pixel của rect
+         * type: 'road' | 'grass' | ... (mở rộng tuỳ ý)
+         * rectData: object rect gốc (có thể chứa thêm metadata)
+         */
+        function drawTypedRect(octx, px1, py1, pw, ph, type, rectData) {
+            switch (type) {
+
+                case 'road': {
+                    const img = imageRegistry['road'];
+                    if (!img) {
+                        octx.fillStyle = '#888';
+                        octx.fillRect(px1, py1, pw, ph);
+                        return;
+                    }
+
+                    const isHorizontal = pw >= ph;
+                    const imgAspect = img.naturalWidth / img.naturalHeight;
+
+                    let tileW, tileH;
+                    if (isHorizontal) {
+                        // Khi nằm ngang: ảnh gốc dọc → xoay 90°
+                        // Sau khi xoay, chiều rộng ảnh trở thành chiều cao rect
+                        tileH = ph;
+                        tileW = tileH * imgAspect;
+                    } else {
+                        tileW = pw;
+                        tileH = tileW / imgAspect;
+                    }
+
+                    octx.save();
+                    octx.beginPath();
+                    octx.rect(px1, py1, pw, ph);
+                    octx.clip();
+
+                    if (isHorizontal) {
+                        // Lặp tile theo chiều ngang, mỗi tile xoay 90° quanh tâm của nó
+                        for (let x = px1; x < px1 + pw; x += tileH) {
+                            // Tâm tile sau khi đặt vào rect (tileH vì sau xoay width = tileH)
+                            const cx = x + tileH / 2;
+                            const cy = py1 + ph / 2;
+
+                            octx.save();
+                            octx.translate(cx, cy);
+                            octx.rotate(Math.PI / 2); // xoay 90° theo chiều kim đồng hồ
+                            // Vẽ ảnh căn giữa tại origin sau rotate
+                            // Trước rotate: ảnh rộng tileW, cao tileH
+                            // Sau rotate 90°: ảnh chiếm tileH theo trục X, tileW theo trục Y
+                            octx.drawImage(img, -tileW / 2, -tileH / 2, tileW, tileH);
+                            octx.restore();
+                        }
+                    } else {
+                        // Dọc: giữ nguyên như cũ
+                        for (let y = py1; y < py1 + ph; y += tileH) {
+                            octx.drawImage(img, px1, y, tileW, tileH);
+                        }
+                    }
+
+                    octx.restore();
+                    break;
+                }
+
+                case 'container': {
+                    const img = imageRegistry['container_1'];
+                    if (!img) {
+                        octx.fillStyle = rectData.color || '#ccc';
+                        octx.fillRect(px1, py1, pw, ph);
+                        break;
+                    }
+
+                    // Scale ảnh: chiều rộng = pw, giữ tỷ lệ
+                    const imgAspect = img.naturalWidth / img.naturalHeight;
+                    const tileW = pw;
+                    const tileH = tileW / imgAspect;
+
+                    // Đặt sát đáy rect
+                    const drawY = py1 + ph - tileH;
+
+                    octx.drawImage(img, px1, drawY, tileW, tileH);
+                    break;
+                }
+
+                case 'dirt': {
+                    const img = imageRegistry['bg_2'];
+                    if (!img) {
+                        octx.fillStyle = rectData.color || '#c2a06e';
+                        octx.fillRect(px1, py1, pw, ph);
+                        break;
+                    }
+
+                    // Scale ảnh để vừa khít rect (stretch cả chiều rộng lẫn chiều cao)
+                    octx.drawImage(img, px1, py1, pw, ph);
+                    break;
+                }
+
+                case 'grass': {
+                    const img = imageRegistry['grass_1'];
+                    if (!img) {
+                        octx.fillStyle = rectData.color || '#4caf50';
+                        octx.fillRect(px1, py1, pw, ph);
+                        break;
+                    }
+
+                    // Scale ảnh để vừa khít rect (stretch cả chiều rộng lẫn chiều cao)
+                    octx.drawImage(img, px1, py1, pw, ph);
+                    break;
+                }
+
+                case 'crane': {
+                    const img = imageRegistry['crane'];
+                    if (!img) {
+                        octx.fillStyle = rectData.color || '#4caf50';
+                        octx.fillRect(px1, py1, pw, ph);
+                        break;
+                    }
+
+                    // Scale chiều rộng = pw, giữ tỷ lệ
+                    const imgAspect = img.naturalWidth / img.naturalHeight;
+                    const drawW = pw;
+                    const drawH = drawW / imgAspect;
+
+                    const drawY = py1 - drawH * 0.6;
+
+                    octx.drawImage(img, px1, drawY, drawW, drawH);
+                    break;
+                }
+
+                default:
+                    // Fallback: vẽ màu nếu type không xác định
+                    octx.fillStyle = rectData.color || '#ccc';
+                    octx.fillRect(px1, py1, pw, ph);
+            }
+        }
+
+        // ===================== NORMALIZED RECT =====================
+        function getNormalizedRect(a, b) {
+            const x = Math.min(a.col, b.col);
+            const y = Math.min(a.row, b.row);
+            const w = Math.abs(b.col - a.col) + 1;
+            const h = Math.abs(b.row - a.row) + 1;
+            return { x, y, w, h };
+        }
+
+        // ===================== DRAW =====================
+        function drawSeaBackground() {
+            const img = imageRegistry['bg_1'];
+            if (!img) return;
+
+            const tileSize = 100; 
+
+            const tileCanvas = document.createElement('canvas');
+            tileCanvas.width = tileSize;
+            tileCanvas.height = tileSize;
+            const tileCtx = tileCanvas.getContext('2d');
+            tileCtx.drawImage(img, 0, 0, tileSize, tileSize);
+
+            const pattern = ctx.createPattern(tileCanvas, 'repeat');
+            if (!pattern) return;
+
+            const patOffX = (offsetX * scale) % tileSize;
+            const patOffY = (offsetY * scale) % tileSize;
+
+            ctx.save();
+            const m = new DOMMatrix();
+            m.translateSelf(patOffX, patOffY);
+            pattern.setTransform(m);
+
+            ctx.fillStyle = pattern;
+            ctx.fillRect(0, 0, canvas.width, canvas.height); 
+            ctx.restore();
+        }
+
+        function animatePath() {
+            dashOffset -= 0.4; // tốc độ chạy, âm = chạy về phía trước
+            draw();
+            animFrameId = requestAnimationFrame(animatePath);
+        }
+
+        function startPathAnimation() {
+            if (animFrameId) cancelAnimationFrame(animFrameId);
+            animatePath();
+        }
+
+        function stopPathAnimation() {
+            if (animFrameId) {
+                cancelAnimationFrame(animFrameId);
+                animFrameId = null;
+            }
+        }
+
+        function drawTruck(ctx, truck, isHover = false) {
+            const { w, h } = getTruckSize(truck.isH);
+            const px1 = colPx[truck.col];
+            const py1 = rowPx[truck.row];
+            const px2 = colPx[Math.min(truck.col + w, COLS)];
+            const py2 = rowPx[Math.min(truck.row + h, ROWS)];
+            const pw = px2 - px1;
+            const ph = py2 - py1;
+            const cx = px1 + pw / 2;
+            const cy = py1 + ph / 2;
+
+            const imgKey = truck.isH ? 'truck2' : 'truck1';
+            const img = imageRegistry[imgKey];
+
+            if (!img) {
+                ctx.fillStyle = truck.id === 0 ? 'rgba(0,200,80,0.7)' : 'rgba(220,50,50,0.7)';
+                ctx.fillRect(px1, py1, pw, ph);
+                return;
+            }
+
+            const aspect = img.naturalWidth / img.naturalHeight;
+
+            // Scale theo chiều tương ứng
+            let drawW, drawH;
+            if (truck.isH) {
+                drawH = ph;
+                drawW = drawH * aspect;
+            } else {
+                drawW = pw;
+                drawH = drawW / aspect;
+            }
+
+            // Kích thước tối thiểu khi zoom ra xa
+            const MIN_SCREEN_SIZE = 32;
+            if (drawW * scale < MIN_SCREEN_SIZE || drawH * scale < MIN_SCREEN_SIZE) {
+                const minLogic = MIN_SCREEN_SIZE / scale;
+                const factor = Math.max(minLogic / drawW, minLogic / drawH);
+                drawW *= factor;
+                drawH *= factor;
+            }
+
+            // Tính flip theo hướng di chuyển
+            let flipX = false, flipY = false;
+            if (currentPath && currentPath.length >= 2) {
+                let p1, p2;
+                if (truck.id === 0) {
+                    p1 = currentPath[0];
+                    p2 = currentPath[1];
+                } else {
+                    p1 = currentPath[currentPath.length - 2];
+                    p2 = currentPath[currentPath.length - 1];
+                }
+                const dx = p2.col - p1.col;
+                const dy = p2.row - p1.row;
+
+                if (truck.isH) {
+                    // truck_2 mặc định quay phải → đi trái thì flip ngang
+                    flipX = dx < 0;
+                } else {
+                    // truck_1 mặc định quay lên → đi xuống thì flip dọc
+                    flipY = dy > 0;
+                }
+            }
+
+            // Lưu hit rect theo screen coords
+            truckScreenRects[truck.id] = {
+                sx: cx * scale + offsetX * scale,
+                sy: cy * scale + offsetY * scale,
+                sw: drawW * scale,
+                sh: drawH * scale,
+            };
+
+            ctx.save();
+            ctx.translate(cx, cy);
+            if (flipX) ctx.scale(-1, 1);
+            if (flipY) ctx.scale(1, -1);
+
+            if (isHover) {
+                ctx.shadowColor = 'rgba(255,255,255,0.9)';
+                ctx.shadowBlur = 12 / scale;
+                ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+                ctx.shadowBlur = 0;
+            }
+            ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+
+            // Reset flip trước khi vẽ label để text không bị lật
+            if (flipX) ctx.scale(-1, 1);
+            if (flipY) ctx.scale(1, -1);
+
+            const fs = Math.max(5, 8 / scale);
+            ctx.font = `bold ${fs}px monospace`;
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+            ctx.lineWidth = 2 / scale;
+            ctx.strokeText(truck.id === 0 ? 'A' : 'B', 0, 0);
+            ctx.fillText(truck.id === 0 ? 'A' : 'B', 0, 0);
+
+            ctx.restore();
+        }
+
+        function drawLegGhost(legIdx) {
+            const leg = legs[legIdx];
+            if (!leg.path || leg.path.length < 2) return;
+
+            const colors = ['rgba(255,140,0,0.85)', 'rgba(0,220,120,0.85)', 'rgba(200,100,255,0.85)'];
+            const color = colors[legIdx];
+
+            const pts = leg.path.map(({ col, row }) => ({
+                x: colPx[col] + (colPx[col + 1] - colPx[col]) / 2,
+                y: rowPx[row] + (rowPx[row + 1] - rowPx[row]) / 2,
+            }));
+
+            ctx.beginPath();
+            ctx.moveTo(pts[0].x, pts[0].y);
+            for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+
+            const dash = 6 / scale;
+            const gap = 5 / scale;
+
+            // Viền mờ phía dưới
+            ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+            ctx.lineWidth = 5 / scale;
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            ctx.setLineDash([dash, gap]);
+            ctx.lineDashOffset = dashOffset / scale;
+            ctx.stroke();
+
+            // Đường màu theo chặng
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2.5 / scale;
+            ctx.setLineDash([dash, gap]);
+            ctx.lineDashOffset = dashOffset / scale;
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.lineDashOffset = 0;
+
+            // Điểm đầu và cuối — to hơn
+            const dotR = 5 / scale;
+            for (const pt of [pts[0], pts[pts.length - 1]]) {
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, dotR, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+                ctx.lineWidth = 1.5 / scale;
+                ctx.stroke();
+            }
+        }
+
+        function drawTruckGhost(ctx, truck, legIdx, path) {
+            const colors = ['rgba(255,140,0,0.85)', 'rgba(0,220,120,0.85)', 'rgba(200,100,255,0.85)'];
+            const { w, h } = getTruckSize(truck.isH);
+            const px1 = colPx[truck.col];
+            const py1 = rowPx[truck.row];
+            const px2 = colPx[Math.min(truck.col + w, COLS)];
+            const py2 = rowPx[Math.min(truck.row + h, ROWS)];
+            const pw = px2 - px1, ph = py2 - py1;
+            const cx = px1 + pw / 2, cy = py1 + ph / 2;
+
+            // Kích thước tối thiểu trên screen để dễ nhìn
+            const minPx = 20 / scale;
+            const drawW = Math.max(pw, minPx);
+            const drawH = Math.max(ph, minPx);
+
+            ctx.save();
+            ctx.globalAlpha = 0.65;
+            ctx.fillStyle = colors[legIdx];
+            ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+            ctx.lineWidth = 2 / scale;
+            ctx.beginPath();
+            ctx.roundRect(cx - drawW / 2, cy - drawH / 2, drawW, drawH, 4 / scale);
+            ctx.fill();
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+
+            // Label "C1 A" / "C1 B"
+            const fs = Math.max(4, 8 / scale);
+            ctx.font = `bold ${fs}px monospace`;
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+            ctx.lineWidth = 2 / scale;
+            const label = `C${legIdx + 1}${truck.id === 0 ? 'A' : 'B'}`;
+            ctx.strokeText(label, cx, cy);
+            ctx.fillText(label, cx, cy);
+            ctx.restore();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            drawSeaBackground(ctx);
+
+            ctx.save();
+            ctx.scale(scale, scale);
+            ctx.translate(offsetX, offsetY);
+
+            ctx.imageSmoothingEnabled = false;
+            ctx.mozImageSmoothingEnabled = false;
+            ctx.webkitImageSmoothingEnabled = false;
+
+            if (offscreen) ctx.drawImage(offscreen, 0, 0);
+
+            for (const layer of MAP_DATA.layers) {
+                if (!layer.type) continue;
+
+                for (const rect of layer.rects) {
+                    const px1 = colPx[rect.x];
+                    const py1 = rowPx[rect.y];
+                    const px2 = colPx[Math.min(rect.x + rect.w, COLS)];
+                    const py2 = rowPx[Math.min(rect.y + rect.h, ROWS)];
+
+                    drawTypedRect(ctx, px1, py1, px2 - px1, py2 - py1, layer.type, layer);
+                }
+            }
+
+            ctx.strokeStyle = 'rgba(0,0,0,1)';
+            ctx.lineWidth = 1 / scale;
+
+            for (const b of MAP_DATA.blocks) {
+                const x0 = b.x + b.border;
+                const y0 = b.y + b.border;
+                const x1 = x0 + b.cols * b.slotW;
+                const y1 = y0 + b.rows * b.slotH;
+
+                const pxLeft = colPx[x0];
+                const pyTop = rowPx[y0];
+                const pxRight = colPx[x1];
+                const pyBot = rowPx[y1];
+
+                // Viền bao ngoài
+                ctx.strokeRect(pxLeft, pyTop, pxRight - pxLeft, pyBot - pyTop);
+
+                // Đường dọc bên trong
+                for (let col = 1; col < b.cols; col++) {
+                    const px = colPx[x0 + col * b.slotW];
+                    ctx.beginPath(); ctx.moveTo(px, pyTop); ctx.lineTo(px, pyBot); ctx.stroke();
+                }
+
+                // Đường ngang bên trong
+                for (let row = 1; row < b.rows; row++) {
+                    const py = rowPx[y0 + row * b.slotH];
+                    ctx.beginPath(); ctx.moveTo(pxLeft, py); ctx.lineTo(pxRight, py); ctx.stroke();
+                }
+            }
+
+            // Label tên slot (chỉ hiện khi zoom đủ lớn)
+            const MIN_SCALE_LABEL = 1; // Điều chỉnh ngưỡng zoom hiện label
+
+            if (scale >= MIN_SCALE_LABEL) {
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                for (const b of MAP_DATA.blocks) {
+                    if (!b.prefix) continue;
+
+                    const x0 = b.x + b.border;
+                    const y0 = b.y + b.border;
+
+                    for (let row = 0; row < b.rows; row++) {
+                        for (let col = 0; col < b.cols; col++) {
+                            const slotIndex = row * b.cols + col + 1;
+                            const slotName = `${b.prefix}${slotIndex}`;
+
+                            const lc = x0 + col * b.slotW;
+                            const lr = y0 + row * b.slotH;
+
+                            // Tâm slot theo pixel
+                            const pxCenter = (colPx[lc] + colPx[lc + b.slotW]) / 2;
+                            const pyCenter = (rowPx[lr] + rowPx[lr + b.slotH]) / 2;
+
+                            // Font size vừa với ô — lấy chiều nhỏ hơn của slot pixel
+                            const slotPxW = colPx[lc + b.slotW] - colPx[lc];
+                            const slotPxH = rowPx[lr + b.slotH] - rowPx[lr];
+                            const fontSize = Math.min(slotPxW, slotPxH) * 0.4;
+
+                            ctx.font = `bold ${fontSize}px monospace`;
+                            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                            ctx.fillText(slotName, pxCenter, pyCenter);
+                        }
+                    }
+                }
+            }
+
+            // Vẽ ảnh container cho từng slot (luôn vẽ, không phụ thuộc zoom label)
+            for (const b of MAP_DATA.blocks) {
+                const x0 = b.x + b.border;
+                const y0 = b.y + b.border;
+
+                for (let row = 0; row < b.rows; row++) {
+                    for (let col = 0; col < b.cols; col++) {
+                        const key = `${b.prefix}-${row}-${col}`;
+                        const imgKey = slotImageMap[key];
+                        const img = imgKey ? imageRegistry[imgKey] : null;
+                        if (!img) continue;
+
+                        const lc = x0 + col * b.slotW;
+                        const lr = y0 + row * b.slotH;
+
+                        // Tọa độ pixel của slot
+                        const pxLeft = colPx[lc];
+                        const pyTop = rowPx[lr];
+                        const pxRight = colPx[lc + b.slotW];
+                        const pyBot = rowPx[lr + b.slotH];
+                        const slotPxW = pxRight - pxLeft;
+                        const slotPxH = pyBot - pyTop;
+
+                        // Scale ảnh: chiều rộng = slotPxW, giữ tỷ lệ
+                        const imgAspect = img.naturalWidth / img.naturalHeight;
+                        const drawW = slotPxW;
+                        const drawH = drawW / imgAspect;
+
+                        // Đặt sát đáy slot
+                        const drawX = pxLeft;
+                        const drawY = pyBot - drawH;
+
+                        ctx.drawImage(img, drawX, drawY, drawW, drawH);
+                    }
+                }
+            }
+
+            // === HOVER CONTAINER HIGHLIGHT ===
+            if (hoverSlot) {
+                const { b, lc, lr, imgKey } = hoverSlot;
+                const img = imageRegistry[imgKey];
+                if (img) {
+                    const pxLeft = colPx[lc];
+                    const pyTop = rowPx[lr];
+                    const pxRight = colPx[lc + b.slotW];
+                    const pyBot = rowPx[lr + b.slotH];
+                    const slotPxW = pxRight - pxLeft;
+                    const slotPxH = pyBot - pyTop;
+
+                    // Kích thước gốc (cách vẽ bình thường)
+                    const imgAspect = img.naturalWidth / img.naturalHeight;
+                    const baseW = slotPxW;
+                    const baseH = baseW / imgAspect;
+
+                    // x1.5 kích thước
+                    const drawW = baseW * 1.2;
+                    const drawH = baseH * 1.2;
+
+                    // Cùng bottom với ảnh gốc, căn giữa ngang theo slot
+                    const drawX = pxLeft + slotPxW / 2 - drawW / 2;
+                    const drawY = (pyBot - baseH) + baseH - drawH; // = pyBot - drawH
+
+                    ctx.save();
+
+                    // Tạo offscreen nhỏ để vẽ white silhouette
+                    const os = document.createElement('canvas');
+                    os.width = Math.ceil(drawW + 22 / scale * scale);
+                    os.height = Math.ceil(drawH + 22 / scale * scale);
+                    const ox = os.getContext('2d');
+                    const pad = 11; // padding pixel trong offscreen
+
+                    const glowLayers = [
+                        { spread: 1, alpha: 0.9 },
+                        { spread: 3, alpha: 0.65 },
+                        { spread: 5, alpha: 0.4 },
+                        { spread: 8, alpha: 0.2 },
+                        { spread: 12, alpha: 0.08 },
+                    ];
+
+                    for (const { spread, alpha } of glowLayers) {
+                        // Vẽ ảnh trắng (dùng destination-out để chỉ lấy silhouette)
+                        ox.save();
+                        ox.globalAlpha = alpha;
+                        ox.shadowColor = '#ffffff';
+                        ox.shadowBlur = spread;
+                        // Vẽ ảnh vào offscreen (offset bởi pad)
+                        ox.drawImage(img, pad, pad, drawW, drawH);
+                        // Tô trắng lên silhouette
+                        ox.globalCompositeOperation = 'source-atop';
+                        ox.fillStyle = '#ffffff';
+                        ox.fillRect(pad - spread * 2, pad - spread * 2, drawW + spread * 4, drawH + spread * 4);
+                        ox.restore();
+                    }
+
+                    // Vẽ offscreen (glow) lên canvas chính
+                    ctx.drawImage(os, drawX - pad, drawY - pad);
+
+                    // Vẽ ảnh chính lên trên
+                    ctx.drawImage(img, drawX, drawY, drawW, drawH);
+
+                    ctx.restore();
+                }
+            }
+            // Label tên layer lên trung tâm mỗi rect
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            for (const layer of MAP_DATA.layers) {
+                if (!layer.name) continue; // Bỏ qua nếu tên rỗng
+
+                for (const rect of layer.rects) {
+                    // Tọa độ pixel của rect
+                    const px1 = colPx[rect.x];
+                    const py1 = rowPx[rect.y];
+                    const px2 = colPx[Math.min(rect.x + rect.w, COLS)];
+                    const py2 = rowPx[Math.min(rect.y + rect.h, ROWS)];
+
+                    const pxCenter = (px1 + px2) / 2;
+                    const pyCenter = (py1 + py2) / 2;
+
+                    // Font size theo chiều nhỏ hơn của rect, giới hạn min/max
+                    const rectPxW = px2 - px1;
+                    const rectPxH = py2 - py1;
+                    const fontSize = Math.min(rectPxW, rectPxH) * 0.4 / scale;
+
+                    if (layer.name === 'D1') {
+                        console.log(`Layer ${layer.name} rect pixel size: ${rectPxW}x${rectPxH}, fontSize: ${fontSize}`);
+                    }
+
+                    ctx.font = `bold ${fontSize}px monospace`;
+                    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                    ctx.fillText(layer.name, pxCenter, pyCenter);
+                }
+            }
+
+            // Vẽ path + truck của các chặng KHÁC (ghost, mờ)
+            for (let i = 0; i < NUM_LEGS; i++) {
+                if (i === currentLeg) continue;
+                drawLegGhost(i);
+                if (legs[i].trucks) {
+                    drawTruckGhost(ctx, legs[i].trucks[0], i, legs[i].path);
+                    drawTruckGhost(ctx, legs[i].trucks[1], i, legs[i].path);
+                }
+            }
+
+            // Vẽ đường đi
+            if (currentPath && currentPath.length > 1) {
+                const pts = currentPath.map(({ col, row }) => ({
+                    x: colPx[col] + (colPx[col + 1] - colPx[col]) / 2,
+                    y: rowPx[row] + (rowPx[row + 1] - rowPx[row]) / 2,
+                }));
+
+                ctx.beginPath();
+                ctx.moveTo(pts[0].x, pts[0].y);
+                for (let i = 1; i < pts.length; i++) {
+                    ctx.lineTo(pts[i].x, pts[i].y);
+                }
+
+                const dash = 6 / scale;
+                const gap = 5 / scale;
+
+                // Viền mờ phía dưới
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.25)';
+                ctx.lineWidth = 5 / scale;
+                ctx.lineJoin = 'round';
+                ctx.lineCap = 'round';
+                ctx.setLineDash([dash, gap]);
+                ctx.lineDashOffset = dashOffset / scale;
+                ctx.stroke();
+
+                // Đường chính màu vàng chạy
+                ctx.strokeStyle = 'rgba(255, 220, 0, 0.95)';
+                ctx.lineWidth = 3 / scale;
+                ctx.setLineDash([dash, gap]);
+                ctx.lineDashOffset = dashOffset / scale;
+                ctx.stroke();
+
+                ctx.setLineDash([]);
+            }
+
+            // Vẽ truck snap preview khi đang kéo
+            if (truckSnapPreview) {
+                const { col, row, isH } = truckSnapPreview;
+                const { w, h } = getTruckSize(isH);
+                const px1 = colPx[col];
+                const py1 = rowPx[row];
+                const pw = colPx[Math.min(col + w, COLS)] - px1;
+                const ph = rowPx[Math.min(row + h, ROWS)] - py1;
+
+                ctx.fillStyle = 'rgba(255, 200, 0, 0.2)';
+                ctx.fillRect(px1, py1, pw, ph);
+                ctx.strokeStyle = 'rgba(255, 180, 0, 0.9)';
+                ctx.lineWidth = 1.5 / scale;
+                ctx.setLineDash([4 / scale, 3 / scale]);
+                ctx.strokeRect(px1, py1, pw, ph);
+                ctx.setLineDash([]);
+            }
+
+            // Vẽ 2 truck (truck đang kéo vẽ sau cùng để nổi lên trên)
+            for (const truck of trucks) {
+                if (draggingTruck && draggingTruck.truckId === truck.id) continue;
+                const isHover = hoveredTruckId === truck.id;
+                drawTruck(ctx, truck, isHover);
+            }
+            // Truck đang kéo vẽ cuối
+            if (draggingTruck) {
+                const truck = trucks[draggingTruck.truckId];
+                drawTruck(ctx, truck, true);
+            }
+
+
+            // Hover highlight — dùng pixel coords
+            if (!isSelecting && selStart === null && hoverCol >= 0 && hoverRow >= 0) {
+                const px = colPx[hoverCol];
+                const py = rowPx[hoverRow];
+                const pw = colPx[hoverCol + 1] - colPx[hoverCol];
+                const ph = rowPx[hoverRow + 1] - rowPx[hoverRow];
+                ctx.fillStyle = 'rgba(255, 220, 0, 0.5)';
+                ctx.fillRect(px, py, pw, ph);
+                ctx.strokeStyle = 'rgba(255, 160, 0, 0.9)';
+                ctx.lineWidth = 0.5 / scale;
+                ctx.strokeRect(px, py, pw, ph);
+            }
+
+            if (selStart && selEnd) {
+                const r = getNormalizedRect(selStart, selEnd);
+                // Convert góc logic sang pixel
+                const px1 = colPx[r.x];
+                const py1 = rowPx[r.y];
+                const px2 = colPx[Math.min(r.x + r.w, COLS)];
+                const py2 = rowPx[Math.min(r.y + r.h, ROWS)];
+                const pw = px2 - px1;
+                const ph = py2 - py1;
+
+                ctx.fillStyle = 'rgba(0, 120, 255, 0.25)';
+                ctx.fillRect(px1, py1, pw, ph);
+                ctx.strokeStyle = 'rgba(0, 80, 220, 0.9)';
+                ctx.lineWidth = 1.5 / scale;
+                ctx.strokeRect(px1, py1, pw, ph);
+
+                const fontSize = Math.max(6, 9 / scale);
+                ctx.font = `${fontSize}px monospace`;
+                ctx.fillStyle = 'rgba(0,0,0,0.85)';
+                const label = `{ x: ${r.x}, y: ${r.y}, w: ${r.w}, h: ${r.h} }`;
+                ctx.fillText(label, px1, py1 - fontSize * 0.3 / scale);
+            }
+
+            // Vẽ vị trí đỗ xe
+            if (parkingSpot) {
+                const { col, row, w: sw, h: sh } = parkingSpot;
+                const px1 = colPx[col];
+                const py1 = rowPx[row];
+                const px2 = colPx[Math.min(col + sw, COLS)];
+                const py2 = rowPx[Math.min(row + sh, ROWS)];
+                const pw = px2 - px1;
+                const ph = py2 - py1;
+
+                // Fill
+                ctx.fillStyle = 'rgba(0, 180, 255, 0.25)';
+                ctx.fillRect(px1, py1, pw, ph);
+
+                // Viền nét đứt
+                ctx.strokeStyle = 'rgba(0, 140, 255, 0.9)';
+                ctx.lineWidth = 1.5 / scale;
+                ctx.setLineDash([4 / scale, 3 / scale]);
+                ctx.strokeRect(px1, py1, pw, ph);
+                ctx.setLineDash([]);
+
+                // Label toạ độ
+                const fontSize = Math.max(6, 8 / scale);
+                ctx.font = `${fontSize}px monospace`;
+                ctx.fillStyle = 'rgba(0, 100, 200, 0.9)';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(`${col},${row}`, px1, py1 - 2 / scale);
+            }
+
+            ctx.restore();
+        }
+
+        function updateLegUI() {
+            const btnContainer = document.getElementById('legButtons');
+            btnContainer.innerHTML = '';
+
+            for (let i = 0; i < NUM_LEGS; i++) {
+                const leg = legs[i];
+                const done = leg.path !== null;
+                const active = i === currentLeg;
+
+                // Wrapper cho mỗi chặng
+                const wrap = document.createElement('div');
+                wrap.style.cssText = 'display:inline-flex; align-items:center; gap:2px;';
+
+                // Nút chuyển chặng
+                const btn = document.createElement('button');
+                btn.textContent = `Chặng ${i + 1}${done ? ' ✓' : ''}`;
+                btn.style.cssText = `
+                    padding: 3px 10px; border-radius: 4px 0 0 4px; border: none;
+                    font-family: monospace; font-size: 11px; cursor: pointer;
+                    background: ${active ? '#1976d2' : done ? '#388e3c' : '#555'};
+                    color: #fff; font-weight: ${active ? 'bold' : 'normal'};
+                    outline: ${active ? '2px solid #90caf9' : 'none'};
+                `;
+                btn.onclick = () => switchLeg(i);
+
+                // Nút ✕ clear từng chặng
+                const clearBtn = document.createElement('button');
+                clearBtn.textContent = '✕';
+                clearBtn.title = `Reset chặng ${i + 1}`;
+                clearBtn.style.cssText = `
+                    padding: 3px 6px; border-radius: 0 4px 4px 0; border: none;
+                    font-family: monospace; font-size: 11px; cursor: pointer;
+                    background: ${done ? '#c62828' : '#444'};
+                    color: ${done ? '#fff' : '#888'};
+                    border-left: 1px solid rgba(0,0,0,0.3);
+                `;
+                clearBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    clearLeg(i);
+                };
+
+                wrap.appendChild(btn);
+                wrap.appendChild(clearBtn);
+                btnContainer.appendChild(wrap);
+            }
+
+            // Nút Clear All
+            const clearAllBtn = document.createElement('button');
+            clearAllBtn.textContent = '🗑 Clear All';
+            clearAllBtn.style.cssText = `
+                padding: 3px 10px; border-radius: 4px; border: none;
+                font-family: monospace; font-size: 11px; cursor: pointer;
+                background: #b71c1c; color: #fff; margin-left: 6px;
+            `;
+            clearAllBtn.onclick = () => clearAllLegs();
+            btnContainer.appendChild(clearAllBtn);
+
+            // Status chặng hiện tại
+            const leg = legs[currentLeg];
+            const m = leg.meters;
+            let statusHtml = `<b>Chặng ${currentLeg + 1}</b>: `;
+            statusHtml += m !== null
+                ? `<span style="color:#69f0ae">${Math.round(m)} m</span>`
+                : `<span style="color:#ff8a65">Chưa có đường</span>`;
+            statusHtml += '<br>';
+
+            statusHtml += '<hr style="border-color:rgba(255,255,255,0.15);margin:4px 0">';
+            for (let i = 0; i < NUM_LEGS; i++) {
+                const l = legs[i];
+                const mark = i === currentLeg ? '▶ ' : '　';
+                const val = l.meters !== null ? `${Math.round(l.meters)} m` : '-';
+                statusHtml += `${mark}Chặng ${i + 1}: <b>${val}</b><br>`;
+            }
+
+            document.getElementById('legStatus').innerHTML = statusHtml;
+        }
+
+        // ===================== btnConfirm =====================
+        document.getElementById('btnConfirm').addEventListener('click', () => {
+            const incomplete = legs.some(l => l.path === null || l.meters === null);
+            if (incomplete) {
+                alert('Vui lòng hoàn thành đủ ' + NUM_LEGS + ' chặng trước khi xuất kết quả!');
+                return;
+            }
+
+            saveCurrentLeg();
+
+            const result = legs.map((leg, i) => ({
+                leg: i + 1,
+                start: { col: leg.trucks[0].col, row: leg.trucks[0].row },
+                end: { col: leg.trucks[1].col, row: leg.trucks[1].row },
+                pathLength: leg.path ? leg.path.length - 1 : null,
+                meters: leg.meters,
+            }));
+
+            window.parent.postMessage({
+                type: 'NDV_RESULT',
+                legs: legs.map(l => ({ meters: l.meters }))
+            }, '*');
+        });
+        // ===================== RESIZE =====================
+        function resetView() {
+            const mw = mapPixelWidth();
+            const mh = mapPixelHeight();
+            // Căn giữa map trên màn hình
+            offsetX = (canvas.width / scale - mw) / 2;
+            offsetY = (canvas.height / scale - mh) * 5 / 6;
+        }
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            draw();
+        }
+        window.addEventListener('resize', resize);
+
+        // ===================== KEYBOARD =====================
+        window.addEventListener('keydown', e => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                spaceDown = true;
+                canvas.style.cursor = 'crosshair';
+            }
+            if (e.code === 'Escape') {
+                selStart = null; selEnd = null; isSelecting = false;
+                document.getElementById('selectInfo').textContent = '-';
+                draw();
+            }
+        });
+
+        window.addEventListener('keyup', e => {
+            if (e.code === 'Space') {
+                spaceDown = false;
+                isPanning = false;
+                isSelecting = false;
+                canvas.style.cursor = 'default';
+            }
+        });
+
+        // ===================== MOUSE DOWN =====================
+
+        function wasDragged(e) {
+            return Math.abs(e.clientX - mouseDownX) > DRAG_THRESHOLD ||
+                Math.abs(e.clientY - mouseDownY) > DRAG_THRESHOLD;
+        }
+
+        function clampOffset() {
+            const mw = mapPixelWidth();
+            const mh = mapPixelHeight();
+            const margin = 200; // px — cho phép kéo ra ngoài bao nhiêu
+            offsetX = Math.min(margin / scale, Math.max(offsetX, -mw + (canvas.width / scale) - margin / scale));
+            offsetY = Math.min(margin / scale, Math.max(offsetY, -mh + (canvas.height / scale) - margin / scale));
+        }
+
+        canvas.addEventListener('mousedown', e => {
+            if (e.button !== 0) return;
+
+            mouseDownX = e.clientX;
+            mouseDownY = e.clientY;
+
+            const w = screenToWorld(e.clientX, e.clientY);
+
+            if (spaceDown) {
+                isSelecting = true;
+                selStart = w;
+                selEnd = w;
+                draw();
+                return;
+            }
+
+            const truckId = getTruckAtMouse(e.clientX, e.clientY);
+            if (truckId >= 0) {
+                draggingTruck = { truckId };
+                canvas.style.cursor = 'grabbing';
+                e.preventDefault();
+                return;
+            }
+
+            // PAN
+            isPanning = true;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            canvas.style.cursor = 'grabbing';
+            e.preventDefault();
+        });
+
+        function showContainerTooltip(tile, mouseX, mouseY) {
+            const el = document.getElementById('containerTooltip');
+
+            const slotName = tile.slot || '-';
+            // tile.block đã được gán khi generateBlock: block: prefix
+            const blockName = tile.block || '-';
+
+            el.innerHTML = `
+        <div style="margin-bottom:5px;border-bottom:1px solid rgba(255,255,255,0.2);padding-bottom:4px">
+            <b>Block:</b> ${blockName} &nbsp;&nbsp; <b>Slot:</b> ${slotName}
+        </div>
+        <div style="color:rgba(100,255,120,0.9)">🖱️ Chuột trái — Xe đến lấy hàng</div>
+        <div style="color:rgba(255,120,100,0.9);margin-top:3px">🖱️ Chuột phải — Xe đến trả hàng</div>
+    `;
+
+            el.style.display = 'block';
+            const pad = 12;
+            const tw = el.offsetWidth;
+            const th = el.offsetHeight;
+            let tx = mouseX + pad;
+            let ty = mouseY - th - pad;
+            if (tx + tw > window.innerWidth) tx = mouseX - tw - pad;
+            if (ty < 0) ty = mouseY + pad;
+            el.style.left = tx + 'px';
+            el.style.top = ty + 'px';
+        }
+
+        function hideContainerTooltip() {
+            document.getElementById('containerTooltip').style.display = 'none';
+        }
+
+
+        // ===================== MOUSE MOVE =====================
+        function getTruckAtMouse(screenX, screenY) {
+            for (const truck of trucks) {
+                const r = truckScreenRects[truck.id];
+                if (!r) continue;
+                if (screenX >= r.sx - r.sw / 2 && screenX <= r.sx + r.sw / 2 &&
+                    screenY >= r.sy - r.sh / 2 && screenY <= r.sy + r.sh / 2) {
+                    return truck.id;
+                }
+            }
+            return -1;
+        }
+
+        window.addEventListener('mousemove', e => {
+            const w = screenToWorld(e.clientX, e.clientY);
+            hoverCol = w.col;
+            hoverRow = w.row;
+            // Tìm slot đang hover
+            hoverSlot = null;
+
+            const hovTile = getTile(hoverCol, hoverRow);
+            if (hovTile && hovTile.slot) {
+                showContainerTooltip(hovTile, e.clientX, e.clientY);
+
+                // Tìm block chứa slot này
+                for (const b of MAP_DATA.blocks) {
+                    const x0 = b.x + b.border;
+                    const y0 = b.y + b.border;
+                    for (let row = 0; row < b.rows; row++) {
+                        for (let col = 0; col < b.cols; col++) {
+                            const key = `${b.prefix}-${row}-${col}`;
+                            const slotIndex = (b.startIndex ?? 1) + row * b.cols + col;
+                            const slotName = `${b.prefix}${slotIndex}`;
+                            if (slotName === hovTile.slot) {
+                                const imgKey = slotImageMap[key];
+                                if (imgKey) {
+                                    hoverSlot = {
+                                        key, b, row, col, imgKey,
+                                        lc: x0 + col * b.slotW,
+                                        lr: y0 + row * b.slotH
+                                    };
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                hideContainerTooltip();
+            }
+
+            if (hovTile && hovTile.slot) {
+                // Tìm slot tile: dùng chính (w.col, w.row) vì đang hover đúng vào slot
+                // Nhưng cần lấy tọa độ CENTER của slot, không phải tile góc
+                // → tìm block chứa slot để tính center
+                let slotCenterCol = w.col;
+                let slotCenterRow = w.row;
+
+                for (const b of MAP_DATA.blocks) {
+                    const x0 = b.x + b.border;
+                    const y0 = b.y + b.border;
+                    for (let row = 0; row < b.rows; row++) {
+                        for (let col = 0; col < b.cols; col++) {
+                            const slotIndex = (b.startIndex ?? 1) + row * b.cols + col;
+                            const slotName = b.prefix + slotIndex;
+                            if (slotName === hovTile.slot) {
+                                // Center của slot này
+                                slotCenterCol = x0 + col * b.slotW + Math.floor(b.slotW / 2);
+                                slotCenterRow = y0 + row * b.slotH + Math.floor(b.slotH / 2);
+                            }
+                        }
+                    }
+                }
+
+                parkingSpot = findParkingSpot(slotCenterCol, slotCenterRow);
+            } else {
+                parkingSpot = null;
+            }
+
+            document.getElementById('pos').textContent = `${w.col}, ${w.row}`;
+            const tile = getTile(w.col, w.row);
+            if (tile) {
+                const label = tile.slot ? `${tile.slot} (${tile.block})` : tile.name;
+                const passable = tile.passable ? '✓ passable' : '✗ blocked';
+                document.getElementById('tileInfo').textContent = `${label} | ${passable}`;
+            } else {
+                document.getElementById('tileInfo').textContent = 'trống';
+            }
+
+            if (isPanning) {
+                offsetX += (e.clientX - lastX) / scale;
+                offsetY += (e.clientY - lastY) / scale;
+                lastX = e.clientX; lastY = e.clientY;
+                clampOffset();
+                draw();
+                return;
+            }
+
+            if (isSelecting) {
+                selEnd = w;
+                const r = getNormalizedRect(selStart, selEnd);
+                document.getElementById('selectInfo').textContent =
+                    `{ x: ${r.x}, y: ${r.y}, w: ${r.w}, h: ${r.h} }`;
+                draw();
+                return;
+            }
+
+            // Hover truck
+            const prevHover = hoveredTruckId;
+            hoveredTruckId = draggingTruck
+                ? draggingTruck.truckId
+                : getTruckAtMouse(e.clientX, e.clientY);
+            if (hoveredTruckId >= 0) canvas.style.cursor = 'grab';
+
+            // Cập nhật vị trí truck đang kéo
+            if (draggingTruck) {
+                truckSnapPreview = findTruckSnapNearMouse(w.col, w.row);
+                canvas.style.cursor = 'grabbing';
+            }
+
+            // Cập nhật cursor theo trạng thái
+            if (spaceDown && !isPanning) {
+                canvas.style.cursor = 'crosshair';
+            } else if (isPanning) {
+                canvas.style.cursor = 'grabbing';
+            } else {
+                canvas.style.cursor = 'default';
+            }
+
+            draw();
+        });
+
+        // ===================== MOUSE UP =====================
+        canvas.addEventListener('mouseup', e => {
+            if (isPanning) {
+                isPanning = false;
+                canvas.style.cursor = spaceDown ? 'crosshair' : 'default';
+                return;
+            }
+            if (isSelecting) {
+                isSelecting = false;
+                const w = screenToWorld(e.clientX, e.clientY);
+                selEnd = w;
+                if (selStart.col === selEnd.col && selStart.row === selEnd.row) {
+                    selStart = null;
+                    selEnd = null;
+                    document.getElementById('selectInfo').textContent = '-';
+                } else {
+                    const r = getNormalizedRect(selStart, selEnd);
+                    document.getElementById('selectInfo').textContent =
+                        `x:${r.x}, y:${r.y}, w:${r.w}, h:${r.h}`;
+                }
+                draw();
+                return;
+            }
+
+            if (draggingTruck) {
+                if (truckSnapPreview) {
+                    const t = trucks[draggingTruck.truckId];
+                    t.col = truckSnapPreview.col;
+                    t.row = truckSnapPreview.row;
+                    t.isH = truckSnapPreview.isH;
+
+                    // Tính lại đường đi giữa 2 truck
+                    const t0 = trucks[0], t1 = trucks[1];
+                    const { w: w0, h: h0 } = getTruckSize(t0.isH);
+                    const { w: w1, h: h1 } = getTruckSize(t1.isH);
+                    const sc = t0.col + Math.floor(w0 / 2), sr = t0.row + Math.floor(h0 / 2);
+                    const ec = t1.col + Math.floor(w1 / 2), er = t1.row + Math.floor(h1 / 2);
+                    const raw = findPath(sc, sr, ec, er);
+                    currentPath = raw ? normalizePath(raw) : null;
+                    if (currentPath) startPathAnimation(); else stopPathAnimation();
+
+                    // ← THÊM: lưu kết quả vào leg và cập nhật UI
+                    legs[currentLeg].path = currentPath;
+                    legs[currentLeg].meters = pathToMeters(currentPath);
+                    legs[currentLeg].trucks = trucks.map(t => ({ ...t }));
+                    updateLegUI();
+                }
+                draggingTruck = null;
+                truckSnapPreview = null;
+                draw();
+                return;
+            }
+        });
+
+        // ===================== CLICK =====================
+
+        // Chuột trái click vào slot → set truck A (id=0) về parking spot
+        canvas.addEventListener('click', e => {
+            if (spaceDown || draggingTruck !== null || wasDragged(e)) return;
+            const w = screenToWorld(e.clientX, e.clientY);
+            const tile = getTile(w.col, w.row);
+            if (!tile || !tile.slot || !parkingSpot) return;
+
+            trucks[0].col = parkingSpot.col;
+            trucks[0].row = parkingSpot.row;
+            trucks[0].isH = parkingSpot.isH ?? true;
+            recalcPath();
+            draw();
+        });
+
+        // Chuột phải click vào slot → set truck B (id=1) về parking spot
+        canvas.addEventListener('contextmenu', e => {
+            e.preventDefault();
+            const w = screenToWorld(e.clientX, e.clientY);
+            const tile = getTile(w.col, w.row);
+            if (!tile || !tile.slot || !parkingSpot) return;
+
+            trucks[1].col = parkingSpot.col;
+            trucks[1].row = parkingSpot.row;
+            trucks[1].isH = parkingSpot.isH ?? true;
+            recalcPath();
+            draw();
+        });
+
+        // ===================== ZOOM =====================
+        canvas.addEventListener('wheel', e => {
+            // if (!e.ctrlKey) return;
+            e.preventDefault();
+            const mx = e.clientX / scale + offsetX;
+            const my = e.clientY / scale + offsetY;
+            const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+            scale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, scale * factor));
+            offsetX = mx - e.clientX / scale;
+            offsetY = my - e.clientY / scale;
+            document.getElementById('scaleEl').textContent = scale.toFixed(2);
+            clampOffset();
+            draw();
+        }, { passive: false });
+
+        // ===================== START =====================
+        buildCoordMap();
+        resize();
+        resetView();
+        loadAllImages().then(() => {
+            loadMap(MAP_DATA);
+            buildRoadMetadata();
+            resetView();
+            draw();
+
+            trucks[0] = { ...legs[0].trucks[0] };
+            trucks[1] = { ...legs[0].trucks[1] };
+            updateLegUI();
+
+            const t0 = trucks[0], t1 = trucks[1];
+            const { w: w0, h: h0 } = getTruckSize(t0.isH);
+            const { w: w1, h: h1 } = getTruckSize(t1.isH);
+            const raw = findPath(
+                t0.col + Math.floor(w0 / 2), t0.row + Math.floor(h0 / 2),
+                t1.col + Math.floor(w1 / 2), t1.row + Math.floor(h1 / 2)
+            );
+            currentPath = raw ? normalizePath(raw) : null;
+            if (currentPath) startPathAnimation();
+        });
+    </script>
+</body>
+
+</html>
