@@ -1,6 +1,7 @@
 <style>
   .topbar { background: var(--white); border-bottom: 1px solid var(--gray-border); padding: 0 28px; height: 60px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-  .topbar-title { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.05rem; color: var(--navy); letter-spacing: .3px; }
+    .topbar-title { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.05rem; color: var(--navy); letter-spacing: .3px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .topbar-title-text { display: inline-flex; align-items: center; }
   .topbar-right { display: flex; align-items: center; gap: 10px; }
   .period-btn { padding: 6px 13px; border-radius: 6px; border: 1.5px solid var(--gray-border); background: white; font-size: 0.82rem; font-weight: 600; color: #4a5a7b; cursor: pointer; transition: all 0.2s; font-family: 'Montserrat', sans-serif; }
   .period-btn:hover { border-color: var(--accent); color: var(--accent); }
@@ -27,10 +28,12 @@
 
 <div class="topbar">
   <div class="topbar-title">
-    {% if topbar_title %}
-      {{ topbar_title|safe }}
+        {% set is_brand_title = (topbar_title is defined and topbar_title == 'VPEI – Vietnam Port Emission Inventory') or (topbar_title is not defined or not topbar_title) %}
+        {% if is_brand_title %}
+            <span class="topbar-title-text">VPEI</span>
+            <span class="topbar-title-text">– Vietnam Port Emission Inventory</span>
     {% else %}
-      VPEI – Vietnam Port Emission Inventory
+            {{ topbar_title|safe }}
     {% endif %}
   </div>
 
