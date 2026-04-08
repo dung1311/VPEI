@@ -1,11 +1,17 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse
+from fastapi.templating import Jinja2Templates
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from core.middleware import SessionValidationMiddleware
 from routers import auth, dashboard, admin, scope1, scope2, scope3, settings, common, reports
 
-app = FastAPI(title="VPEI – Vietnam Port Emission Inventory")
+app = FastAPI(
+    title="VPEI – Vietnam Port Emission Inventory",
+    docs_url=None,
+    redoc_url=None,
+)
+templates = Jinja2Templates(directory="templates")
 
 # Validate session (is_active check) on every protected request
 app.add_middleware(SessionValidationMiddleware)
@@ -26,6 +32,14 @@ app.include_router(scope3.router)
 app.include_router(common.router)
 app.include_router(reports.router)
 
+
+@app.exception_handler(StarletteHTTPException)
+async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
+    if exc.status_code == 404:
+        return templates.TemplateResponse("404.html", {"request": request}, status_code=404)
+    raise exc
+
+
 @app.get("/")
-async def root():
-    return RedirectResponse(url="/login")
+async def root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})

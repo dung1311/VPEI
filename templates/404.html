@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>404 - Không tìm thấy trang</title>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0a3d62;
+      --primary-mid: #1a5276;
+      --accent: #1abc9c;
+      --accent-dark: #148f77;
+      --text-mid: #5a6b7d;
+      --bg: #f4f8fb;
+    }
+
+    * { box-sizing: border-box; font-family: 'Be Vietnam Pro', sans-serif; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle at top right, #e8f5f2, transparent 45%),
+                  radial-gradient(circle at bottom left, #e7eef8, transparent 50%),
+                  var(--bg);
+      padding: 20px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 620px;
+      background: #fff;
+      border: 1px solid #e5edf5;
+      border-radius: 20px;
+      padding: 40px 30px;
+      text-align: center;
+      box-shadow: 0 14px 42px rgba(10, 61, 98, 0.08);
+    }
+
+    .logo {
+      width: 88px;
+      height: auto;
+      margin-bottom: 16px;
+    }
+
+    .code {
+      font-size: clamp(3rem, 9vw, 5rem);
+      font-weight: 800;
+      line-height: 1;
+      color: var(--primary);
+      margin: 8px 0 14px;
+      letter-spacing: 1px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      color: var(--primary);
+      font-size: clamp(1.2rem, 3vw, 1.8rem);
+      font-weight: 700;
+    }
+
+    p {
+      margin: 0 auto 24px;
+      max-width: 500px;
+      color: var(--text-mid);
+      line-height: 1.7;
+      font-size: 0.98rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 24px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary), var(--primary-mid));
+      transition: all .2s ease;
+      box-shadow: 0 8px 22px rgba(10, 61, 98, 0.22);
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      background: linear-gradient(135deg, var(--primary-mid), var(--accent-dark));
+      box-shadow: 0 12px 26px rgba(10, 61, 98, 0.26);
+    }
+
+    .tip {
+      margin-top: 14px;
+      font-size: 0.82rem;
+      color: #93a1b1;
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <img src="/static/logo.png" alt="VPEI Logo" class="logo">
+    <div class="code">404</div>
+    <h1>Không tìm thấy trang bạn yêu cầu</h1>
+    <p>
+      Đường dẫn có thể đã thay đổi hoặc không còn tồn tại. Vui lòng quay lại bảng điều khiển để tiếp tục sử dụng hệ thống.
+    </p>
+    <a href="/dashboard" class="btn">Về Dashboard</a>
+    <div class="tip">VPEI – Vietnam Port Emission Inventory</div>
+  </main>
+</body>
+</html>

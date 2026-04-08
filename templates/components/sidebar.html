@@ -15,10 +15,15 @@
   .sidebar .nav-expand.nav-expand--open {
     transform: rotate(180deg);
   }
+  .sidebar .sidebar-logo a {
+    justify-content: flex-start;
+  }
 </style>
 <div class="sidebar">
   <div class="sidebar-logo">
-    <div class="logo-box">VPEI</div>
+    <a href="/" style="display:flex;align-items:center;justify-content:flex-start;width:100%;text-decoration:none;">
+      <img src="/static/logo.png" alt="VPEI Logo" style="height:48px;width:auto;object-fit:contain;display:block;">
+    </a>
   </div>
   <nav class="nav-items">
     <div class="nav-section">Menu chính</div>
