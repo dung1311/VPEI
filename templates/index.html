@@ -199,6 +199,36 @@
             box-shadow: 0 8px 24px rgba(26,188,156,0.3);
         }
 
+        .btn-login {
+            background: linear-gradient(135deg, var(--primary), var(--primary-mid));
+            color: #fff;
+            border: 1.5px solid transparent;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            padding: 9px 18px;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.22s ease;
+            box-shadow: 0 8px 20px rgba(10, 61, 98, 0.2);
+        }
+
+        .btn-login:hover {
+            color: var(--primary);
+            background: #ffffff;
+            border-color: #dbe7f1;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 22px rgba(10, 61, 98, 0.12);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 12px rgba(10, 61, 98, 0.14);
+        }
+
         .btn-outline {
             background: transparent;
             color: #fff;
@@ -498,8 +528,7 @@
                         <i class="fas fa-search"></i>
                     </button>
                     <div class="hidden lg:flex items-center gap-2 border-l pl-4">
-                        <button onclick="openLoginModal()" class="nav-link" style="border:none;">Đăng nhập</button>
-                        <button onclick="openRegisterModal()" class="btn-primary" style="padding:9px 18px;font-size:0.85rem;">Đăng ký</button>
+                        <button onclick="openLoginModal()" class="btn-login">Đăng nhập</button>
                     </div>
                     <button onclick="toggleMobileMenu()" class="lg:hidden text-gray-600 p-2">
                         <i class="fas fa-bars text-xl"></i>
