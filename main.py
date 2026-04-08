@@ -1,11 +1,13 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
+from fastapi.templating import Jinja2Templates
 from core.middleware import SessionValidationMiddleware
 from routers import auth, dashboard, admin, scope1, scope2, scope3, settings, common, reports
 
 app = FastAPI(title="VPEI – Vietnam Port Emission Inventory")
+templates = Jinja2Templates(directory="templates")
 
 # Validate session (is_active check) on every protected request
 app.add_middleware(SessionValidationMiddleware)
@@ -27,5 +29,5 @@ app.include_router(common.router)
 app.include_router(reports.router)
 
 @app.get("/")
-async def root():
-    return RedirectResponse(url="/login")
+async def root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
