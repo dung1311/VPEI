@@ -24,9 +24,5 @@ jobs:
             cd $WORKING_DIR
             git fetch origin
             git reset --hard origin/production
-            # activate venv
-            source $WORKING_DIR/.venv/bin/activate
-
-            pip install -r requirements.txt
-
-            pm2 reload VPEI
+            docker compose down
+            docker compose up -d --build
