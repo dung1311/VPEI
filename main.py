@@ -2,6 +2,7 @@ import os
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from core.middleware import SessionValidationMiddleware
 from routers import auth, dashboard, admin, scope1, scope2, scope3, settings, common, reports
