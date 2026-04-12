@@ -52,7 +52,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--gray-soft);color:var(-
 .right-panel{flex:1;display:flex;flex-direction:column;gap:14px;min-width:0;}
 
 /* CARDS */
-.card{background:white;border-radius:13px;border:1px solid var(--gray-border);}
+.card{background:white;border-radius:13px;border: 2px solid #000080;}
 .card-header{padding:13px 18px;border-bottom:1px solid var(--gray-border);display:flex;align-items:center;justify-content:space-between;}
 .card-title{font-size:.75rem;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.07em;display:flex;align-items:center;gap:8px;}
 .card-body{padding:16px 18px;}
@@ -91,7 +91,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--gray-soft);color:var(-
 .preview-nav{display:flex;gap:6px;align-items:center;justify-content:center;}
 .pnav-btn{width:28px;height:28px;border-radius:6px;border:1.5px solid var(--gray-border);background:white;cursor:pointer;font-size:.7rem;display:flex;align-items:center;justify-content:center;transition:all .18s;}
 .pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
-.pnav-indicator{font-size:.72rem;font-weight:700;color:var(--navy);padding:4px 12px;background:white;border-radius:6px;border:1px solid var(--gray-border);}
+.pnav-indicator{font-size:.72rem;font-weight:700;color:var(--navy);padding:4px 12px;background:white;border-radius:6px;border:2px solid #000080;}
 .preview-page{background:white;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.08);flex:1;overflow-y:auto;padding:28px 32px;min-height:0;}
 
 /* PREVIEW CONTENT */
@@ -118,7 +118,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--gray-soft);color:var(-
 .preview-table tr:last-child td{border-bottom:none;}
 
 /* ACTION BAR */
-.action-bar{background:white;border-radius:13px;border:1px solid var(--gray-border);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.action-bar{background:white;border-radius:13px;border:2px solid #000080;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
 .action-left{display:flex;align-items:center;gap:8px;}
 .action-right{display:flex;align-items:center;gap:8px;}
 .status-flow{display:flex;align-items:center;gap:6px;}
@@ -181,7 +181,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--gray-soft);color:var(-
     <div style="position: relative; display: inline-block;" class="docx-hover-wrap">
       <button class="btn-create" id="btn-download-docx" style="background:#2e7df7; margin-left:8px;"><i class="fa-solid fa-file-word"></i> Xuất DOCX <i class="fa-solid fa-chevron-down" style="font-size:0.7em;margin-left:4px"></i></button>
       <div class="docx-hover-menu" style="display:none; position:absolute; right:0; top:100%; padding-top:6px; z-index:100; min-width:200px;">
-        <div style="background:white; border:1px solid var(--gray-border); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); padding:4px 0; overflow:hidden;">
+        <div style="background:white; border:2px solid #000080; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); padding:4px 0; overflow:hidden;">
           <div class="docx-hover-item" style="padding:10px 16px; cursor:pointer; font-size:0.8rem; font-weight:600; color:var(--navy); transition:background 0.2s;" onclick="downloadDocx(true)"><i class="fa-solid fa-paperclip" style="margin-right:8px;color:var(--text-muted)"></i> Bao gồm phụ lục</div>
           <div class="docx-hover-item" style="padding:10px 16px; cursor:pointer; font-size:0.8rem; font-weight:600; color:var(--navy); transition:background 0.2s;" onclick="downloadDocx(false)"><i class="fa-solid fa-file-lines" style="margin-right:8px;color:var(--text-muted)"></i> Không bao gồm phụ lục</div>
         </div>
@@ -197,7 +197,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--gray-soft);color:var(-
   <!-- CONTENT -->
   <div class="content" style="justify-content: center; flex-direction: column; align-items: center;">
 
-    <div id="reportDateRangeCard" style="width:100%;max-width:900px;margin-bottom:14px;padding:14px 18px;background:var(--white);border-radius:13px;border:1px solid var(--gray-border);display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;">
+    <div id="reportDateRangeCard" style="width:100%;max-width:900px;margin-bottom:14px;padding:14px 18px;background:var(--white);border-radius:13px;border:2px solid #000080;display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;">
       <div>
         <div style="font-size:.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;">Khoảng thời gian báo cáo</div>
         <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
