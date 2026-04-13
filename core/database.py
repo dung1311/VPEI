@@ -33,6 +33,7 @@ def init_db():
     from models import container as _  # noqa: F401
     from models import ship as _  # noqa: F401
     from models import harbor_craft as _  # noqa: F401
+    from models.settings import CompanySetting
 
     Base.metadata.create_all(bind=engine)
 

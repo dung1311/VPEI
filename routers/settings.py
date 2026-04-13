@@ -21,11 +21,21 @@ async def settings_home(request: Request, db: Session = Depends(get_db)):
     admin, is_super = _ctx(request, db)
     users = UserService.get_all(db)
     
+    from models.settings import CompanySetting
+    company_setting = db.query(CompanySetting).first()
+    if not company_setting:
+        company_setting = CompanySetting(company_name="Cảng VPEI – Việt Nam Port users = UserService.get_all(db) Energy Infrastructure", tax_code="0314852369", address="Số 1 Đường Cảng Biển, Khu kinh tế, TP. Hồ Chí Minh", logo_src="/static/VPEI-removebg-preview.png")
+        db.add(company_setting)
+        db.commit()
+        db.refresh(company_setting)
+    
+    
     return templates.TemplateResponse("settings/settings.html", {
         "request": request,
         "admin": admin,
         "users": users,
         "is_super_admin": is_super,
+        "company_setting": company_setting,
         "flash": request.query_params.get("flash"),
         "flash_type": request.query_params.get("flash_type", "success"),
     })
@@ -111,3 +121,43 @@ async def api_reset_password(user_id: int, request: Request, data: dict = Body(.
             return {"status": "success", "message": f"Reset thành công nhưng email lỗi: {msg}", "password": plain}
 
     return {"status": "success", "message": "Cấp lại mật khẩu thành công.", "password": plain}
+
+from fastapi import Form, File, UploadFile
+import shutil
+import os
+
+@router.post("/api/company")
+async def update_company_info(
+    request: Request,
+    company_name: str = Form(None),
+    tax_code: str = Form(None),
+    address: str = Form(None),
+    logo_file: UploadFile = File(None),
+    db: Session = Depends(get_db)
+):
+    admin, is_super = _ctx(request, db)
+    from models.settings import CompanySetting
+    
+    company_setting = db.query(CompanySetting).first()
+    if not company_setting:
+        company_setting = CompanySetting()
+        db.add(company_setting)
+        
+    if company_name is not None:
+        company_setting.company_name = company_name
+    if tax_code is not None:
+        company_setting.tax_code = tax_code
+    if address is not None:
+        company_setting.address = address
+        
+    if logo_file and logo_file.filename:
+        os.makedirs("static", exist_ok=True)
+        ext = os.path.splitext(logo_file.filename)[1]
+        filename = f"company_logo_uploaded{ext}"
+        filepath = os.path.join("static", filename)
+        with open(filepath, "wb") as buffer:
+            shutil.copyfileobj(logo_file.file, buffer)
+        company_setting.logo_src = f"/static/{filename}"
+        
+    db.commit()
+    return {"status": "success", "message": "Cập nhật thành công."}
