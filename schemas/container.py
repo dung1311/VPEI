@@ -12,6 +12,7 @@ class ContainerCreate(BaseModel):
     end_time: datetime
     max_weight: float = 40.0
     journey_type: JourneyType
+    is_refrigerated: bool = False
     velocity_1: float
     velocity_2: float
     velocity_3: float
@@ -28,6 +29,7 @@ class ContainerUpdate(BaseModel):
     end_time: Optional[datetime] = None
     max_weight: Optional[float] = None
     journey_type: Optional[JourneyType] = None
+    is_refrigerated: Optional[bool] = None
     velocity_1: Optional[float] = None
     velocity_2: Optional[float] = None
     velocity_3: Optional[float] = None
@@ -48,6 +50,7 @@ class ContainerResponse(BaseModel):
     max_weight: float
     journey_type: JourneyType
     container_weight_type: str
+    is_refrigerated: bool
     velocity: float
     velocity_1: float
     velocity_2: float

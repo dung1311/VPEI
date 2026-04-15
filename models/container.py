@@ -1,7 +1,7 @@
 import enum
 
 from core.database import Base
-from sqlalchemy import Column, DateTime, Enum, Float, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, Enum, Float, Integer, String
 
 
 class JourneyType(str, enum.Enum):
@@ -28,6 +28,7 @@ class Container(Base):
 
     journey_type = Column(Enum(JourneyType), nullable=False)
     container_weight_type = Column(Enum(ContainerWeightType), nullable=False)
+    is_refrigerated = Column(Boolean, nullable=False, default=False)
     velocity = Column(Float, nullable=True)
     velocity_1 = Column(Float, nullable=False)
     velocity_2 = Column(Float, nullable=False)

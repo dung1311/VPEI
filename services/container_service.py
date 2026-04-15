@@ -16,12 +16,19 @@ def _resolve_container_weight_type(max_weight: float) -> ContainerWeightType:
     return ContainerWeightType.TYPE_1 if (max_weight or 40.0) <= 40 else ContainerWeightType.TYPE_2
 
 
-def _interpolated_ef(weight_type: ContainerWeightType, payload_ratio: float) -> float:
+def _interpolated_ef(weight_type: ContainerWeightType, payload_ratio: float, is_refrigerated: bool) -> float:
     x_data = [0.0, 50.0, 100.0]
-    if weight_type == ContainerWeightType.TYPE_1:
-        y_data = [0.61562, 0.76647, 0.91733]
+    
+    if not is_refrigerated:
+        if weight_type == ContainerWeightType.TYPE_1:
+            y_data = [0.61562, 0.76647, 0.91733]
+        else:
+            y_data = [0.6325, 0.83849, 1.04448]
     else:
-        y_data = [0.6325, 0.83849, 1.04448]
+        if weight_type == ContainerWeightType.TYPE_1:
+            y_data = [0.72566, 0.90403, 1.08239]
+        else:
+            y_data = [0.748, 0.99249, 1.23699]
 
     payload_percent = max(0.0, min(100.0, payload_ratio * 100.0))
     if payload_percent <= x_data[1]:
@@ -83,10 +90,12 @@ def _compute_fields(data: Dict[str, Any]) -> Dict[str, Any]:
     payload_2 = round(payload_2, 3)
     payload_3 = round(payload_3, 3)
 
+    is_refrigerated = data.get("is_refrigerated", False)
+
     container_weight_type = _resolve_container_weight_type(max_weight)
-    ef1 = _interpolated_ef(container_weight_type, payload_1)
-    ef2 = _interpolated_ef(container_weight_type, payload_2)
-    ef3 = _interpolated_ef(container_weight_type, payload_3)
+    ef1 = _interpolated_ef(container_weight_type, payload_1, is_refrigerated)
+    ef2 = _interpolated_ef(container_weight_type, payload_2, is_refrigerated)
+    ef3 = _interpolated_ef(container_weight_type, payload_3, is_refrigerated)
 
     time1 = round(distance_1 / velocity_1, 5)
     time2 = round(distance_2 / velocity_2, 5)
@@ -135,6 +144,7 @@ def create_container(
         license_plate=container_data.license_plate,
         start_time=container_data.start_time,
         end_time=container_data.end_time,
+        is_refrigerated=container_data.is_refrigerated,
         max_weight=computed["max_weight"],
         journey_type=computed["journey_type"],
         container_weight_type=computed["container_weight_type"],
@@ -193,6 +203,7 @@ def get_all_containers(db: Session) -> List[Dict[str, Any]]:
             "end_time": c.end_time.isoformat(),
             "duration": c.duration,
             "max_weight": c.max_weight,
+            "is_refrigerated": bool(c.is_refrigerated),
             "journey_type": c.journey_type.value if c.journey_type else None,
             "velocity": c.velocity,
             "velocity_1": c.velocity_1,
@@ -282,6 +293,7 @@ def update_container(
             "end_time": container.end_time,
             "max_weight": container.max_weight,
             "journey_type": container.journey_type,
+            "is_refrigerated": container.is_refrigerated,
             "velocity_1": container.velocity_1,
             "velocity_2": container.velocity_2,
             "velocity_3": container.velocity_3,

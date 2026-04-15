@@ -79,6 +79,24 @@ async def list_electrical_items(db: Session = Depends(get_db)):
 async def update_electrical_item(item_id: int, item: ElectricalItemUpdate, request: Request, db: Session = Depends(get_db)):
     return electrical_items_service.update_electrical_item(item_id, item, db, actor=_actor_from_request(request))
 
+from pydantic import BaseModel
+
+class BulkDeleteRequest(BaseModel):
+    ids: list[int]
+
+@router.delete("/api/scope2/items/bulk")
+async def delete_electrical_items_bulk(payload: BulkDeleteRequest, request: Request, db: Session = Depends(get_db)):
+    deleted_count = 0
+    actor = _actor_from_request(request)
+    for c_id in payload.ids:
+        try:
+            electrical_items_service.delete_electrical_item(c_id, db, actor)
+            deleted_count += 1
+        except Exception:
+            pass
+    return {"message": f"Deleted {deleted_count} items"}
+
+
 @router.delete("/api/scope2/items/{item_id}")
 async def delete_electrical_item(item_id: int, request: Request, db: Session = Depends(get_db)):
     return electrical_items_service.delete_electrical_item(item_id, db, actor=_actor_from_request(request))

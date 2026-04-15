@@ -211,6 +211,7 @@ function toggleMenu(id){
         <div class="cat-actions">
           <button class="cat-btn" onclick="selectAll()"><i class="fa-solid fa-check-double" style="font-size:0.65rem"></i> Chọn tất cả</button>
           <button class="cat-btn" onclick="deselectAll()"><i class="fa-solid fa-xmark" style="font-size:0.65rem"></i> Bỏ chọn</button>
+          <button class="cat-btn" id="bulkDeleteBtn2" onclick="deleteSelectedCategories()" style="color:var(--red); display:none;"><i class="fa-solid fa-trash-alt" style="font-size:0.65rem"></i> Xóa</button>
         </div>
         <button class="btn-add" onclick="showModal()"><i class="fa-solid fa-plus"></i> Thêm hạng mục Scope 2</button>
       </div>
@@ -741,7 +742,31 @@ function setTimeMode(mode,btn) {
   sel.innerHTML=buckets.length?buckets.map(b=>`<option value="${b.value}">${b.label}</option>`).join(''):'<option value="">Chưa có dữ liệu</option>';
   onPeriodChange();
 }
-function onPeriodChange() { buildCatList(); updateAll(); }
+function onPeriodChange() { buildCatList(); updateAll(); updateBulkDeleteBtn(); }
+
+function updateBulkDeleteBtn() {
+  const btn = document.getElementById("bulkDeleteBtn2");
+  if (btn) {
+    btn.style.display = selected.size > 0 ? "inline-block" : "none";
+  }
+}
+
+async function deleteSelectedCategories() {
+  if(selected.size === 0) return;
+  if (!confirm(`Bạn có chắc muốn xóa ${selected.size} hạng mục này?`)) return;
+  try {
+    const res = await fetch("/api/scope2/items/bulk", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: Array.from(selected) })
+    });
+    if(!res.ok) throw new Error("Thất bại");
+    selected.clear();
+    window.location.reload();
+  } catch(e) {
+    alert("Xóa lỗi: " + e.message);
+  }
+}
 function refreshData() {
   onPeriodChange();
   const btn=document.querySelector('.btn-outline');

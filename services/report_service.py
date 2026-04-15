@@ -644,8 +644,7 @@ class ReportService:
                 (float(con.velocity_1 or 0.0) + float(con.velocity_2 or 0.0) + float(con.velocity_3 or 0.0)) / 3.0
             )
 
-            cw = str(ReportService._enum_value(con.container_weight_type) or "")
-            truck_type = "lạnh" if cw == "type_2" else "thường"
+            truck_type = "lạnh" if getattr(con, "is_refrigerated", False) else "thường"
 
             container_rows.append(
                 [
