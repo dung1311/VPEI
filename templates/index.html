@@ -560,9 +560,27 @@
         </div>
     </header>
 
-    <div style="width: 100%;">
-        <img src="/static/teams.jpg" alt="VPEI Team" style="width: 100%; height: auto; display: block;" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <div style="width: 100%; overflow: hidden;" class="swiper mySwiper">
+        <div class="swiper-wrapper">
+            <div class="swiper-slide"><img src="/static/team1.jpg" alt="VPEI Team 1" style="width: 100%; height: auto; display: block;" /></div>
+            <div class="swiper-slide"><img src="/static/team2.jpg" alt="VPEI Team 2" style="width: 100%; height: auto; display: block;" /></div>
+            <div class="swiper-slide"><img src="/static/team3.jpg" alt="VPEI Team 3" style="width: 100%; height: auto; display: block;" /></div>
+        </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var swiper = new Swiper(".mySwiper", {
+                loop: true,
+                grabCursor: true,
+                autoplay: {
+                    delay: 5000,
+                    disableOnInteraction: false,
+                },
+            });
+        });
+    </script>
 
     <!-- ===== PHẦN 1: HERO ===== -->
     <section class="hero-section">
