@@ -44,6 +44,7 @@ def _scope3_excel_column_names(df: pd.DataFrame) -> set[str]:
 SCOPE3_CONTAINER_IMPORT_COLUMNS = frozenset(
     {
         "Biển số xe",
+        "Loại xe (Thường/Lạnh)",
         "Journey Type (both/import/export)",
         "Thời gian vào (YYYY-MM-DD HH:MM)",
         "Thời gian ra (YYYY-MM-DD HH:MM)",
@@ -328,6 +329,7 @@ async def download_container_template():
         
         dummy_data.append({
             "Biển số xe": f"{random.choice(plates)}-{random.randint(10000, 99999)}",
+            "Loại xe (Thường/Lạnh)": random.choice(["Thường", "Lạnh"]),
             "Journey Type (both/import/export)": j_type,
             "Thời gian vào (YYYY-MM-DD HH:MM)": (now - timedelta(hours=hours_in, minutes=random.randint(0, 59))).strftime("%Y-%m-%d %H:%M"),
             "Thời gian ra (YYYY-MM-DD HH:MM)": (now - timedelta(hours=hours_out, minutes=random.randint(0, 59))).strftime("%Y-%m-%d %H:%M"),
@@ -461,9 +463,16 @@ async def import_containers(request: Request, file: UploadFile = File(...), db: 
         try:
             start_t = pd.to_datetime(row["Thời gian vào (YYYY-MM-DD HH:MM)"])
             end_t = pd.to_datetime(row["Thời gian ra (YYYY-MM-DD HH:MM)"])
+            
+            is_refri = False
+            if "Loại xe (Thường/Lạnh)" in row:
+                val = str(row["Loại xe (Thường/Lạnh)"]).strip().lower()
+                if val == "lạnh":
+                    is_refri = True
 
             payload = ContainerCreate(
                 license_plate=str(row["Biển số xe"]),
+                is_refrigerated=is_refri,
                 journey_type=str(row["Journey Type (both/import/export)"]) if row["Journey Type (both/import/export)"] else "both",
                 start_time=start_t,
                 end_time=end_t,
