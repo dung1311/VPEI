@@ -65,7 +65,6 @@ SCOPE3_SHIP_IMPORT_COLUMNS = frozenset(
         "Tên tàu",
         "Loại tàu (VD: container_ship)",
         "Năm đóng",
-        "Phao số (Buoy)",
         "DWT (Tấn)",
         "Thời gian vào cảng (YYYY-MM-DD HH:MM)",
         "Thời gian rời cảng (YYYY-MM-DD HH:MM)",
@@ -73,7 +72,6 @@ SCOPE3_SHIP_IMPORT_COLUMNS = frozenset(
         "V_maneuver (km/h)",
         "V_max (km/h)",
         "P_main (kW)",
-        "P_aux (kW)",
         "RPM",
         "Loại Van (C3/SV)",
         "Động cơ MAN (TRUE/FALSE)",
@@ -378,7 +376,6 @@ async def download_ship_template():
             "Tên tàu": f"VPEI {random.choice(ship_prefixes)} {random.randint(10, 99)}",
             "Loại tàu (VD: container_ship)": random.choice(ship_types),
             "Năm đóng": random.randint(2005, 2023),
-            "Phao số (Buoy)": random.choice([0, 1, 2, 3]),
             "DWT (Tấn)": round(random.uniform(20000.0, 150000.0), 0),
             "Thời gian vào cảng (YYYY-MM-DD HH:MM)": (now - timedelta(hours=hours_in, minutes=random.randint(0,59))).strftime("%Y-%m-%d %H:%M"),
             "Thời gian rời cảng (YYYY-MM-DD HH:MM)": (now - timedelta(hours=hours_out, minutes=random.randint(0,59))).strftime("%Y-%m-%d %H:%M"),
@@ -386,7 +383,6 @@ async def download_ship_template():
             "V_maneuver (km/h)": round(random.uniform(4.0, 8.0), 1),
             "V_max (km/h)": v_max,
             "P_main (kW)": round(random.uniform(10000.0, 50000.0), 0),
-            "P_aux (kW)": round(random.uniform(1500.0, 5000.0), 0),
             "RPM": random.choice([100.0, 120.0, 150.0, 180.0]),
             "Loại Van (C3/SV)": random.choice(["C3", "SV"]),
             "Động cơ MAN (TRUE/FALSE)": random.choice([True, False])
@@ -413,7 +409,7 @@ async def download_ship_template():
 async def download_harbor_craft_template():
     now = datetime.now()
     dummy_data = []
-    device_names = ["Tàu lai dắt 01", "Tàu lai dắt 02", "Xà lan 01", "Tàu hoa tiêu 01", "Tàu kéo 01"]
+    device_names = ["Tàu lai dắt 01", "Tàu lai dắt 02", "Tàu hoa tiêu 01", "Tàu kéo 01"]
     craft_types = [e.value for e in HarborCraftTypeEnum]
     
     for i in range(1, 11):
@@ -517,19 +513,20 @@ async def import_ships(request: Request, file: UploadFile = File(...), db: Sessi
             start_t = pd.to_datetime(row["Thời gian vào cảng (YYYY-MM-DD HH:MM)"])
             end_t = pd.to_datetime(row["Thời gian rời cảng (YYYY-MM-DD HH:MM)"])
 
+            p_main = float(row["P_main (kW)"])
             payload = ShipCreate(
                 name=str(row["Tên tàu"]),
                 ship_type=str(row["Loại tàu (VD: container_ship)"]),
                 year_built=int(row["Năm đóng"]),
-                buoy=int(row["Phao số (Buoy)"]),
+                buoy=0,
                 deadweight_tonnage=float(row["DWT (Tấn)"]),
                 start_time=start_t,
                 end_time=end_t,
                 v_trip=float(row["V_trip (km/h)"]),
                 v_maneuver=float(row["V_maneuver (km/h)"]),
                 v_max=float(row["V_max (km/h)"]),
-                P_main=float(row["P_main (kW)"]),
-                P_aux=float(row["P_aux (kW)"]),
+                P_main=p_main,
+                P_aux=1/5*p_main,
                 rpm=float(row["RPM"]),
                 valve_type=str(row["Loại Van (C3/SV)"]),
                 is_man=bool(row["Động cơ MAN (TRUE/FALSE)"]),

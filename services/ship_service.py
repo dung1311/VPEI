@@ -18,7 +18,7 @@ def calculate_ship_co2(ship: Ship) -> float:
         time_in_port = float(ship.time_in_port)
         buoy = int(ship.buoy)
         p_main = float(ship.P_main)
-        p_aux = float(ship.P_aux)
+        p_aux = 1/5*p_main  # Always set P_aux = 1/5*P_main for Scope 3
         year_built = int(ship.year_built)
         rpm = float(ship.rpm)
         is_man = bool(ship.is_man)

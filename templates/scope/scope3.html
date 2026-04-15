@@ -323,14 +323,13 @@ window.addEventListener('click', function (event) {
                         <option value="roro_ship">RoRo</option>
                         <option value="reefer_ship">Reefer Ship</option>
                         <option value="oil_tanker">Oil Tanker</option>
-                        <option value="other_ship">Khác</option>
+                        <option value="other_ship">Sà Lan</option>
                     </select>
                 </div>
             </div>
             <div class="form-row-3">
                 <div class="form-group"><label class="form-label">Năm đóng</label><input id="s-year" type="number" class="form-input" value="2010"></div>
-                <div class="form-group"><label class="form-label">Phao số (Buoy)</label><input id="s-buoy" type="number" class="form-input" value="0"></div>
-                <div class="form-group"><label class="form-label">DWT (Tấn)</label><input id="s-dwt" type="number" class="form-input" value="50000"></div>
+                <div class="form-group"><label class="form-label">Trọng tải (GT)</label><input id="s-dwt" type="number" class="form-input" value="50000"></div>
             </div>
             <div class="form-row">
               <div class="form-group"><label class="form-label">Thời gian vào cảng</label><input type="datetime-local" id="s-start-time" class="form-input"></div>
@@ -343,7 +342,6 @@ window.addEventListener('click', function (event) {
             </div>
             <div class="form-row-3">
                 <div class="form-group"><label class="form-label">P_main (kW)</label><input id="s-pmain" type="number" class="form-input" value="15000"></div>
-                <div class="form-group"><label class="form-label">P_aux (kW)</label><input id="s-paux" type="number" class="form-input" value="2500"></div>
                 <div class="form-group"><label class="form-label">RPM</label><input id="s-rpm" type="number" class="form-input" value="150"></div>
             </div>
             <div class="form-row">
@@ -837,32 +835,23 @@ async function saveShipData() {
     showToast('Năm đóng tàu không hợp lệ', 'warn');
     return;
   }
-  const buoyRaw = String(document.getElementById('s-buoy').value ?? '').trim();
-  const buoy = buoyRaw === '' ? 0 : parseInt(buoyRaw, 10);
-  if (!Number.isFinite(buoy) || buoy < 0) {
-    showToast('Phao số (Buoy) không hợp lệ', 'warn');
-    return;
-  }
   const dwt = reqNum('s-dwt', 'DWT');
   const vTrip = reqNum('s-vtrip', 'V_trip');
   const vMan = reqNum('s-vmaneuver', 'V_maneuver');
   const vMax = reqNum('s-vmax', 'V_max');
   const pMain = reqNum('s-pmain', 'P_main');
-  const pAux = reqNum('s-paux', 'P_aux');
   const rpm = reqNum('s-rpm', 'RPM');
-  if (dwt == null || vTrip == null || vMan == null || vMax == null || pMain == null || pAux == null || rpm == null) return;
+  if (dwt == null || vTrip == null || vMan == null || vMax == null || pMain == null || rpm == null) return;
 
   const payload = {
     name,
     ship_type: document.getElementById('s-type').value,
     year_built,
-    buoy,
     deadweight_tonnage: dwt,
     v_trip: vTrip,
     v_maneuver: vMan,
     v_max: vMax,
     P_main: pMain,
-    P_aux: pAux,
     rpm,
     valve_type: document.getElementById('s-valve').value,
     is_man: document.getElementById('s-isman').value === 'true',

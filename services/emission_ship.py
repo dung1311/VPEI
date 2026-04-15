@@ -340,7 +340,8 @@ def compute_A(v_actual, buoy = 0, status='trip'):
 def compute_E(pollutants, v_actual, v_max, P, engine='main', type='container', status='trip', buoy=0, is_man=True, valve_type='C3', rpm=100, year=2010):
     lf = compute_lf(v_actual, v_max, engine=engine, type=type, status=status)
 
-    A = compute_A(v_actual, buoy=buoy, status=status)
+    # buoy is ignored for Scope 3 ships
+    A = compute_A(v_actual, buoy=0, status=status)
     if is_man:
         ef_man = compute_real_ef_man(pollutants, lf = lf, engine=engine, valve_type=valve_type, rpm=rpm, year=year)
         E = {}

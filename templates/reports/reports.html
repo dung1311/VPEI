@@ -177,7 +177,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--gray-soft);color:var(-
   {% set topbar_title = '<i class="fa-solid fa-file-lines" style="color:var(--accent);margin-right:7px;font-size:1rem"></i> Reports – Báo cáo phát thải' %}
   {% set hide_period_filter = True %}
   {% set extra_right_html = '
-    <button class="btn-create" style="background:#16a34a; margin-left:8px;" onclick="exportExcel()"><i class="fa-solid fa-file-excel"></i> Xuất Excel</button>
+    <button class="btn-create" id="btn-download-excel" style="background:#16a34a; margin-left:8px;" onclick="exportExcel()"><i class="fa-solid fa-file-excel"></i> Xuất Excel</button>
     <div style="position: relative; display: inline-block;" class="docx-hover-wrap">
       <button class="btn-create" id="btn-download-docx" style="background:#2e7df7; margin-left:8px;"><i class="fa-solid fa-file-word"></i> Xuất DOCX <i class="fa-solid fa-chevron-down" style="font-size:0.7em;margin-left:4px"></i></button>
       <div class="docx-hover-menu" style="display:none; position:absolute; right:0; top:100%; padding-top:6px; z-index:100; min-width:200px;">
@@ -400,7 +400,67 @@ async function downloadDocx(includeAppendix = true) {
 }
 
 function exportExcel() {
-    showToast('Tính năng xuất Excel đang được phát triển...', 'warn');
+  if (!hasReportDateRange()) {
+    showToast('Vui lòng chọn và áp dụng khoảng thời gian trước khi xuất báo cáo!', 'error');
+    return;
+  }
+
+  const params = getReportParams();
+  const year = params.get('year') || new Date().getFullYear();
+  const btn = document.getElementById('btn-download-excel');
+
+  if (btn) {
+    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Đang xuất...';
+    btn.disabled = true;
+    btn.style.opacity = '0.7';
+    btn.style.cursor = 'wait';
+  }
+  showToast('Đang tạo và tải báo cáo Excel, vui lòng chờ...', 'success');
+
+  params.set('format', 'xlsx');
+
+  fetch(`/reports/download?${params.toString()}`)
+    .then((response) => {
+      if (!response.ok) throw new Error('Không thể xuất báo cáo Excel');
+
+      const contentType = String(response.headers.get('Content-Type') || '').toLowerCase();
+      if (!contentType.includes('spreadsheetml')) {
+        throw new Error('Server chưa trả về định dạng Excel. Vui lòng tải lại trang hoặc khởi động lại server.');
+      }
+
+      const disposition = response.headers.get('Content-Disposition');
+      let filename = `VPEI_Report_${year}.xlsx`;
+      if (disposition && disposition.includes('filename=')) {
+        const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
+        if (matches != null && matches[1]) {
+          filename = matches[1].replace(/['"]/g, '');
+        }
+      }
+      return response.blob().then((blob) => ({ blob, filename }));
+    })
+    .then(({ blob, filename }) => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      showToast('Xuất nội dung Excel thành công!', 'success');
+    })
+    .catch((err) => {
+      console.error(err);
+      showToast('Đã xảy ra lỗi khi tải báo cáo Excel!', 'error');
+    })
+    .finally(() => {
+      if (btn) {
+        btn.innerHTML = '<i class="fa-solid fa-file-excel"></i> Xuất Excel';
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+      }
+    });
 }
 
 function init() {

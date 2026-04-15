@@ -37,6 +37,7 @@ async def download_report(
     date_start: str = Query(None),
     date_end: str = Query(None),
     include_appendix: bool = Query(True),
+    format: str = Query("docx"),
     db: Session = Depends(get_db),
 ):
     """
@@ -50,15 +51,86 @@ async def download_report(
     if ds is not None and de is not None and ds > de:
         raise HTTPException(status_code=400, detail="date_start phải trước hoặc bằng date_end")
 
+    fmt = (format or "docx").strip().lower()
+    if fmt not in {"docx", "xlsx", "excel"}:
+        raise HTTPException(status_code=400, detail="format chỉ hỗ trợ docx hoặc xlsx")
+
     try:
-        report_bytes = ReportService.generate_vpei_final_report(
+        if fmt in {"xlsx", "excel"}:
+            report_bytes = ReportService.generate_vpei_excel_report(
+                db,
+                year,
+                month=month,
+                quarter=quarter,
+                date_start=ds,
+                date_end=de,
+            )
+        else:
+            report_bytes = ReportService.generate_vpei_final_report(
+                db,
+                year,
+                month=month,
+                quarter=quarter,
+                date_start=ds,
+                date_end=de,
+                include_appendix=include_appendix,
+            )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    if ds is not None and de is not None:
+        tag = f"{ds.strftime('%Y%m%d')}_{de.strftime('%Y%m%d')}"
+    elif month is not None:
+        tag = f"{year}_T{month}"
+    elif quarter is not None:
+        tag = f"{year}_Q{quarter}"
+    else:
+        tag = f"{year}"
+
+    if fmt in {"xlsx", "excel"}:
+        return StreamingResponse(
+            iter([report_bytes]),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename=VPEI_Report_{tag}.xlsx"},
+        )
+
+    return StreamingResponse(
+        iter([report_bytes]),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f"attachment; filename=VPEI_Report_{tag}.docx"},
+    )
+
+
+@router.get("/download-excel")
+@router.get("/download_excel")
+async def download_report_excel(
+    request: Request,
+    year: int = Query(2023),
+    month: int = Query(None),
+    quarter: int = Query(None),
+    date_start: str = Query(None),
+    date_end: str = Query(None),
+    db: Session = Depends(get_db),
+):
+    """
+    Download báo cáo theo template Excel 7 sheet.
+    Nếu có cả date_start và date_end (YYYY-MM-DD), báo cáo lọc theo khoảng ngày đó.
+    """
+    ds = _parse_iso_date(date_start)
+    de = _parse_iso_date(date_end)
+    if (ds is None) ^ (de is None):
+        raise HTTPException(status_code=400, detail="Cần gửi cả date_start và date_end, hoặc không gửi cả hai")
+    if ds is not None and de is not None and ds > de:
+        raise HTTPException(status_code=400, detail="date_start phải trước hoặc bằng date_end")
+
+    try:
+        report_bytes = ReportService.generate_vpei_excel_report(
             db,
             year,
             month=month,
             quarter=quarter,
             date_start=ds,
             date_end=de,
-            include_appendix=include_appendix,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -74,6 +146,6 @@ async def download_report(
 
     return StreamingResponse(
         iter([report_bytes]),
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        headers={"Content-Disposition": f"attachment; filename=VPEI_Report_{tag}.docx"},
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=VPEI_Report_{tag}.xlsx"},
     )
