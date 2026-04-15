@@ -446,6 +446,7 @@ window.addEventListener('click', function (event) {
           <div class="table-header">
             <div class="table-header-title"><i class="fa-solid fa-list"></i> Danh sách bản ghi</div>
             <div class="tbl-actions">
+              <button class="tbl-btn" id="bulkDeleteBtn" onclick="bulkDeleteSelected()" style="color:var(--red); display: none;"><i class="fa-solid fa-trash-alt"></i> Xóa đã chọn (<span id="bulkDeleteCount">0</span>)</button>
               <button class="tbl-btn" onclick="exportRecordsExcel()"><i class="fa-solid fa-file-excel" style="color:#16a34a"></i> Excel</button>
               <button class="tbl-btn" onclick="exportRecordsPdf()"><i class="fa-solid fa-file-pdf" style="color:#dc2626"></i> PDF</button>
             </div>
@@ -1140,6 +1141,7 @@ function renderRecordsTable() {
 
       return `
         <tr>
+          <td><input type="checkbox" class="record-checkbox" onchange="updateBulkDeleteBtn()" data-id="${r.id}" data-type="${type}" /></td>
           <td>${idx + 1}</td>
           <td><strong>${label}</strong></td>
           <td>${vGroup.icon} ${specificTypeLabel}</td>
@@ -1159,7 +1161,7 @@ function renderRecordsTable() {
           ${vGroup.icon} ${vGroup.label} (${rows.length})
         </div>
         <table>
-            <thead><tr><th>#</th><th>Biển số / Tên</th><th>Loại chi tiết</th><th>Thời gian</th><th>CO₂e (tCO₂e)</th><th>Hành động</th></tr></thead>
+            <thead><tr><th style="width: 40px"><input type="checkbox" onchange="toggleSelectAll(this, '${type}')" /></th><th>#</th><th>Biển số / Tên</th><th>Loại chi tiết</th><th>Thời gian</th><th>CO₂e (tCO₂e)</th><th>Hành động</th></tr></thead>
             <tbody>${rowHtml}</tbody>
         </table>
       </div>
@@ -1342,6 +1344,59 @@ function exportRecordsPdf() {
   showToast('Đã xuất PDF thành công', 'success');
 }
 
+function toggleSelectAll(checkbox, type) {
+  const checkboxes = document.querySelectorAll(`.record-checkbox[data-type="${type}"]`);
+  checkboxes.forEach(cb => cb.checked = checkbox.checked);
+  updateBulkDeleteBtn();
+}
+
+function updateBulkDeleteBtn() {
+  const selected = document.querySelectorAll('.record-checkbox:checked').length;
+  const btn = document.getElementById('bulkDeleteBtn');
+  const countSpan = document.getElementById('bulkDeleteCount');
+  if (selected > 0) {
+    btn.style.display = 'inline-flex';
+    countSpan.textContent = selected;
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+async function bulkDeleteSelected() {
+  const selectedBoxes = Array.from(document.querySelectorAll('.record-checkbox:checked'));
+  if (selectedBoxes.length === 0) return;
+  if (!confirm(`Bạn có chắc chắn muốn xóa ${selectedBoxes.length} bản ghi đã chọn?`)) return;
+
+  const payloads = {
+    truck: [],
+    'container-ship': [],
+    harbor_craft: []
+  };
+
+  selectedBoxes.forEach(cb => {
+    const type = cb.getAttribute('data-type');
+    const id = parseInt(cb.getAttribute('data-id'), 10);
+    if (payloads[type]) payloads[type].push(id);
+  });
+
+  try {
+    if (payloads.truck.length > 0) {
+      await fetch('/api/scope3/containers/bulk', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: payloads.truck }) });
+    }
+    if (payloads['container-ship'].length > 0) {
+      await fetch('/api/scope3/ships/bulk', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: payloads['container-ship'] }) });
+    }
+    if (payloads.harbor_craft.length > 0) {
+      await fetch('/api/scope3/harbor_crafts/bulk', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: payloads.harbor_craft }) });
+    }
+    
+    showToast(`✓ Đã xóa ${selectedBoxes.length} bản ghi`, 'success');
+    await loadAllRecords();
+    updateBulkDeleteBtn();
+  } catch (err) {
+    showToast('❌ Lỗi xóa nhiều bản ghi', 'error');
+  }
+}
 
 function deleteRecord(id, type) {
   deleteTarget = { id, type };
