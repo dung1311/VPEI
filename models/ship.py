@@ -39,6 +39,7 @@ class Ship(Base):
     is_man = Column(Boolean, nullable=False, default=0)  
     start_time = Column(DateTime, nullable=True) 
     end_time = Column(DateTime, nullable=True)
+    total_co2 = Column(Float, nullable=True, default=0.0)
 
 
 

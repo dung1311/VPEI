@@ -192,17 +192,22 @@ async def scope3_page(
     # 1. Lấy summary của Container
     container_summary = container_service.get_scope3_summary(db)
     
+    # Query database for totals to avoid loading all rows
+    from sqlalchemy import func
+    from models.ship import Ship
+    from models.harbor_craft import HarborCraft
+    
     # 2. Lấy summary của Ship
-    ships = ship_service.get_all_ships(db)
-    ship_total_co2 = sum(s.get("e_total", 0.0) if isinstance(s, dict) else getattr(s, "total_co2", getattr(s, "e_total", 0.0)) for s in ships)
+    ship_total_co2 = db.query(func.sum(Ship.total_co2)).scalar() or 0.0
+    ship_count = db.query(func.count(Ship.id)).scalar() or 0
     
     # 3. Lấy summary của Tàu cảng (Harbor Craft)
-    harbors = harbor_craft_service.get_all_harbor_crafts(db)
-    harbor_total_co2 = sum(h.get("e_total", 0.0) for h in harbors)
+    harbor_total_co2 = db.query(func.sum(HarborCraft.e_total)).scalar() or 0.0
+    harbor_count = db.query(func.count(HarborCraft.id)).scalar() or 0
     
     # 4. Gộp dữ liệu Summary
     total_co2e = container_summary.get("total_co2", 0.0) + ship_total_co2 + harbor_total_co2
-    total_trips = container_summary.get("total_trips", 0) + len(ships) + len(harbors)
+    total_trips = container_summary.get("total_trips", 0) + ship_count + harbor_count
     
     summary = {
         **container_summary,

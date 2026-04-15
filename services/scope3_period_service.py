@@ -6,12 +6,30 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from sqlalchemy.orm import Session
+from sqlalchemy import extract, and_, or_, func
+
+from models.container import Container
+from models.ship import Ship
+from models.harbor_craft import HarborCraft
 
 from services import (
     container_service,
     harbor_craft_service,
     ship_service,
 )
+
+
+def _get_period_filters(model, date_column, year: int, month: Optional[int], quarter: Optional[int]):
+    filters = [extract('year', date_column) == year]
+    if month is not None:
+        filters.append(extract('month', date_column) == int(month))
+    elif quarter is not None:
+        q = int(quarter)
+        filters.append(and_(
+            extract('month', date_column) >= (q - 1) * 3 + 1,
+            extract('month', date_column) <= q * 3
+        ))
+    return filters
 
 
 def month_filter_set(month: Optional[int], quarter: Optional[int]) -> Optional[Set[int]]:
@@ -81,12 +99,16 @@ def compute_scope3_period(
     quarter: Optional[int] = None,
 ) -> Dict[str, Any]:
     """
-    container_co2e: xe container (bảng Container).
-    other_vehicle_co2e / n_other_vehicles luôn 0 (đã bỏ bảng PT khác).
+    Otimized DB-level filtering and computation.
     """
-    mf = month_filter_set(month, quarter)
-    containers = container_service.get_all_containers(db)
-    ships = ship_service.get_all_ships(db)
+    cont_filters = _get_period_filters(Container, Container.start_time, year, month, quarter)
+    containers = db.query(Container).filter(*cont_filters).all()
+    
+    ship_filters = _get_period_filters(Ship, Ship.start_time, year, month, quarter)
+    ships = db.query(Ship).filter(*ship_filters).all()
+
+    harbor_filters = _get_period_filters(HarborCraft, HarborCraft.record_time, year, month, quarter)
+    harbor_crafts = db.query(HarborCraft).filter(*harbor_filters).all()
 
     truck_co2 = 0.0
     other_ve_co2 = 0.0
@@ -97,44 +119,42 @@ def compute_scope3_period(
     ship_trend = [0.0] * 12
     other_trend = [0.0] * 12
     harbor_trend = [0.0] * 12
-    n_cont = 0
-    n_ship = 0
+    
+    n_cont = len(containers)
+    n_ship = len(ships)
     n_other = 0
-    n_harbor = 0
+    n_harbor = len(harbor_crafts)
 
     for c in containers:
-        if not row_in_period_start_time(c.get("start_time"), year, mf):
-            continue
-        val = _co2_container_row(c)
+        val = _co2_container_row(c.__dict__)
         truck_co2 += val
-        n_cont += 1
-        dt = parse_datetime(c.get("start_time"))
+        
+        # start_time may be a datetime object or string. For models, it is usually datetime.
+        dt = getattr(c, "start_time", None)
         if dt:
-            s3_trend[dt.month - 1] += val
-            truck_trend[dt.month - 1] += val
+            m_idx = dt.month - 1
+            s3_trend[m_idx] += val
+            truck_trend[m_idx] += val
 
     for s in ships:
-        if not row_in_period_start_time(getattr(s, "start_time", None), year, mf):
-            continue
-        val = _co2_ship(s)
+        val = getattr(s, "total_co2", 0.0) or 0.0
         ship_co2 += val
-        n_ship += 1
-        dt = parse_datetime(getattr(s, "start_time", None))
+        
+        dt = getattr(s, "start_time", None)
         if dt:
-            s3_trend[dt.month - 1] += val
-            ship_trend[dt.month - 1] += val
+            m_idx = dt.month - 1
+            s3_trend[m_idx] += val
+            ship_trend[m_idx] += val
 
-    harbors = harbor_craft_service.get_all_harbor_crafts(db)
-    for h in harbors:
-        if not row_in_period_start_time(h.get("record_time"), year, mf):
-            continue
-        val = float(h.get("e_total") or 0.0)
+    for h in harbor_crafts:
+        val = getattr(h, "e_total", 0.0) or 0.0
         harbor_co2 += val
-        n_harbor += 1
-        dt = parse_datetime(h.get("record_time"))
+        
+        dt = getattr(h, "record_time", None)
         if dt:
-            s3_trend[dt.month - 1] += val
-            harbor_trend[dt.month - 1] += val
+            m_idx = dt.month - 1
+            s3_trend[m_idx] += val
+            harbor_trend[m_idx] += val
 
     container_co2e = truck_co2 + other_ve_co2
     total = container_co2e + ship_co2 + harbor_co2
@@ -157,8 +177,8 @@ def compute_scope3_period(
         "trend_container_monthly": container_trend,
         "trend_ship_monthly": ship_trend,
         "trend_harbor_monthly": harbor_trend,
-        "containers": containers,
-        "ships": ships,
+        "containers": [c.__dict__ for c in containers], # ensure dict format for existing UI
+        "ships": [s.__dict__ for s in ships], # ensure dict format for existing UI
     }
 
 

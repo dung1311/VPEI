@@ -88,12 +88,13 @@ def create_ship(ship_data: ShipCreate, db: Session, actor: str = "system"):
     ship_dict["time_in_port"] = time_in_port
     
     new_ship = Ship(**ship_dict)
+    
+    # Gán giá trị tính toán động trước khi lưu
+    new_ship.total_co2 = calculate_ship_co2(new_ship)
+    
     db.add(new_ship)
     db.commit()
     db.refresh(new_ship)
-    
-    # Gán giá trị tính toán động
-    new_ship.total_co2 = calculate_ship_co2(new_ship)
     
     try:
         from services.ship_activity_service import record_ship_activity
@@ -105,10 +106,8 @@ def create_ship(ship_data: ShipCreate, db: Session, actor: str = "system"):
 
 
 def get_all_ships(db: Session):
-    """Lấy danh sách toàn bộ tàu biển và tự động tính toán phát thải"""
+    """Lấy danh sách toàn bộ tàu biển"""
     ships = db.query(Ship).order_by(Ship.id.desc()).all()
-    for s in ships:
-        s.total_co2 = calculate_ship_co2(s)
     return ships
 
 
@@ -118,7 +117,6 @@ def get_ship_by_id(ship_id: int, db: Session):
     if not ship:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ship not found")
     
-    ship.total_co2 = calculate_ship_co2(ship)
     return ship
 
 
@@ -140,10 +138,11 @@ def update_ship(ship_id: int, ship_data: ShipUpdate, db: Session, actor: str = "
     for key, value in update_dict.items():
         setattr(ship, key, value)
         
+    # Tính lại tổng phát thải và cập nhật vào record DB
+    ship.total_co2 = calculate_ship_co2(ship)
+        
     db.commit()
     db.refresh(ship)
-    
-    ship.total_co2 = calculate_ship_co2(ship)
     
     try:
         from services.ship_activity_service import record_ship_activity
