@@ -10,6 +10,7 @@ from models.audit_log import AuditLog
 from models.device import ActivityData
 from models.ship import Ship
 from models.container import Container
+from models.other_vehicle import OtherVehicle
 from models.electrical_item import ElectricalItem
 
 router = APIRouter()
@@ -49,6 +50,10 @@ def get_common_periods(db: Session = Depends(get_db)):
             
         conts_y = db.query(extract('year', Container.start_time)).distinct().all()
         for y in conts_y:
+            if y[0]: years.add(int(y[0]))
+
+        other_y = db.query(extract('year', OtherVehicle.record_time)).distinct().all()
+        for y in other_y:
             if y[0]: years.add(int(y[0]))
 
         # Scope 2 — electrical_items.period_value (vd: 2025-06-15, 15/06/2025, "Tháng 06 - 2025")

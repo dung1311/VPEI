@@ -11,6 +11,7 @@ from sqlalchemy import extract, and_, or_, func
 from models.container import Container
 from models.ship import Ship
 from models.harbor_craft import HarborCraft
+from models.other_vehicle import OtherVehicle
 
 from services import (
     container_service,
@@ -110,6 +111,9 @@ def compute_scope3_period(
     harbor_filters = _get_period_filters(HarborCraft, HarborCraft.record_time, year, month, quarter)
     harbor_crafts = db.query(HarborCraft).filter(*harbor_filters).all()
 
+    other_filters = _get_period_filters(OtherVehicle, OtherVehicle.record_time, year, month, quarter)
+    other_vehicles = db.query(OtherVehicle).filter(*other_filters).all()
+
     truck_co2 = 0.0
     other_ve_co2 = 0.0
     ship_co2 = 0.0
@@ -122,7 +126,7 @@ def compute_scope3_period(
     
     n_cont = len(containers)
     n_ship = len(ships)
-    n_other = 0
+    n_other = len(other_vehicles)
     n_harbor = len(harbor_crafts)
 
     for c in containers:
@@ -156,10 +160,20 @@ def compute_scope3_period(
             s3_trend[m_idx] += val
             harbor_trend[m_idx] += val
 
-    container_co2e = truck_co2 + other_ve_co2
-    total = container_co2e + ship_co2 + harbor_co2
+    for ov in other_vehicles:
+        val = getattr(ov, "e_total", 0.0) or 0.0
+        other_ve_co2 += val
 
-    container_trend = [truck_trend[i] + other_trend[i] for i in range(12)]
+        dt = getattr(ov, "record_time", None)
+        if dt:
+            m_idx = dt.month - 1
+            s3_trend[m_idx] += val
+            other_trend[m_idx] += val
+
+    container_co2e = truck_co2
+    total = container_co2e + ship_co2 + harbor_co2 + other_ve_co2
+
+    container_trend = truck_trend[:]
 
     return {
         "truck_co2e": truck_co2,
@@ -177,6 +191,7 @@ def compute_scope3_period(
         "trend_container_monthly": container_trend,
         "trend_ship_monthly": ship_trend,
         "trend_harbor_monthly": harbor_trend,
+        "trend_other_vehicle_monthly": other_trend,
         "containers": [c.__dict__ for c in containers], # ensure dict format for existing UI
         "ships": [s.__dict__ for s in ships], # ensure dict format for existing UI
     }
@@ -191,6 +206,8 @@ def _metric_from_payload(p: Dict[str, Any], key: str) -> float:
         return float(p.get("ship_co2e") or 0.0)
     if key == "harbor":
         return float(p.get("harbor_co2e") or 0.0)
+    if key == "other_vehicle":
+        return float(p.get("other_vehicle_co2e") or 0.0)
     return 0.0
 
 
@@ -247,5 +264,6 @@ def build_scope3_comparison_payload(
             "container": pack("container"),
             "ship": pack("ship"),
             "harbor": pack("harbor"),
+            "other_vehicle": pack("other_vehicle"),
         },
     }

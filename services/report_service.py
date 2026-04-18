@@ -20,6 +20,7 @@ from models.electrical_item import ElectricalItem
 from models.ship import Ship
 from models.container import Container
 from models.harbor_craft import HarborCraft
+from models.other_vehicle import OtherVehicle
 from services.ship_service import calculate_ship_co2
 from services.scope3_period_service import compute_scope3_period
 
@@ -238,11 +239,26 @@ class ReportService:
                 .order_by(HarborCraft.record_time.desc())
                 .all()
             )
+            other_vehicles = (
+                db.query(OtherVehicle)
+                .filter(
+                    OtherVehicle.record_time.isnot(None),
+                    OtherVehicle.record_time >= t0,
+                    OtherVehicle.record_time <= t1,
+                )
+                .order_by(OtherVehicle.record_time.desc())
+                .all()
+            )
         else:
             q_hc = db.query(HarborCraft).filter(extract("year", HarborCraft.record_time) == year)
             if mf is not None:
                 q_hc = q_hc.filter(extract("month", HarborCraft.record_time).in_(list(mf)))
             harbor_crafts = q_hc.order_by(HarborCraft.record_time.desc()).all()
+
+            q_ov = db.query(OtherVehicle).filter(extract("year", OtherVehicle.record_time) == year)
+            if mf is not None:
+                q_ov = q_ov.filter(extract("month", OtherVehicle.record_time).in_(list(mf)))
+            other_vehicles = q_ov.order_by(OtherVehicle.record_time.desc()).all()
 
         s3_co2e_ships = 0.0
         parts_tau_bien: List[Tuple[datetime, List[Any]]] = []
@@ -306,6 +322,19 @@ class ReportService:
         xe_may_co2 = 0.0
         oto_count = 0
         oto_co2 = 0.0
+
+        for ov in other_vehicles:
+            vtype = ov.vehicle_type.value if hasattr(ov.vehicle_type, "value") else str(ov.vehicle_type)
+            count = int(ov.vehicle_count or 0)
+            co2_val = float(ov.e_total or 0.0)
+            if vtype == "motorbike":
+                xe_may_count += count
+                xe_may_co2 += co2_val
+            else:
+                oto_count += count
+                oto_co2 += co2_val
+
+        s3_co2e_other = xe_may_co2 + oto_co2
 
         # Tổng Scope 3 khớp dashboard / trang Scope 3: gồm tàu biển + xe container + tàu cảng (harbor craft).
         s3_co2e_harbor = sum(float(h.e_total or 0.0) for h in harbor_crafts)
@@ -559,6 +588,16 @@ class ReportService:
                 .order_by(HarborCraft.record_time.desc())
                 .all()
             )
+            other_vehicles = (
+                db.query(OtherVehicle)
+                .filter(
+                    OtherVehicle.record_time.isnot(None),
+                    OtherVehicle.record_time >= t0,
+                    OtherVehicle.record_time <= t1,
+                )
+                .order_by(OtherVehicle.record_time.desc())
+                .all()
+            )
         else:
             q_sh = db.query(Ship).filter(extract("year", Ship.start_time) == year)
             q_ct = db.query(Container).filter(extract("year", Container.start_time) == year)
@@ -573,6 +612,11 @@ class ReportService:
             if mf is not None:
                 q_hc = q_hc.filter(extract("month", HarborCraft.record_time).in_(list(mf)))
             harbor_crafts = q_hc.order_by(HarborCraft.record_time.desc()).all()
+
+            q_ov = db.query(OtherVehicle).filter(extract("year", OtherVehicle.record_time) == year)
+            if mf is not None:
+                q_ov = q_ov.filter(extract("month", OtherVehicle.record_time).in_(list(mf)))
+            other_vehicles = q_ov.order_by(OtherVehicle.record_time.desc()).all()
 
         ship_rows: List[List[Any]] = []
         for idx, ship in enumerate(ships, 1):
@@ -691,6 +735,17 @@ class ReportService:
         xe_may_co2 = 0.0
         oto_count = 0
         oto_co2 = 0.0
+
+        for ov in other_vehicles:
+            vtype = ov.vehicle_type.value if hasattr(ov.vehicle_type, "value") else str(ov.vehicle_type)
+            count = int(ov.vehicle_count or 0)
+            co2_val = float(ov.e_total or 0.0)
+            if vtype == "motorbike":
+                xe_may_count += count
+                xe_may_co2 += co2_val
+            else:
+                oto_count += count
+                oto_co2 += co2_val
 
         template_path = "./static/Báo-cáo-VPEI-file-excel.xlsx"
         if not os.path.exists(template_path):

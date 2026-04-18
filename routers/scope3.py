@@ -28,6 +28,10 @@ from services import harbor_craft_service
 from schemas.harbor_craft import HarborCraftCreate, HarborCraftUpdate
 from models.harbor_craft import HarborCraftTypeEnum, EngineTypeEnum
 
+# Other Vehicles (CAR/MOTORBIKE)
+from services import other_vehicle_service
+from schemas.other_vehicle import OtherVehicleCreate, OtherVehicleUpdate
+
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
@@ -92,9 +96,17 @@ SCOPE3_HARBOR_CRAFT_IMPORT_COLUMNS = frozenset(
     }
 )
 
+SCOPE3_OTHER_VEHICLE_IMPORT_COLUMNS = frozenset(
+    {
+        "Loại xe (car/motorbike)",
+        "Số lượng xe",
+        "Thời gian (YYYY-MM-DD HH:MM)",
+    }
+)
+
 
 def _validate_scope3_import_excel(df: pd.DataFrame, kind: str) -> None:
-    """kind: container | ship | harbor_craft — đúng mẫu cột + gợi ý khi nhầm loại file."""
+    """kind: container | ship | harbor_craft | other_vehicle — đúng mẫu cột + gợi ý khi nhầm loại file."""
     if df is None or len(df) == 0:
         raise HTTPException(status_code=400, detail="File Excel không có dòng dữ liệu.")
 
@@ -151,6 +163,28 @@ def _validate_scope3_import_excel(df: pd.DataFrame, kind: str) -> None:
                 status_code=400,
                 detail=f"File không đúng mẫu tàu trong cảng. Thiếu cột: {', '.join(sorted(missing))}.",
             )
+    elif kind == "other_vehicle":
+        if SCOPE3_CONTAINER_IMPORT_COLUMNS <= cols:
+            raise HTTPException(
+                status_code=400,
+                detail="File là mẫu xe container. Chọn đúng loại Xe thường hoặc dùng mẫu Excel xe thường.",
+            )
+        if SCOPE3_SHIP_IMPORT_COLUMNS <= cols:
+            raise HTTPException(
+                status_code=400,
+                detail="File là mẫu tàu biển. Chọn đúng loại Xe thường hoặc dùng mẫu Excel xe thường.",
+            )
+        if SCOPE3_HARBOR_CRAFT_IMPORT_COLUMNS <= cols:
+            raise HTTPException(
+                status_code=400,
+                detail="File là mẫu tàu trong cảng. Chọn đúng loại Xe thường hoặc dùng mẫu Excel xe thường.",
+            )
+        missing = SCOPE3_OTHER_VEHICLE_IMPORT_COLUMNS - cols
+        if missing:
+            raise HTTPException(
+                status_code=400,
+                detail=f"File không đúng mẫu xe thường. Thiếu cột: {', '.join(sorted(missing))}.",
+            )
     else:
         raise HTTPException(status_code=500, detail="Cấu hình import không hợp lệ.")
 
@@ -194,6 +228,7 @@ async def scope3_page(
     from sqlalchemy import func
     from models.ship import Ship
     from models.harbor_craft import HarborCraft
+    from models.other_vehicle import OtherVehicle
     
     # 2. Lấy summary của Ship
     ship_total_co2 = db.query(func.sum(Ship.total_co2)).scalar() or 0.0
@@ -202,16 +237,20 @@ async def scope3_page(
     # 3. Lấy summary của Tàu cảng (Harbor Craft)
     harbor_total_co2 = db.query(func.sum(HarborCraft.e_total)).scalar() or 0.0
     harbor_count = db.query(func.count(HarborCraft.id)).scalar() or 0
+
+    other_total_co2 = db.query(func.sum(OtherVehicle.e_total)).scalar() or 0.0
+    other_count = db.query(func.count(OtherVehicle.id)).scalar() or 0
     
     # 4. Gộp dữ liệu Summary
-    total_co2e = container_summary.get("total_co2", 0.0) + ship_total_co2 + harbor_total_co2
-    total_trips = container_summary.get("total_trips", 0) + ship_count + harbor_count
+    total_co2e = container_summary.get("total_co2", 0.0) + ship_total_co2 + harbor_total_co2 + other_total_co2
+    total_trips = container_summary.get("total_trips", 0) + ship_count + harbor_count + other_count
     
     summary = {
         **container_summary,
         "container_co2e": container_summary.get("total_co2", 0.0),
         "ship_co2e": ship_total_co2,
         "harbor_co2e": harbor_total_co2,
+        "other_vehicle_co2e": other_total_co2,
         "total_co2e": total_co2e,
         "total_trips": total_trips
     }
@@ -224,8 +263,10 @@ async def scope3_page(
         "container_co2e": round(s3["container_co2e"], 2),
         "ship_co2e": round(s3["ship_co2e"], 2),
         "harbor_co2e": round(s3["harbor_co2e"], 2),
+        "other_vehicle_co2e": round(s3["other_vehicle_co2e"], 2),
         "total_trips": s3["record_count"],
         "total_ships": s3["n_ships"],
+        "n_other_vehicles": s3["n_other_vehicles"],
     }
 
     return templates.TemplateResponse(
@@ -442,6 +483,36 @@ async def download_harbor_craft_template():
     )
 
 
+@router.get("/api/scope3/other_vehicles/template")
+async def download_other_vehicle_template():
+    now = datetime.now()
+    dummy_data = []
+    types = ["car", "motorbike"]
+
+    for i in range(1, 11):
+        dummy_data.append({
+            "Loại xe (car/motorbike)": random.choice(types),
+            "Số lượng xe": random.randint(1, 50),
+            "Thời gian (YYYY-MM-DD HH:MM)": (now - timedelta(days=random.randint(1, 10))).strftime("%Y-%m-%d %H:%M"),
+        })
+
+    df = pd.DataFrame(dummy_data)
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name='Data_Xe_Thuong', index=False)
+        for column in df:
+            column_length = max(df[column].astype(str).map(len).max(), len(column))
+            col_idx = df.columns.get_loc(column)
+            writer.sheets['Data_Xe_Thuong'].set_column(col_idx, col_idx, column_length + 2)
+
+    output.seek(0)
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=Template_Import_Xe_Thuong.xlsx"},
+    )
+
+
 # --- IMPORTS EXCEL POST ENDPOINTS ---
 @router.post("/api/scope3/containers/import")
 async def import_containers(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -609,6 +680,53 @@ async def import_harbor_crafts(request: Request, file: UploadFile = File(...), d
     return _scope3_import_result(imported_count, total)
 
 
+@router.post("/api/scope3/other_vehicles/import")
+async def import_other_vehicles(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    contents = await file.read()
+    try:
+        df = pd.read_excel(io.BytesIO(contents))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Không đọc được file Excel: {str(e)}") from e
+
+    df = df.fillna(0)
+    _validate_scope3_import_excel(df, "other_vehicle")
+
+    imported_count = 0
+    actor = _actor_from_request(request)
+
+    for _, row in df.iterrows():
+        try:
+            record_time_raw = row.get("Thời gian (YYYY-MM-DD HH:MM)")
+            if pd.isna(record_time_raw) or not record_time_raw:
+                record_t = datetime.now()
+            else:
+                record_t = pd.to_datetime(record_time_raw)
+
+            raw_type = str(row.get("Loại xe (car/motorbike)", "car")).strip().lower()
+            if raw_type not in ("car", "motorbike"):
+                raw_type = "car"
+
+            payload = OtherVehicleCreate(
+                vehicle_type=raw_type,
+                vehicle_count=int(row.get("Số lượng xe", 1) or 1),
+                record_time=record_t,
+            )
+            other_vehicle_service.create_other_vehicle(payload, db, actor=actor)
+            imported_count += 1
+        except Exception as e:
+            print(f"Lỗi dòng xe thường: {e}")
+            continue
+
+    total = len(df)
+    if total > 0 and imported_count == 0:
+        raise HTTPException(
+            status_code=422,
+            detail="Không import được dòng nào. Kiểm tra định dạng thời gian và giá trị số trên từng dòng.",
+        )
+
+    return _scope3_import_result(imported_count, total)
+
+
 # =====================================================================
 # ─── API ENDPOINTS CHO CRUD DỮ LIỆU (JSON) ───────────────────────────
 # =====================================================================
@@ -692,6 +810,29 @@ async def delete_harbor_craft(record_id: int, request: Request, db: Session = De
         raise HTTPException(status_code=400, detail=str(e))
 
 
+# ─── OTHER VEHICLE API (CAR/MOTORBIKE) ───
+@router.get("/api/scope3/other_vehicles")
+async def list_other_vehicles(db: Session = Depends(get_db)):
+    items = other_vehicle_service.get_all_other_vehicles(db)
+    return {"items": items, "count": len(items)}
+
+@router.post("/api/scope3/other_vehicles")
+async def create_other_vehicle(payload: OtherVehicleCreate, request: Request, db: Session = Depends(get_db)):
+    return other_vehicle_service.create_other_vehicle(payload, db, actor=_actor_from_request(request))
+
+@router.get("/api/scope3/other_vehicles/{record_id}")
+async def get_other_vehicle(record_id: int, db: Session = Depends(get_db)):
+    return other_vehicle_service.get_other_vehicle_by_id(record_id, db)
+
+@router.put("/api/scope3/other_vehicles/{record_id}")
+async def update_other_vehicle(record_id: int, payload: OtherVehicleUpdate, request: Request, db: Session = Depends(get_db)):
+    return other_vehicle_service.update_other_vehicle(record_id, payload, db, actor=_actor_from_request(request))
+
+@router.delete("/api/scope3/other_vehicles/{record_id}")
+async def delete_other_vehicle(record_id: int, request: Request, db: Session = Depends(get_db)):
+    return other_vehicle_service.delete_other_vehicle(record_id, db, actor=_actor_from_request(request))
+
+
 # ─── COMBINED SUMMARY & AUDIT API ENDPOINTS ──────────────────
 
 @router.get("/api/scope3/summary")
@@ -721,6 +862,7 @@ async def get_scope3_summary(
         "trend_container_monthly": s3["trend_container_monthly"],
         "trend_ship_monthly": s3["trend_ship_monthly"],
         "trend_harbor_monthly": s3["trend_harbor_monthly"],
+        "trend_other_vehicle_monthly": s3["trend_other_vehicle_monthly"],
         "trend_monthly": s3["trend_monthly"],
     }
 
