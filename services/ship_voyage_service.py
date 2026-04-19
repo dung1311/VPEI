@@ -8,15 +8,28 @@ from fastapi import HTTPException, status
 import services.emission_ship as compute
 from schemas.ship import ShipVoyageRequest, VoyagePortCall
 
+POLLUTANTS = ("CO2", "SO2", "PM10", "PM2.5")
+SULFUR_FRACTION = 0.005
+AUX_BSFC = 227.0
+
 
 def _bsfc_main(rpm: float) -> float:
-    # Theo mo ta nghiep vu: main <130 rpm dung 195, con lai dung 215 g/kWh.
+    # Business rule: slow-speed main engine uses 195, otherwise 215 g/kWh.
     return 195.0 if float(rpm) < 130 else 215.0
 
 
-def _sea_co2_ef_from_bsfc(bsfc: float) -> float:
-    # CO2 EF (g/kWh) cho nhien lieu FO/HFO trong hanh trinh tren bien.
-    return 3.114 * float(bsfc)
+def _sea_emission_factors_from_bsfc(bsfc: float) -> Dict[str, float]:
+    pm10 = 0.5761 + (bsfc * 0.02247 * 7.0 * SULFUR_FRACTION)
+    pm25 = pm10 * 0.8
+    so2 = SULFUR_FRACTION * bsfc * 2.0 * 0.97753
+    co2 = 3.114 * bsfc
+
+    return {
+        "CO2": co2,
+        "SO2": so2,
+        "PM10": pm10,
+        "PM2.5": pm25,
+    }
 
 
 def _hours_between_port_calls(prev_port: VoyagePortCall, next_port: VoyagePortCall, sea_buffer_hours: float) -> float:
@@ -35,13 +48,18 @@ def _fallback_time_from_buoy(v_actual: float, buoy: int, status_name: str) -> fl
         return 0.0
 
 
-def _get_in_port_co2_ef(payload: ShipVoyageRequest, lf: float, engine: str) -> float:
-    pollutants = ["CO2"]
+def _pollutant_to_ship_table_name(pollutant: str) -> str:
+    # in-port emission tables use SOx while API contract exposes SO2
+    return "SOx" if pollutant == "SO2" else pollutant
+
+
+def _get_in_port_real_efs(payload: ShipVoyageRequest, pollutants: tuple[str, ...], lf: float, engine: str) -> Dict[str, float]:
+    table_pollutants = [_pollutant_to_ship_table_name(p) for p in pollutants]
 
     if engine == "main":
         if payload.is_man:
             raw = compute.compute_real_ef_man(
-                pollutants,
+                table_pollutants,
                 lf=lf,
                 engine="main",
                 year=payload.year_built,
@@ -50,7 +68,7 @@ def _get_in_port_co2_ef(payload: ShipVoyageRequest, lf: float, engine: str) -> f
             )
         else:
             raw = compute.compute_real_ef_non_man(
-                pollutants,
+                table_pollutants,
                 lf=lf,
                 engine="main",
                 year=payload.year_built,
@@ -58,9 +76,8 @@ def _get_in_port_co2_ef(payload: ShipVoyageRequest, lf: float, engine: str) -> f
                 valve_type=payload.valve_type.value,
             )
     else:
-        # May phu dung bo he so non-MAN nhu luong Scope 3 hien tai.
         raw = compute.compute_real_ef_non_man(
-            pollutants,
+            table_pollutants,
             lf=lf,
             engine="auxiliary",
             year=payload.year_built,
@@ -68,7 +85,10 @@ def _get_in_port_co2_ef(payload: ShipVoyageRequest, lf: float, engine: str) -> f
             valve_type=payload.valve_type.value,
         )
 
-    return float(raw.get("CO2", 0.0))
+    return {
+        original: float(raw.get(mapped, 0.0))
+        for original, mapped in zip(pollutants, table_pollutants)
+    }
 
 
 def _calculate_in_port_for_call(payload: ShipVoyageRequest, port: VoyagePortCall) -> Dict[str, Any]:
@@ -79,7 +99,7 @@ def _calculate_in_port_for_call(payload: ShipVoyageRequest, port: VoyagePortCall
         t_trip = (2.0 * distance / payload.v_trip) if payload.v_trip > 0 else 0.0
         t_maneuver = (2.0 * distance / payload.v_maneuver) if payload.v_maneuver > 0 else 0.0
     else:
-        # Fallback theo bang buoy de giu tuong thich cach tinh cu.
+        # fallback to buoy-based duration model to stay compatible with old logic
         t_trip = _fallback_time_from_buoy(payload.v_trip, payload.buoy, "trip")
         t_maneuver = _fallback_time_from_buoy(payload.v_maneuver, payload.buoy, "maneuver")
 
@@ -98,20 +118,25 @@ def _calculate_in_port_for_call(payload: ShipVoyageRequest, port: VoyagePortCall
     )
     lf_a_anchor = float(compute.compute_lf(0.0, payload.v_max, engine="auxiliary", type=ship_type, status="mooring"))
 
-    ef_m_trip = _get_in_port_co2_ef(payload, lf_m_trip, engine="main")
-    ef_m_maneuver = _get_in_port_co2_ef(payload, lf_m_maneuver, engine="main")
-    ef_a_trip = _get_in_port_co2_ef(payload, lf_a_trip, engine="auxiliary")
-    ef_a_maneuver = _get_in_port_co2_ef(payload, lf_a_maneuver, engine="auxiliary")
-    ef_a_anchor = _get_in_port_co2_ef(payload, lf_a_anchor, engine="auxiliary")
+    ef_m_trip = _get_in_port_real_efs(payload, POLLUTANTS, lf_m_trip, engine="main")
+    ef_m_maneuver = _get_in_port_real_efs(payload, POLLUTANTS, lf_m_maneuver, engine="main")
+    ef_a_trip = _get_in_port_real_efs(payload, POLLUTANTS, lf_a_trip, engine="auxiliary")
+    ef_a_maneuver = _get_in_port_real_efs(payload, POLLUTANTS, lf_a_maneuver, engine="auxiliary")
+    ef_a_anchor = _get_in_port_real_efs(payload, POLLUTANTS, lf_a_anchor, engine="auxiliary")
 
-    e1 = payload.P_main * t_trip * lf_m_trip * ef_m_trip
-    e2 = payload.P_main * t_maneuver * lf_m_maneuver * ef_m_maneuver
-    e3 = p_aux * t_trip * lf_a_trip * ef_a_trip
-    e4 = p_aux * t_maneuver * lf_a_maneuver * ef_a_maneuver
-    e5 = p_aux * t_anchor * lf_a_anchor * ef_a_anchor
+    emissions_grams: Dict[str, float] = {}
+    emissions_tons: Dict[str, float] = {}
 
-    co2_grams = float(e1 + e2 + e3 + e4 + e5)
-    co2_tons = co2_grams / 1_000_000.0
+    for pollutant in POLLUTANTS:
+        e1 = payload.P_main * t_trip * lf_m_trip * ef_m_trip[pollutant]
+        e2 = payload.P_main * t_maneuver * lf_m_maneuver * ef_m_maneuver[pollutant]
+        e3 = p_aux * t_trip * lf_a_trip * ef_a_trip[pollutant]
+        e4 = p_aux * t_maneuver * lf_a_maneuver * ef_a_maneuver[pollutant]
+        e5 = p_aux * t_anchor * lf_a_anchor * ef_a_anchor[pollutant]
+
+        grams = float(e1 + e2 + e3 + e4 + e5)
+        emissions_grams[pollutant] = grams
+        emissions_tons[pollutant] = grams / 1_000_000.0
 
     return {
         "port_code": port.port_code,
@@ -122,8 +147,10 @@ def _calculate_in_port_for_call(payload: ShipVoyageRequest, port: VoyagePortCall
         "t_trip": round(t_trip, 4),
         "t_maneuver": round(t_maneuver, 4),
         "t_anchor": round(t_anchor, 4),
-        "co2_grams": round(co2_grams, 4),
-        "co2_tons": round(co2_tons, 6),
+        "co2_grams": round(emissions_grams["CO2"], 4),
+        "co2_tons": round(emissions_tons["CO2"], 6),
+        "emissions_grams": {k: round(v, 4) for k, v in emissions_grams.items()},
+        "emissions_tons": {k: round(v, 6) for k, v in emissions_tons.items()},
         "latitude": port.latitude,
         "longitude": port.longitude,
     }
@@ -133,6 +160,7 @@ def _calculate_at_sea_leg(payload: ShipVoyageRequest, prev_port: VoyagePortCall,
     schedule_hours = _hours_between_port_calls(prev_port, next_port, payload.sea_buffer_hours)
 
     if schedule_hours <= 0:
+        zero_emissions = {p: 0.0 for p in POLLUTANTS}
         return {
             "from_port": prev_port.port_code,
             "to_port": next_port.port_code,
@@ -142,6 +170,8 @@ def _calculate_at_sea_leg(payload: ShipVoyageRequest, prev_port: VoyagePortCall,
             "note": "Leg is too short/overlapped in schedule; treated as in-port operation.",
             "co2_grams": 0.0,
             "co2_tons": 0.0,
+            "emissions_grams": zero_emissions,
+            "emissions_tons": zero_emissions,
             "from": {
                 "port_code": prev_port.port_code,
                 "port_name": prev_port.port_name or prev_port.port_code,
@@ -175,14 +205,19 @@ def _calculate_at_sea_leg(payload: ShipVoyageRequest, prev_port: VoyagePortCall,
     lf_aux = payload.lf_aux_at_sea
 
     p_aux = float(payload.P_aux if payload.P_aux is not None else payload.P_main / 5.0)
-    ef_main_co2 = _sea_co2_ef_from_bsfc(_bsfc_main(payload.rpm))
-    ef_aux_co2 = _sea_co2_ef_from_bsfc(227.0)
+    ef_main = _sea_emission_factors_from_bsfc(_bsfc_main(payload.rpm))
+    ef_aux = _sea_emission_factors_from_bsfc(AUX_BSFC)
 
-    co2_grams = (
-        payload.P_main * lf_main * hours * ef_main_co2
-        + p_aux * lf_aux * hours * ef_aux_co2
-    )
-    co2_tons = co2_grams / 1_000_000.0
+    emissions_grams: Dict[str, float] = {}
+    emissions_tons: Dict[str, float] = {}
+
+    for pollutant in POLLUTANTS:
+        grams = (
+            payload.P_main * lf_main * hours * ef_main[pollutant]
+            + p_aux * lf_aux * hours * ef_aux[pollutant]
+        )
+        emissions_grams[pollutant] = float(grams)
+        emissions_tons[pollutant] = float(grams) / 1_000_000.0
 
     return {
         "from_port": prev_port.port_code,
@@ -192,8 +227,10 @@ def _calculate_at_sea_leg(payload: ShipVoyageRequest, prev_port: VoyagePortCall,
         "speed_kmh": round(speed_kmh, 4),
         "load_factor_main": round(lf_main, 6),
         "load_factor_aux": round(lf_aux, 6),
-        "co2_grams": round(float(co2_grams), 4),
-        "co2_tons": round(float(co2_tons), 6),
+        "co2_grams": round(emissions_grams["CO2"], 4),
+        "co2_tons": round(emissions_tons["CO2"], 6),
+        "emissions_grams": {k: round(v, 4) for k, v in emissions_grams.items()},
+        "emissions_tons": {k: round(v, 6) for k, v in emissions_tons.items()},
         "from": {
             "port_code": prev_port.port_code,
             "port_name": prev_port.port_name or prev_port.port_code,
@@ -209,6 +246,11 @@ def _calculate_at_sea_leg(payload: ShipVoyageRequest, prev_port: VoyagePortCall,
     }
 
 
+def _sum_pollutants(target: Dict[str, float], source: Dict[str, float]) -> None:
+    for pollutant in POLLUTANTS:
+        target[pollutant] = float(target.get(pollutant, 0.0)) + float(source.get(pollutant, 0.0))
+
+
 def calculate_ship_voyage_emissions(payload: ShipVoyageRequest) -> Dict[str, Any]:
     if len(payload.ports) < 2:
         raise HTTPException(
@@ -219,20 +261,20 @@ def calculate_ship_voyage_emissions(payload: ShipVoyageRequest) -> Dict[str, Any
     sea_legs: list[Dict[str, Any]] = []
     port_calls: list[Dict[str, Any]] = []
 
-    total_at_sea_co2_tons = 0.0
-    total_in_port_co2_tons = 0.0
+    at_sea_tons = {p: 0.0 for p in POLLUTANTS}
+    in_port_tons = {p: 0.0 for p in POLLUTANTS}
 
     for idx in range(len(payload.ports) - 1):
         leg = _calculate_at_sea_leg(payload, payload.ports[idx], payload.ports[idx + 1])
         sea_legs.append(leg)
-        total_at_sea_co2_tons += float(leg["co2_tons"])
+        _sum_pollutants(at_sea_tons, leg["emissions_tons"])
 
     for port in payload.ports:
         info = _calculate_in_port_for_call(payload, port)
         port_calls.append(info)
-        total_in_port_co2_tons += float(info["co2_tons"])
+        _sum_pollutants(in_port_tons, info["emissions_tons"])
 
-    total_co2_tons = total_at_sea_co2_tons + total_in_port_co2_tons
+    total_tons = {p: at_sea_tons[p] + in_port_tons[p] for p in POLLUTANTS}
 
     map_points = [
         {
@@ -261,6 +303,7 @@ def calculate_ship_voyage_emissions(payload: ShipVoyageRequest) -> Dict[str, Any
                 "coordinates": coords,
                 "distance_km": leg["distance_km"],
                 "co2_tons": leg["co2_tons"],
+                "emissions_tons": leg["emissions_tons"],
             }
         )
 
@@ -273,14 +316,18 @@ def calculate_ship_voyage_emissions(payload: ShipVoyageRequest) -> Dict[str, Any
             "ship_type": payload.ship_type.value,
             "year_built": payload.year_built,
         },
+        "pollutants": list(POLLUTANTS),
         "summary": {
             "num_ports": len(payload.ports),
             "num_legs": len(sea_legs),
             "at_sea_hours": round(total_at_sea_hours, 4),
             "in_port_hours": round(total_in_port_hours, 4),
-            "at_sea_co2_tons": round(total_at_sea_co2_tons, 6),
-            "in_port_co2_tons": round(total_in_port_co2_tons, 6),
-            "total_co2_tons": round(total_co2_tons, 6),
+            "at_sea_tons": {k: round(v, 6) for k, v in at_sea_tons.items()},
+            "in_port_tons": {k: round(v, 6) for k, v in in_port_tons.items()},
+            "total_tons": {k: round(v, 6) for k, v in total_tons.items()},
+            "at_sea_co2_tons": round(at_sea_tons["CO2"], 6),
+            "in_port_co2_tons": round(in_port_tons["CO2"], 6),
+            "total_co2_tons": round(total_tons["CO2"], 6),
         },
         "legs": sea_legs,
         "ports": port_calls,

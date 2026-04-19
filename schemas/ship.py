@@ -89,7 +89,7 @@ class ShipVoyageRequest(BaseModel):
 
     P_main: float = Field(..., gt=0, description="Công suất máy chính (kW)")
     P_aux: Optional[float] = Field(None, gt=0, description="Công suất máy phụ (kW)")
-    lf_aux_at_sea: float = Field(0.2, ge=0, le=1, description="Load factor máy phụ khi đi biển")
+    lf_aux_at_sea: float = Field(0.9*0.9*0.9, ge=0, le=1, description="Load factor máy phụ khi đi biển")
 
     sea_buffer_hours: float = Field(
         2.0,
