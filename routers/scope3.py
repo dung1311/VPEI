@@ -19,8 +19,8 @@ from services.scope3_period_service import compute_scope3_period, build_scope3_c
 from schemas.container import ContainerCreate, ContainerUpdate
 
 # Ship Services & Schemas
-from services import ship_service, ship_activity_service
-from schemas.ship import ShipCreate, ShipUpdate
+from services import ship_service, ship_activity_service, ship_voyage_service
+from schemas.ship import ShipCreate, ShipUpdate, ShipVoyageRequest
 from models.audit_log import AuditLog
 
 # Harbor Craft Services & Schemas (TÀU TRONG CẢNG)
@@ -699,6 +699,12 @@ async def delete_ships_bulk(payload: BulkDeleteRequest, request: Request, db: Se
 @router.delete("/api/scope3/ships/{ship_id}")
 async def delete_ship_endpoint(ship_id: int, request: Request, db: Session = Depends(get_db)):
     return ship_service.delete_ship(ship_id, db, actor=_actor_from_request(request))
+
+
+@router.post("/api/scope3/ships/voyage/calculate")
+async def calculate_ship_voyage(payload: ShipVoyageRequest):
+    """Tính phát thải cho tuyến nhiều cảng (at sea + in port) và trả dữ liệu để vẽ map."""
+    return ship_voyage_service.calculate_ship_voyage_emissions(payload)
 
 
 # ─── HARBOR CRAFT API (TÀU TRONG CẢNG) ───
