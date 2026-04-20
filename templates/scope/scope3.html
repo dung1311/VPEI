@@ -269,18 +269,27 @@ window.addEventListener('click', function (event) {
           <div id="form-truck" class="form-section">
             <div class="form-row">
               <div class="form-group"><label class="form-label">Biển số xe</label><input type="text" id="c-license-plate" class="form-input" placeholder="VD: 51F-12345"></div>
+              <div class="form-group">
+                <label class="form-label">Loại xe</label>
+                <select id="c-is-refrigerated" class="form-select">
+                  <option value="false">Container Thường</option>
+                  <option value="true">Container Lạnh</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
               <div class="form-group"><label class="form-label">Journey Type</label><select id="c-journey-type" class="form-select"><option value="both">Nhập & Xuất</option><option value="export">Chỉ Xuất</option><option value="import">Chỉ Nhập</option></select></div>
+              <div class="form-group"><label class="form-label">Tải trọng tối đa (tấn)</label><input type="number" id="c-max-weight" class="form-input" min="1" step="0.1" value="40"></div>
             </div>
             <div class="form-row">
               <div class="form-group"><label class="form-label">Thời gian vào</label><input type="datetime-local" id="c-start-time" class="form-input"></div>
               <div class="form-group"><label class="form-label">Thời gian ra</label><input type="datetime-local" id="c-end-time" class="form-input"></div>
             </div>
             <div class="form-row">
-              <div class="form-group"><label class="form-label">Tải trọng tối đa (tấn)</label><input type="number" id="c-max-weight" class="form-input" min="1" step="0.1" value="40"></div>
               <div class="form-group"><label class="form-label">Vận tốc chặng 1 (km/h)</label><input type="number" id="c-velocity-1" class="form-input"></div>
+              <div class="form-group"><label class="form-label">Vận tốc chặng 2 (km/h)</label><input type="number" id="c-velocity-2" class="form-input"></div>
             </div>
             <div class="form-row">
-              <div class="form-group"><label class="form-label">Vận tốc chặng 2 (km/h)</label><input type="number" id="c-velocity-2" class="form-input"></div>
               <div class="form-group"><label class="form-label">Vận tốc chặng 3 (km/h)</label><input type="number" id="c-velocity-3" class="form-input"></div>
             </div>
             <div class="form-row">
@@ -473,6 +482,7 @@ window.addEventListener('click', function (event) {
           <div class="table-header">
             <div class="table-header-title"><i class="fa-solid fa-list"></i> Danh sách bản ghi</div>
             <div class="tbl-actions">
+              <button class="tbl-btn" id="bulkDeleteBtn" onclick="bulkDeleteSelected()" style="color:var(--red); display: none;"><i class="fa-solid fa-trash-alt"></i> Xóa đã chọn (<span id="bulkDeleteCount">0</span>)</button>
               <button class="tbl-btn" onclick="exportRecordsExcel()"><i class="fa-solid fa-file-excel" style="color:#16a34a"></i> Excel</button>
               <button class="tbl-btn" onclick="exportRecordsPdf()"><i class="fa-solid fa-file-pdf" style="color:#dc2626"></i> PDF</button>
             </div>
@@ -642,7 +652,7 @@ function getRecordSpecificType(r) {
     const type = getRecordVehicleType(r);
     if (type === 'container-ship') return SHIP_TYPES[r.ship_type] || r.ship_type || 'Tàu biển';
     if (type === 'harbor_craft') return HARBOR_CRAFT_TYPES[r.craft_type] || r.craft_type || 'Tàu trong cảng';
-    if (type === 'other_vehicle') return OTHER_VEHICLE_TYPES[r.vehicle_type] || 'Xe thường';
+    if (type === 'truck') return r.is_refrigerated ? 'Container lạnh' : 'Container thường';
     return 'Xe container';
 }
 
@@ -899,6 +909,7 @@ function startEditContainer(id) {
   if (!record) return;
   editingContainerId = id;
   document.getElementById('c-license-plate').value = record.license_plate || '';
+  document.getElementById('c-is-refrigerated').value = record.is_refrigerated ? 'true' : 'false';
   document.getElementById('c-journey-type').value = record.journey_type || 'both';
   document.getElementById('c-max-weight').value = record.max_weight != null ? String(record.max_weight) : '40';
   document.getElementById('c-velocity-1').value = record.velocity_1 != null ? String(record.velocity_1) : '';
@@ -926,6 +937,7 @@ function cancelEditContainer() {
   document.getElementById('container-cancel-edit-btn').classList.add('hidden');
   document.getElementById('container-save-btn').innerHTML = '<i class="fa-solid fa-save"></i> Lưu dữ liệu Xe';
   document.getElementById('c-license-plate').value = '';
+  document.getElementById('c-is-refrigerated').value = 'false';
   document.getElementById('c-journey-type').value = 'both';
   document.getElementById('c-max-weight').value = '40';
   ['c-start-time', 'c-end-time', 'c-velocity-1', 'c-velocity-2', 'c-velocity-3', 'c-input-weight', 'c-output-weight', 'c-distance-1', 'c-distance-2', 'c-distance-3', 'c-note', 'c-update-reason'].forEach((id) => {
@@ -1035,11 +1047,13 @@ async function saveContainerData() {
   }
 
   const journey_type = document.getElementById('c-journey-type').value || 'both';
+  const is_refrigerated = document.getElementById('c-is-refrigerated')?.value === 'true';
 
   const payload = {
     license_plate: licensePlate,
     start_time: new Date(startTime).toISOString(),
     end_time: new Date(endTime).toISOString(),
+    is_refrigerated: is_refrigerated,
     max_weight: maxWeight,
     journey_type,
     velocity_1: v1,
@@ -1251,6 +1265,7 @@ function renderRecordsTable() {
 
       return `
         <tr>
+          <td><input type="checkbox" class="record-checkbox" onchange="updateBulkDeleteBtn()" data-id="${r.id}" data-type="${type}" /></td>
           <td>${idx + 1}</td>
           <td><strong>${label}</strong></td>
           <td>${vGroup.icon} ${specificTypeLabel}</td>
@@ -1270,7 +1285,7 @@ function renderRecordsTable() {
           ${vGroup.icon} ${vGroup.label} (${rows.length})
         </div>
         <table>
-            <thead><tr><th>#</th><th>Biển số / Tên</th><th>Loại chi tiết</th><th>Thời gian</th><th>CO₂e (tCO₂e)</th><th>Hành động</th></tr></thead>
+            <thead><tr><th style="width: 40px"><input type="checkbox" onchange="toggleSelectAll(this, '${type}')" /></th><th>#</th><th>Biển số / Tên</th><th>Loại chi tiết</th><th>Thời gian</th><th>CO₂e (tCO₂e)</th><th>Hành động</th></tr></thead>
             <tbody>${rowHtml}</tbody>
         </table>
       </div>
@@ -1463,6 +1478,59 @@ function exportRecordsPdf() {
   showToast('Đã xuất PDF thành công', 'success');
 }
 
+function toggleSelectAll(checkbox, type) {
+  const checkboxes = document.querySelectorAll(`.record-checkbox[data-type="${type}"]`);
+  checkboxes.forEach(cb => cb.checked = checkbox.checked);
+  updateBulkDeleteBtn();
+}
+
+function updateBulkDeleteBtn() {
+  const selected = document.querySelectorAll('.record-checkbox:checked').length;
+  const btn = document.getElementById('bulkDeleteBtn');
+  const countSpan = document.getElementById('bulkDeleteCount');
+  if (selected > 0) {
+    btn.style.display = 'inline-flex';
+    countSpan.textContent = selected;
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+async function bulkDeleteSelected() {
+  const selectedBoxes = Array.from(document.querySelectorAll('.record-checkbox:checked'));
+  if (selectedBoxes.length === 0) return;
+  if (!confirm(`Bạn có chắc chắn muốn xóa ${selectedBoxes.length} bản ghi đã chọn?`)) return;
+
+  const payloads = {
+    truck: [],
+    'container-ship': [],
+    harbor_craft: []
+  };
+
+  selectedBoxes.forEach(cb => {
+    const type = cb.getAttribute('data-type');
+    const id = parseInt(cb.getAttribute('data-id'), 10);
+    if (payloads[type]) payloads[type].push(id);
+  });
+
+  try {
+    if (payloads.truck.length > 0) {
+      await fetch('/api/scope3/containers/bulk', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: payloads.truck }) });
+    }
+    if (payloads['container-ship'].length > 0) {
+      await fetch('/api/scope3/ships/bulk', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: payloads['container-ship'] }) });
+    }
+    if (payloads.harbor_craft.length > 0) {
+      await fetch('/api/scope3/harbor_crafts/bulk', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: payloads.harbor_craft }) });
+    }
+    
+    showToast(`✓ Đã xóa ${selectedBoxes.length} bản ghi`, 'success');
+    await loadAllRecords();
+    updateBulkDeleteBtn();
+  } catch (err) {
+    showToast('❌ Lỗi xóa nhiều bản ghi', 'error');
+  }
+}
 
 function deleteRecord(id, type) {
   deleteTarget = { id, type };

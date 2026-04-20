@@ -5,6 +5,11 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import List, Optional
+from pydantic import BaseModel
+
+class BulkDeleteRequest(BaseModel):
+    ids: List[int]
+
 
 from core.database import get_db
 from core.security import decode_token
@@ -153,6 +158,15 @@ async def update_activity(activity_id: int, payload: ActivityDataUpdate, db: Ses
 @router.delete("/scope1/activities/{activity_id}")
 async def delete_activity(activity_id: int, db: Session = Depends(get_db)):
     return scope1_services.ActivityDataService.delete(db, activity_id)
+
+@router.delete("/api/scope1/activities/bulk")
+async def delete_activities_bulk(payload: BulkDeleteRequest, request: Request, db: Session = Depends(get_db)):
+    for act_id in payload.ids:
+        try:
+            scope1_services.ActivityDataService.delete(db, act_id)
+        except Exception:
+            pass
+    return {"message": f"Đã xóa {len(payload.ids)} bản ghi thành công", "status": "success"}
 
 @router.post("/scope1/activities/import")
 async def import_activities(file: UploadFile = File(...), period_year: int = Query(...), period_month: int = Query(...), db: Session = Depends(get_db)):

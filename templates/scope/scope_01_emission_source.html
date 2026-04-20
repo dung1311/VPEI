@@ -135,6 +135,7 @@
       <div class="data-section-header">
         <div class="section-title" style="margin:0;">Nhập dữ liệu hoạt động</div>
         <div style="display:flex;gap:10px;">
+          <button id="bulkDeleteBtnAct" class="btn-outline action-require-edit" style="color:var(--red); display:none;" onclick="bulkDeleteActivities()">[ Xóa đã chọn ]</button>
           <button class="btn-primary action-require-edit" onclick="document.getElementById('catModal').classList.add('show')">[ + Tạo Thiết Bị ]</button>
           <button class="btn-primary action-require-edit" onclick="openActivityModal()">[ Nhập hoạt động ]</button>
           <button class="btn-outline action-require-edit" onclick="document.getElementById('importModal').classList.add('show')">[ Import Excel ]</button>
@@ -144,6 +145,7 @@
       <table class="data-table">
         <thead>
           <tr>
+            <th style="width: 40px;"><input type="checkbox" id="selectAllAct" onclick="toggleSelectAllAct(this)"></th>
             <th>ID B/Ghi</th>
             <th>Tên thiết bị</th>
             <th>Power (kW)</th>
@@ -157,6 +159,7 @@
         <tbody>
           {% for act in activities %}
           <tr>
+            <td><input type="checkbox" class="act-checkbox" value="{{ act.id }}" onchange="updateBulkDeleteBtn('act-checkbox', 'bulkDeleteBtnAct', 'selectAllAct')"></td>
             <td>{{ loop.index }}</td>
             <td style="font-weight:600;">[{{ act.device_id }}] {{ act.device_name }}</td>
             <td>{{ act.power }}</td>
@@ -177,7 +180,7 @@
           </tr>
           {% else %}
           <tr>
-            <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 20px;">Chưa có dữ liệu hoạt động trong kỳ này.</td>
+            <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 20px;">Chưa có dữ liệu hoạt động trong kỳ này.</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -582,6 +585,47 @@ async function deleteActivity(id) {
   if (!confirm("Bạn có chắc muốn xóa bản ghi này?")) return;
   const res = await fetch(`/scope1/activities/${id}`, { method: 'DELETE' });
   if (res.ok) window.location.reload(); else alert("Lỗi khi xóa.");
+}
+
+function toggleSelectAllAct(source) {
+  const checkboxes = document.querySelectorAll('.act-checkbox');
+  checkboxes.forEach(cb => cb.checked = source.checked);
+  updateBulkDeleteBtn('act-checkbox', 'bulkDeleteBtnAct', 'selectAllAct');
+}
+
+function updateBulkDeleteBtn(className, btnId, selectAllId) {
+  const checkboxes = document.querySelectorAll(`.${className}`);
+  const btn = document.getElementById(btnId);
+  const selectAll = document.getElementById(selectAllId);
+  if (!btn) return;
+  
+  const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+  const allChecked = Array.from(checkboxes).every(cb => cb.checked) && checkboxes.length > 0;
+  
+  btn.style.display = anyChecked ? "inline-block" : "none";
+  if (selectAll) selectAll.checked = allChecked;
+}
+
+async function bulkDeleteActivities() {
+  const checkboxes = document.querySelectorAll('.act-checkbox:checked');
+  const ids = Array.from(checkboxes).map(cb => parseInt(cb.value));
+  if (ids.length === 0) return;
+  if (!confirm(`Bạn có chắc muốn xóa ${ids.length} bản ghi đã chọn?`)) return;
+  
+  try {
+    const res = await fetch('/api/scope1/activities/bulk', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids })
+    });
+    if (res.ok) {
+      window.location.reload();
+    } else {
+      alert("Lỗi khi xóa nhiều bản ghi.");
+    }
+  } catch (err) {
+    alert("Xóa nhiều lỗi: " + err.message);
+  }
 }
 
 // ---------------------------------------------------------

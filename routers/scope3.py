@@ -48,6 +48,7 @@ def _scope3_excel_column_names(df: pd.DataFrame) -> set[str]:
 SCOPE3_CONTAINER_IMPORT_COLUMNS = frozenset(
     {
         "Biển số xe",
+        "Loại xe (Thường/Lạnh)",
         "Journey Type (both/import/export)",
         "Thời gian vào (YYYY-MM-DD HH:MM)",
         "Thời gian ra (YYYY-MM-DD HH:MM)",
@@ -369,6 +370,7 @@ async def download_container_template():
         
         dummy_data.append({
             "Biển số xe": f"{random.choice(plates)}-{random.randint(10000, 99999)}",
+            "Loại xe (Thường/Lạnh)": random.choice(["Thường", "Lạnh"]),
             "Journey Type (both/import/export)": j_type,
             "Thời gian vào (YYYY-MM-DD HH:MM)": (now - timedelta(hours=hours_in, minutes=random.randint(0, 59))).strftime("%Y-%m-%d %H:%M"),
             "Thời gian ra (YYYY-MM-DD HH:MM)": (now - timedelta(hours=hours_out, minutes=random.randint(0, 59))).strftime("%Y-%m-%d %H:%M"),
@@ -532,9 +534,16 @@ async def import_containers(request: Request, file: UploadFile = File(...), db: 
         try:
             start_t = pd.to_datetime(row["Thời gian vào (YYYY-MM-DD HH:MM)"])
             end_t = pd.to_datetime(row["Thời gian ra (YYYY-MM-DD HH:MM)"])
+            
+            is_refri = False
+            if "Loại xe (Thường/Lạnh)" in row:
+                val = str(row["Loại xe (Thường/Lạnh)"]).strip().lower()
+                if val == "lạnh":
+                    is_refri = True
 
             payload = ContainerCreate(
                 license_plate=str(row["Biển số xe"]),
+                is_refrigerated=is_refri,
                 journey_type=str(row["Journey Type (both/import/export)"]) if row["Journey Type (both/import/export)"] else "both",
                 start_time=start_t,
                 end_time=end_t,
@@ -754,6 +763,22 @@ async def get_container(container_id: int, db: Session = Depends(get_db)):
 async def update_container(container_id: int, container: ContainerUpdate, request: Request, db: Session = Depends(get_db)):
     return container_service.update_container(container_id, container, db, actor=_actor_from_request(request))
 
+from pydantic import BaseModel
+class BulkDeleteRequest(BaseModel):
+    ids: list[int]
+
+@router.delete("/api/scope3/containers/bulk")
+async def delete_containers_bulk(payload: BulkDeleteRequest, request: Request, db: Session = Depends(get_db)):
+    deleted_count = 0
+    actor = _actor_from_request(request)
+    for c_id in payload.ids:
+        try:
+            container_service.delete_container(c_id, db, actor)
+            deleted_count += 1
+        except Exception:
+            pass
+    return {"message": f"Deleted {deleted_count} containers"}
+
 @router.delete("/api/scope3/containers/{container_id}")
 async def delete_container(container_id: int, request: Request, db: Session = Depends(get_db)):
     return container_service.delete_container(container_id, db, actor=_actor_from_request(request))
@@ -776,6 +801,18 @@ async def get_ship_endpoint(ship_id: int, db: Session = Depends(get_db)):
 @router.put("/api/scope3/ships/{ship_id}")
 async def update_ship_endpoint(ship_id: int, ship: ShipUpdate, request: Request, db: Session = Depends(get_db)):
     return ship_service.update_ship(ship_id, ship, db, actor=_actor_from_request(request))
+
+@router.delete("/api/scope3/ships/bulk")
+async def delete_ships_bulk(payload: BulkDeleteRequest, request: Request, db: Session = Depends(get_db)):
+    deleted_count = 0
+    actor = _actor_from_request(request)
+    for s_id in payload.ids:
+        try:
+            ship_service.delete_ship(s_id, db, actor)
+            deleted_count += 1
+        except Exception:
+            pass
+    return {"message": f"Deleted {deleted_count} ships"}
 
 @router.delete("/api/scope3/ships/{ship_id}")
 async def delete_ship_endpoint(ship_id: int, request: Request, db: Session = Depends(get_db)):
@@ -801,6 +838,18 @@ async def update_harbor_craft(record_id: int, payload: HarborCraftUpdate, reques
         return harbor_craft_service.update_harbor_craft(record_id, payload, db, actor=_actor_from_request(request))
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete("/api/scope3/harbor_crafts/bulk")
+async def delete_harbor_crafts_bulk(payload: BulkDeleteRequest, request: Request, db: Session = Depends(get_db)):
+    deleted_count = 0
+    actor = _actor_from_request(request)
+    for h_id in payload.ids:
+        try:
+            harbor_craft_service.delete_harbor_craft(h_id, db, actor)
+            deleted_count += 1
+        except Exception:
+            pass
+    return {"message": f"Deleted {deleted_count} harbor crafts"}
 
 @router.delete("/api/scope3/harbor_crafts/{record_id}")
 async def delete_harbor_craft(record_id: int, request: Request, db: Session = Depends(get_db)):

@@ -65,6 +65,12 @@ def init_db():
                 conn.execute(text("ALTER TABLE audit_logs ADD COLUMN scope VARCHAR DEFAULT NULL"))
                 conn.execute(text("CREATE INDEX IF NOT EXISTS ix_audit_logs_scope ON audit_logs (scope)"))
 
+    if "containers" in inspector.get_table_names():
+        columns = [col["name"] for col in inspector.get_columns("containers")]
+        if "is_refrigerated" not in columns:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE containers ADD COLUMN is_refrigerated BOOLEAN NOT NULL DEFAULT 0"))
+
     from models.user import User
     from core.security import hash_password
 
