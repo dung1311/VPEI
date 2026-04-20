@@ -58,7 +58,7 @@ body { font-family:'Montserrat',sans-serif; background:var(--gray-soft); color:v
 .content { flex:1; overflow-y:auto; padding:20px 28px; display:flex; flex-direction:column; gap:28px; }
 
 /* ─── KPI ─── */
-.kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom: 24px; }
+.kpi-row { display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:12px; margin-bottom: 24px; }
 .kpi-card { background:white; border-radius:13px; padding:16px 18px; border: 2px solid #000080; cursor:pointer; transition:all .2s; position:relative; overflow:hidden; }
 .kpi-card:hover { border-color:var(--accent); box-shadow:0 4px 16px rgba(46,125,247,.1); transform:translateY(-1px); }
 .kpi-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:.85rem; margin-bottom:8px; }
@@ -210,6 +210,12 @@ window.addEventListener('click', function (event) {
           <div class="kpi-value" id="kpi-harbor">{{ "{:,.2f}".format(summary.harbor_co2e|default(0)) }}<span class="kpi-unit"> t</span></div>
           <div class="kpi-change neutral" id="kpi-harbor-chg"><i class="fa-solid fa-hand-pointer" style="font-size:0.6rem;margin-right:4px"></i>Nhấn xem xu hướng</div>
         </div>
+        <div class="kpi-card" onclick="toggleKpiDetailScope3('other_vehicle')" id="kpi-card-other">
+          <div class="kpi-icon" style="background:rgba(249,115,22,.1);color:#f97316"><i class="fa-solid fa-car-side"></i></div>
+          <div class="kpi-label">Xe thường</div>
+          <div class="kpi-value" id="kpi-other">{{ "{:,.2f}".format(summary.other_vehicle_co2e|default(0)) }}<span class="kpi-unit"> t</span></div>
+          <div class="kpi-change neutral" id="kpi-other-chg"><i class="fa-solid fa-hand-pointer" style="font-size:0.6rem;margin-right:4px"></i>Nhấn xem xu hướng</div>
+        </div>
       </div>
 
       <div class="kpi-detail" id="kpiDetailPanelS3">
@@ -256,6 +262,8 @@ window.addEventListener('click', function (event) {
               <button class="vtab active" onclick="selectVehicleType('truck', this)"><span>🚛</span> Xe container</button>
               <button class="vtab" onclick="selectVehicleType('container-ship', this)"><span>🚢</span> Tàu biển</button>
               <button class="vtab" onclick="selectVehicleType('harbor_craft', this)"><span>🛥️</span> Tàu trong cảng</button>
+              <button class="vtab" onclick="selectVehicleType('other_vehicle', this)"><span>🚗</span> Xe thường</button>
+              <button class="vtab" onclick="selectVehicleType('ship-voyage', this)"><span>🧭</span> Tàu liên cảng</button>
             </div>
           </div>
 
@@ -360,6 +368,118 @@ window.addEventListener('click', function (event) {
             <button class="btn-primary" onclick="saveShipData()" style="width:100%;justify-content:center;margin-top:16px"><i class="fa-solid fa-save"></i> Lưu dữ liệu Tàu biển</button>
           </div>
 
+          <div id="form-ship-voyage" class="form-section hidden">
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Tên tàu</label><input id="sv-name" type="text" class="form-input" placeholder="VD: Haian Beta"></div>
+              <div class="form-group">
+                <label class="form-label">Loại tàu</label>
+                <select id="sv-type" class="form-select">
+                  <option value="container_ship">Container Ship</option>
+                  <option value="bulk_carrier">Bulk Carrier</option>
+                  <option value="cruiser_ship">Cruiser Ship</option>
+                  <option value="general_cargo_ship">General Cargo</option>
+                  <option value="roro_ship">RoRo</option>
+                  <option value="reefer_ship">Reefer Ship</option>
+                  <option value="oil_tanker">Oil Tanker</option>
+                  <option value="other_ship">Sà Lan</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row-3">
+              <div class="form-group"><label class="form-label">Năm đóng</label><input id="sv-year" type="number" class="form-input" value="2018"></div>
+              <div class="form-group"><label class="form-label">RPM</label><input id="sv-rpm" type="number" class="form-input" value="120"></div>
+              <div class="form-group"><label class="form-label">Buoy (fallback)</label><input id="sv-buoy" type="number" class="form-input" value="0" min="0"></div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Loại Van</label>
+                <select id="sv-valve" class="form-select"><option value="C3">C3</option><option value="SV">SV</option></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Động cơ MAN?</label>
+                <select id="sv-isman" class="form-select"><option value="true">Có</option><option value="false">Không</option></select>
+              </div>
+            </div>
+
+            <div class="form-row-3">
+              <div class="form-group"><label class="form-label">V_trip (km/h)</label><input id="sv-vtrip" type="number" step="0.1" class="form-input" value="10"></div>
+              <div class="form-group"><label class="form-label">V_maneuver (km/h)</label><input id="sv-vmaneuver" type="number" step="0.1" class="form-input" value="6"></div>
+              <div class="form-group"><label class="form-label">V_max (km/h)</label><input id="sv-vmax" type="number" step="0.1" class="form-input" value="20"></div>
+            </div>
+
+            <div class="form-row-3">
+              <div class="form-group"><label class="form-label">V_sea (km/h, tùy chọn)</label><input id="sv-vsea" type="number" step="0.1" class="form-input" value="18"></div>
+              <div class="form-group"><label class="form-label">P_main (kW)</label><input id="sv-pmain" type="number" step="0.1" class="form-input" value="12000"></div>
+              <div class="form-group"><label class="form-label">P_aux (kW, tùy chọn)</label><input id="sv-paux" type="number" step="0.1" class="form-input" value="2400"></div>
+            </div>
+
+            <div class="form-row-3">
+              <div class="form-group"><label class="form-label">lf_aux_at_sea [0..1]</label><input id="sv-lf-aux" type="number" step="0.01" class="form-input" value="0.2"></div>
+              <div class="form-group"><label class="form-label">sea_buffer_hours</label><input id="sv-sea-buffer" type="number" step="0.1" class="form-input" value="2"></div>
+              <div class="form-group"><label class="form-label">default_sea_speed_ratio</label><input id="sv-speed-ratio" type="number" step="0.01" class="form-input" value="0.9"></div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">cap_speed_by_design</label>
+                <select id="sv-cap-speed" class="form-select"><option value="true">true</option><option value="false">false</option></select>
+              </div>
+              <div class="form-group" style="display:flex;align-items:flex-end;justify-content:flex-end;">
+                <button type="button" class="btn-outline" onclick="addShipVoyagePortRow()" style="padding:8px 14px;">
+                  <i class="fa-solid fa-plus"></i> Thêm cảng
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-top:4px;">
+              <label class="form-label">Danh sách cảng theo thứ tự hành trình</label>
+              <div id="sv-ports-container" style="display:flex;flex-direction:column;gap:10px;"></div>
+              <div style="font-size:0.72rem;color:var(--text-muted);margin-top:6px;">
+                Cần tối thiểu 2 cảng. `sea_distance_to_next_km` nằm ở cảng hiện tại để tính chặng tới cảng kế tiếp.
+              </div>
+            </div>
+
+            <div style="display:flex;gap:8px;margin-top:16px;">
+              <button id="sv-calc-btn" class="btn-primary" onclick="calculateShipVoyageData()" style="width:100%;justify-content:center;"><i class="fa-solid fa-route"></i> Tính phát thải tuyến liên cảng</button>
+              <button type="button" class="btn-secondary" onclick="resetShipVoyageForm()">Làm mới</button>
+            </div>
+
+            <div id="sv-result-panel" class="section-card hidden" style="margin-top:14px; border:1px solid var(--gray-border);">
+              <div class="section-header" style="padding:10px 12px;">
+                <div class="section-title" style="font-size:0.82rem;"><i class="fa-solid fa-chart-line"></i> Kết quả tính phát thải</div>
+              </div>
+              <div class="section-body" style="padding:12px;display:flex;flex-direction:column;gap:12px;">
+                <div class="kpi-row" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-bottom:0;">
+                  <div class="kpi-card" style="cursor:default;"><div class="kpi-label">CO2 tổng (tấn)</div><div class="kpi-value" id="sv-kpi-co2">0</div></div>
+                  <div class="kpi-card" style="cursor:default;"><div class="kpi-label">SO2 tổng (tấn)</div><div class="kpi-value" id="sv-kpi-so2">0</div></div>
+                  <div class="kpi-card" style="cursor:default;"><div class="kpi-label">PM10 tổng (tấn)</div><div class="kpi-value" id="sv-kpi-pm10">0</div></div>
+                  <div class="kpi-card" style="cursor:default;"><div class="kpi-label">PM2.5 tổng (tấn)</div><div class="kpi-value" id="sv-kpi-pm25">0</div></div>
+                </div>
+
+                <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:0.74rem;color:var(--text-muted);">
+                  <div><strong>Giờ đi biển:</strong> <span id="sv-total-sea-hours">0</span></div>
+                  <div><strong>Giờ trong cảng:</strong> <span id="sv-total-port-hours">0</span></div>
+                  <div><strong>Số chặng:</strong> <span id="sv-num-legs">0</span></div>
+                  <div><strong>Số cảng:</strong> <span id="sv-num-ports">0</span></div>
+                </div>
+
+                <div id="sv-route-note" style="font-size:0.74rem;color:var(--text-muted);"></div>
+
+                <div>
+                  <div style="font-size:0.76rem;font-weight:800;color:var(--navy);margin-bottom:6px;">Theo chặng</div>
+                  <div id="sv-legs-table"></div>
+                </div>
+
+                <div>
+                  <div style="font-size:0.76rem;font-weight:800;color:var(--navy);margin-bottom:6px;">Theo cảng</div>
+                  <div id="sv-ports-table"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div id="form-harbor-craft" class="form-section hidden">
             <div class="form-row">
               <div class="form-group"><label class="form-label">Tên thiết bị / Tàu</label><input type="text" id="h-name" class="form-input" placeholder="VD: Tàu lai dắt 01"></div>
@@ -420,6 +540,34 @@ window.addEventListener('click', function (event) {
             </div>
           </div>
 
+          <div id="form-other-vehicle" class="form-section hidden">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Loại xe</label>
+                <select id="ov-type" class="form-select">
+                  <option value="car">Ô tô thường</option>
+                  <option value="motorbike">Xe máy</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Số lượng xe</label>
+                <input type="number" id="ov-count" class="form-input" min="1" step="1" value="1">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Thời gian ghi nhận</label><input type="datetime-local" id="ov-record-time" class="form-input"></div>
+              <div id="ov-update-reason-group" class="form-group hidden"><label class="form-label">Lý do cập nhật (bắt buộc)</label><input type="text" id="ov-update-reason" class="form-input"></div>
+            </div>
+            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">
+              Hệ số phát thải cố định: ô tô thường 0.082869, xe máy 0.3362; quãng đường mặc định 1 km.
+            </div>
+
+            <div style="display:flex; gap:8px; margin-top:16px;">
+              <button id="other-vehicle-save-btn" class="btn-primary" onclick="saveOtherVehicleData()" style="width:100%;justify-content:center;"><i class="fa-solid fa-save"></i> Lưu dữ liệu Xe thường</button>
+              <button id="other-vehicle-cancel-edit-btn" class="btn-secondary hidden" onclick="cancelEditOtherVehicle()">Hủy sửa</button>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -436,6 +584,7 @@ window.addEventListener('click', function (event) {
               <button class="vtab" onclick="setRecordsFilter('truck', this)"><span class="vtab-dot" style="background:#0ea5e9"></span> Xe container</button>
               <button class="vtab" onclick="setRecordsFilter('container-ship', this)"><span class="vtab-dot" style="background:#0d1f3c"></span> Tàu biển</button>
               <button class="vtab" onclick="setRecordsFilter('harbor_craft', this)"><span class="vtab-dot" style="background:#8b5cf6"></span> Tàu trong cảng</button>
+              <button class="vtab" onclick="setRecordsFilter('other_vehicle', this)"><span class="vtab-dot" style="background:#f97316"></span> Xe thường</button>
             </div>
           </div>
         </div>
@@ -456,12 +605,12 @@ window.addEventListener('click', function (event) {
 
         <div class="section-card records-chart-card" id="recordsChartCard">
           <div class="section-header">
-            <div class="section-title" id="recordsChartTitle"><i class="fa-solid fa-chart-pie"></i> Tỷ trọng theo 3 nhóm</div>
+            <div class="section-title" id="recordsChartTitle"><i class="fa-solid fa-chart-pie"></i> Tỷ trọng theo 4 nhóm</div>
           </div>
           <div class="section-body">
             <canvas id="recordsEmissionDonut" height="220"></canvas>
             <div id="recordsEmissionHint" style="margin-top:10px;font-size:.74rem;color:var(--text-muted)">
-              Xe container, tàu biển, tàu trong cảng (theo kỳ đang chọn). Chọn tab chi tiết bên trái để ẩn biểu đồ.
+              Xe container, tàu biển, tàu trong cảng, xe thường (theo kỳ đang chọn). Chọn tab chi tiết bên trái để ẩn biểu đồ.
             </div>
           </div>
         </div>
@@ -480,6 +629,7 @@ window.addEventListener('click', function (event) {
             <option value="container">🚛 Xe Container</option>
             <option value="ship">🚢 Tàu Biển</option>
             <option value="harbor_craft">🛥️ Tàu Trong Cảng</option>
+            <option value="other_vehicle">🚗 Xe Thường</option>
         </select>
     </div>
 
@@ -553,7 +703,8 @@ window.addEventListener('click', function (event) {
 const VEHICLES = {
   'truck': { label: 'Xe container', icon: '🚛', color: '#0ea5e9' },
   'container-ship': { label: 'Tàu biển', icon: '🚢', color: '#0d1f3c' },
-  'harbor_craft': { label: 'Tàu trong cảng', icon: '🛥️', color: '#8b5cf6' }
+  'harbor_craft': { label: 'Tàu trong cảng', icon: '🛥️', color: '#8b5cf6' },
+  'other_vehicle': { label: 'Xe thường', icon: '🚗', color: '#f97316' }
 };
 
 const SHIP_TYPES = {
@@ -582,11 +733,17 @@ const HARBOR_CRAFT_TYPES = {
     'other': 'Khác'
 };
 
+const OTHER_VEHICLE_TYPES = {
+    'car': 'Ô tô thường',
+    'motorbike': 'Xe máy'
+};
+
 let containerRecords = [];
 let selectedVehicleType = 'truck';
 let deleteTarget = { id: null, type: null };
 let editingContainerId = null;
 let editingHarborCraftId = null;
+let editingOtherVehicleId = null;
 let toastTimer;
 let recordsDonutRef = null;
 let scope3Comparison = null;
@@ -677,10 +834,14 @@ function selectVehicleType(type, btn) {
   document.getElementById('form-truck').classList.add('hidden');
   document.getElementById('form-ship').classList.add('hidden');
   document.getElementById('form-harbor-craft').classList.add('hidden');
+  document.getElementById('form-other-vehicle').classList.add('hidden');
+  document.getElementById('form-ship-voyage').classList.add('hidden');
   
   if (type === 'truck') document.getElementById('form-truck').classList.remove('hidden');
   else if (type === 'container-ship') document.getElementById('form-ship').classList.remove('hidden');
   else if (type === 'harbor_craft') document.getElementById('form-harbor-craft').classList.remove('hidden');
+  else if (type === 'other_vehicle') document.getElementById('form-other-vehicle').classList.remove('hidden');
+  else if (type === 'ship-voyage') document.getElementById('form-ship-voyage').classList.remove('hidden');
 }
 
 function formatForDateTimeLocal(isoText) {
@@ -786,6 +947,78 @@ function cancelEditHarborCraft() {
   document.getElementById('h-engine-tier').value = '0-3';
 }
 
+async function saveOtherVehicleData() {
+  const recordTimeStr = document.getElementById('ov-record-time').value;
+  if (!recordTimeStr) { showToast('Vui lòng chọn thời gian ghi nhận', 'warn'); return; }
+
+  const countRaw = String(document.getElementById('ov-count').value || '').trim();
+  const count = parseInt(countRaw, 10);
+  if (!Number.isFinite(count) || count <= 0) { showToast('Số lượng xe phải > 0', 'warn'); return; }
+
+  const btn = document.getElementById('other-vehicle-save-btn');
+  btn.disabled = true;
+
+  const payload = {
+    vehicle_type: document.getElementById('ov-type').value || 'car',
+    vehicle_count: count,
+    record_time: new Date(recordTimeStr).toISOString()
+  };
+
+  let method = 'POST';
+  let url = '/api/scope3/other_vehicles';
+  if (editingOtherVehicleId !== null) {
+    const reason = document.getElementById('ov-update-reason').value.trim();
+    if (!reason) { showToast('Nhập lý do cập nhật', 'warn'); btn.disabled = false; return; }
+    payload.reason = reason;
+    method = 'PUT';
+    url = `/api/scope3/other_vehicles/${editingOtherVehicleId}`;
+  }
+
+  try {
+    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const data = await res.json().catch(()=>({}));
+    if (!res.ok) throw new Error(data.detail || 'Lỗi lưu xe thường');
+    cancelEditOtherVehicle();
+    await loadAllRecords();
+    showToast('✓ Đã lưu thành công!', 'success');
+  } catch (err) {
+    showToast('❌ ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function startEditOtherVehicle(id) {
+  const record = containerRecords.find((r) => r.id === id && r.ui_type === 'other_vehicle');
+  if (!record) return;
+  editingOtherVehicleId = id;
+  document.getElementById('ov-type').value = record.vehicle_type || 'car';
+  document.getElementById('ov-count').value = record.vehicle_count || 1;
+  document.getElementById('ov-record-time').value = formatForDateTimeLocal(record.record_time);
+  document.getElementById('ov-update-reason').value = '';
+
+  document.getElementById('ov-update-reason-group').classList.remove('hidden');
+  document.getElementById('other-vehicle-cancel-edit-btn').classList.remove('hidden');
+  document.getElementById('other-vehicle-save-btn').innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Cập nhật dữ liệu Xe thường';
+
+  const vtabs = document.querySelectorAll('#page-input .vehicle-tabs .vtab');
+  const otherTab = vtabs && vtabs[3];
+  if (otherTab) selectVehicleType('other_vehicle', otherTab);
+  setMainTab('input');
+}
+
+function cancelEditOtherVehicle() {
+  editingOtherVehicleId = null;
+  document.getElementById('ov-update-reason-group').classList.add('hidden');
+  document.getElementById('other-vehicle-cancel-edit-btn').classList.add('hidden');
+  document.getElementById('other-vehicle-save-btn').innerHTML = '<i class="fa-solid fa-save"></i> Lưu dữ liệu Xe thường';
+
+  document.getElementById('ov-type').value = 'car';
+  document.getElementById('ov-count').value = '1';
+  document.getElementById('ov-record-time').value = '';
+  document.getElementById('ov-update-reason').value = '';
+}
+
 function startEditContainer(id) {
   const record = containerRecords.find((r) => r.id === id && r.record_kind === 'container');
   if (!record) return;
@@ -888,6 +1121,397 @@ async function saveShipData() {
     showToast('✓ Lưu tàu biển thành công', 'success');
   } catch (e) {
     showToast('❌ ' + (e.message || 'Lỗi'), 'error');
+  }
+}
+
+function voyageFormatNum(value, digits = 6) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '0';
+  return n.toLocaleString('vi-VN', { minimumFractionDigits: 0, maximumFractionDigits: digits });
+}
+
+function voyageRequiredNumber(id, label) {
+  const raw = String(document.getElementById(id)?.value ?? '').trim();
+  if (raw === '') {
+    showToast(`Thiếu: ${label}`, 'warn');
+    return null;
+  }
+  const num = Number(raw);
+  if (!Number.isFinite(num)) {
+    showToast(`${label} không hợp lệ`, 'warn');
+    return null;
+  }
+  return num;
+}
+
+function voyageOptionalNumber(id) {
+  const raw = String(document.getElementById(id)?.value ?? '').trim();
+  if (raw === '') return null;
+  const num = Number(raw);
+  return Number.isFinite(num) ? num : NaN;
+}
+
+function refreshShipVoyagePortLabels() {
+  const rows = Array.from(document.querySelectorAll('#sv-ports-container .sv-port-row'));
+  rows.forEach((row, idx) => {
+    const tag = row.querySelector('.sv-port-index');
+    if (tag) tag.textContent = `Cảng ${idx + 1}`;
+    const btn = row.querySelector('.sv-remove-port-btn');
+    if (btn) btn.disabled = rows.length <= 2;
+  });
+}
+
+function addShipVoyagePortRow(initial = {}) {
+  const container = document.getElementById('sv-ports-container');
+  if (!container) return;
+  const row = document.createElement('div');
+  row.className = 'sv-port-row';
+  row.style.border = '1px solid var(--gray-border)';
+  row.style.borderRadius = '10px';
+  row.style.padding = '10px';
+  row.style.background = '#fff';
+  row.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <strong class="sv-port-index" style="font-size:0.75rem;color:var(--navy);">Cảng</strong>
+      <button type="button" class="btn-secondary sv-remove-port-btn" onclick="removeShipVoyagePortRow(this)" style="padding:4px 10px; font-size:0.72rem;">Xóa</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Mã cảng *</label><input type="text" class="form-input sv-port-code" value="${initial.port_code || ''}" placeholder="VD: HPH"></div>
+      <div class="form-group"><label class="form-label">Tên cảng</label><input type="text" class="form-input sv-port-name" value="${initial.port_name || ''}" placeholder="VD: Hai Phong"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">ETA *</label><input type="datetime-local" class="form-input sv-port-eta" value="${initial.eta || ''}"></div>
+      <div class="form-group"><label class="form-label">ETD *</label><input type="datetime-local" class="form-input sv-port-etd" value="${initial.etd || ''}"></div>
+    </div>
+    <div class="form-row-3">
+      <div class="form-group"><label class="form-label">channel_distance_km</label><input type="number" step="0.01" min="0" class="form-input sv-port-channel-distance" value="${initial.channel_distance_km || ''}"></div>
+      <div class="form-group"><label class="form-label">sea_distance_to_next_km</label><input type="number" step="0.01" min="0" class="form-input sv-port-sea-distance" value="${initial.sea_distance_to_next_km || ''}"></div>
+      <div class="form-group"><label class="form-label">Latitude</label><input type="number" step="0.000001" min="-90" max="90" class="form-input sv-port-lat" value="${initial.latitude || ''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Longitude</label><input type="number" step="0.000001" min="-180" max="180" class="form-input sv-port-lng" value="${initial.longitude || ''}"></div>
+      <div class="form-group"></div>
+    </div>
+  `;
+  container.appendChild(row);
+  refreshShipVoyagePortLabels();
+}
+
+function removeShipVoyagePortRow(btn) {
+  const container = document.getElementById('sv-ports-container');
+  if (!container) return;
+  const rows = container.querySelectorAll('.sv-port-row');
+  if (rows.length <= 2) {
+    showToast('Cần tối thiểu 2 cảng', 'warn');
+    return;
+  }
+  const row = btn.closest('.sv-port-row');
+  if (row) row.remove();
+  refreshShipVoyagePortLabels();
+}
+
+function collectShipVoyagePorts() {
+  const rows = Array.from(document.querySelectorAll('#sv-ports-container .sv-port-row'));
+  if (rows.length < 2) {
+    showToast('Cần ít nhất 2 cảng', 'warn');
+    return null;
+  }
+
+  const ports = [];
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const code = row.querySelector('.sv-port-code')?.value.trim() || '';
+    const portName = row.querySelector('.sv-port-name')?.value.trim() || '';
+    const etaRaw = row.querySelector('.sv-port-eta')?.value || '';
+    const etdRaw = row.querySelector('.sv-port-etd')?.value || '';
+
+    if (!code) {
+      showToast(`Thiếu mã cảng ở dòng ${i + 1}`, 'warn');
+      return null;
+    }
+    if (!etaRaw || !etdRaw) {
+      showToast(`Thiếu ETA/ETD ở dòng ${i + 1}`, 'warn');
+      return null;
+    }
+
+    const eta = new Date(etaRaw);
+    const etd = new Date(etdRaw);
+    if (Number.isNaN(eta.getTime()) || Number.isNaN(etd.getTime())) {
+      showToast(`ETA/ETD không hợp lệ ở dòng ${i + 1}`, 'warn');
+      return null;
+    }
+
+    const parseOptionalNonNegative = (selector, label) => {
+      const raw = String(row.querySelector(selector)?.value ?? '').trim();
+      if (raw === '') return null;
+      const n = Number(raw);
+      if (!Number.isFinite(n) || n < 0) {
+        showToast(`${label} phải >= 0 (dòng ${i + 1})`, 'warn');
+        return NaN;
+      }
+      return n;
+    };
+
+    const parseOptionalBounded = (selector, label, min, max) => {
+      const raw = String(row.querySelector(selector)?.value ?? '').trim();
+      if (raw === '') return null;
+      const n = Number(raw);
+      if (!Number.isFinite(n) || n < min || n > max) {
+        showToast(`${label} ngoài khoảng [${min}, ${max}] (dòng ${i + 1})`, 'warn');
+        return NaN;
+      }
+      return n;
+    };
+
+    const channelDistance = parseOptionalNonNegative('.sv-port-channel-distance', 'channel_distance_km');
+    const seaDistance = parseOptionalNonNegative('.sv-port-sea-distance', 'sea_distance_to_next_km');
+    const lat = parseOptionalBounded('.sv-port-lat', 'Latitude', -90, 90);
+    const lng = parseOptionalBounded('.sv-port-lng', 'Longitude', -180, 180);
+
+    if ([channelDistance, seaDistance, lat, lng].some((x) => Number.isNaN(x))) return null;
+
+    const item = {
+      port_code: code,
+      eta: eta.toISOString(),
+      etd: etd.toISOString(),
+    };
+    if (portName) item.port_name = portName;
+    if (channelDistance != null) item.channel_distance_km = channelDistance;
+    if (seaDistance != null) item.sea_distance_to_next_km = seaDistance;
+    if (lat != null) item.latitude = lat;
+    if (lng != null) item.longitude = lng;
+    ports.push(item);
+  }
+
+  return ports;
+}
+
+function renderShipVoyageResult(data) {
+  const summary = data?.summary || {};
+  const total = summary.total_tons || {};
+  const legs = Array.isArray(data?.legs) ? data.legs : [];
+  const ports = Array.isArray(data?.ports) ? data.ports : [];
+  const mapSeg = Array.isArray(data?.map_route?.segments) ? data.map_route.segments : [];
+
+  document.getElementById('sv-kpi-co2').textContent = voyageFormatNum(total.CO2, 6);
+  document.getElementById('sv-kpi-so2').textContent = voyageFormatNum(total.SO2, 6);
+  document.getElementById('sv-kpi-pm10').textContent = voyageFormatNum(total.PM10, 6);
+  document.getElementById('sv-kpi-pm25').textContent = voyageFormatNum(total['PM2.5'], 6);
+
+  document.getElementById('sv-total-sea-hours').textContent = voyageFormatNum(summary.at_sea_hours, 4);
+  document.getElementById('sv-total-port-hours').textContent = voyageFormatNum(summary.in_port_hours, 4);
+  document.getElementById('sv-num-legs').textContent = String(summary.num_legs ?? legs.length ?? 0);
+  document.getElementById('sv-num-ports').textContent = String(summary.num_ports ?? ports.length ?? 0);
+
+  document.getElementById('sv-route-note').textContent = `Tuyến bản đồ: ${mapSeg.length} segment(s), ${Array.isArray(data?.map_route?.points) ? data.map_route.points.length : 0} point(s).`;
+
+  const legRows = legs.map((leg, idx) => {
+    const e = leg.emissions_tons || {};
+    return `
+      <tr>
+        <td>${idx + 1}</td>
+        <td>${leg.from_port || '—'} → ${leg.to_port || '—'}</td>
+        <td>${voyageFormatNum(leg.hours, 4)}</td>
+        <td>${voyageFormatNum(leg.distance_km, 4)}</td>
+        <td>${voyageFormatNum(e.CO2, 6)}</td>
+        <td>${voyageFormatNum(e.SO2, 6)}</td>
+        <td>${voyageFormatNum(e.PM10, 6)}</td>
+        <td>${voyageFormatNum(e['PM2.5'], 6)}</td>
+      </tr>
+    `;
+  }).join('');
+
+  const portRows = ports.map((p, idx) => {
+    const e = p.emissions_tons || {};
+    return `
+      <tr>
+        <td>${idx + 1}</td>
+        <td>${p.port_code || '—'}</td>
+        <td>${voyageFormatNum(p.in_port_hours, 4)}</td>
+        <td>${voyageFormatNum(e.CO2, 6)}</td>
+        <td>${voyageFormatNum(e.SO2, 6)}</td>
+        <td>${voyageFormatNum(e.PM10, 6)}</td>
+        <td>${voyageFormatNum(e['PM2.5'], 6)}</td>
+      </tr>
+    `;
+  }).join('');
+
+  document.getElementById('sv-legs-table').innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Chặng</th>
+          <th>Giờ biển</th>
+          <th>Km</th>
+          <th>CO2</th>
+          <th>SO2</th>
+          <th>PM10</th>
+          <th>PM2.5</th>
+        </tr>
+      </thead>
+      <tbody>${legRows || '<tr><td colspan="8">Không có dữ liệu chặng</td></tr>'}</tbody>
+    </table>
+  `;
+
+  document.getElementById('sv-ports-table').innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Cảng</th>
+          <th>Giờ cảng</th>
+          <th>CO2</th>
+          <th>SO2</th>
+          <th>PM10</th>
+          <th>PM2.5</th>
+        </tr>
+      </thead>
+      <tbody>${portRows || '<tr><td colspan="7">Không có dữ liệu cảng</td></tr>'}</tbody>
+    </table>
+  `;
+
+  document.getElementById('sv-result-panel').classList.remove('hidden');
+}
+
+function resetShipVoyageForm() {
+  document.getElementById('sv-name').value = '';
+  document.getElementById('sv-type').value = 'container_ship';
+  document.getElementById('sv-year').value = '2018';
+  document.getElementById('sv-rpm').value = '120';
+  document.getElementById('sv-buoy').value = '0';
+  document.getElementById('sv-valve').value = 'C3';
+  document.getElementById('sv-isman').value = 'true';
+  document.getElementById('sv-vtrip').value = '10';
+  document.getElementById('sv-vmaneuver').value = '6';
+  document.getElementById('sv-vmax').value = '20';
+  document.getElementById('sv-vsea').value = '18';
+  document.getElementById('sv-pmain').value = '12000';
+  document.getElementById('sv-paux').value = '2400';
+  document.getElementById('sv-lf-aux').value = '0.2';
+  document.getElementById('sv-sea-buffer').value = '2';
+  document.getElementById('sv-speed-ratio').value = '0.9';
+  document.getElementById('sv-cap-speed').value = 'true';
+
+  const container = document.getElementById('sv-ports-container');
+  container.innerHTML = '';
+  addShipVoyagePortRow({ port_code: 'HPH', port_name: 'Hai Phong' });
+  addShipVoyagePortRow({ port_code: 'SGN', port_name: 'Sai Gon' });
+
+  document.getElementById('sv-result-panel').classList.add('hidden');
+  document.getElementById('sv-legs-table').innerHTML = '';
+  document.getElementById('sv-ports-table').innerHTML = '';
+  document.getElementById('sv-route-note').textContent = '';
+}
+
+async function calculateShipVoyageData() {
+  const name = document.getElementById('sv-name').value.trim();
+  if (!name) {
+    showToast('Nhập tên tàu', 'warn');
+    return;
+  }
+
+  const yearBuilt = parseInt(String(document.getElementById('sv-year').value || '').trim(), 10);
+  if (!Number.isFinite(yearBuilt) || yearBuilt < 1800 || yearBuilt > 2100) {
+    showToast('Năm đóng tàu không hợp lệ', 'warn');
+    return;
+  }
+
+  const rpm = voyageRequiredNumber('sv-rpm', 'RPM');
+  const buoyRaw = voyageRequiredNumber('sv-buoy', 'Buoy');
+  const vTrip = voyageRequiredNumber('sv-vtrip', 'V_trip');
+  const vManeuver = voyageRequiredNumber('sv-vmaneuver', 'V_maneuver');
+  const vMax = voyageRequiredNumber('sv-vmax', 'V_max');
+  const pMain = voyageRequiredNumber('sv-pmain', 'P_main');
+  if (rpm == null || buoyRaw == null || vTrip == null || vManeuver == null || vMax == null || pMain == null) return;
+
+  if (buoyRaw < 0) {
+    showToast('Buoy phải >= 0', 'warn');
+    return;
+  }
+
+  const pAux = voyageOptionalNumber('sv-paux');
+  const vSea = voyageOptionalNumber('sv-vsea');
+  const lfAuxRaw = voyageOptionalNumber('sv-lf-aux');
+  const seaBufferRaw = voyageOptionalNumber('sv-sea-buffer');
+  const speedRatioRaw = voyageOptionalNumber('sv-speed-ratio');
+
+  if ([pAux, vSea, lfAuxRaw, seaBufferRaw, speedRatioRaw].some((x) => Number.isNaN(x))) {
+    showToast('Một số trường số không hợp lệ', 'warn');
+    return;
+  }
+
+  const lfAux = lfAuxRaw == null ? 0.2 : lfAuxRaw;
+  const seaBuffer = seaBufferRaw == null ? 2 : seaBufferRaw;
+  const speedRatio = speedRatioRaw == null ? 0.9 : speedRatioRaw;
+
+  if (lfAux < 0 || lfAux > 1) {
+    showToast('lf_aux_at_sea phải trong [0..1]', 'warn');
+    return;
+  }
+  if (seaBuffer < 0) {
+    showToast('sea_buffer_hours phải >= 0', 'warn');
+    return;
+  }
+  if (speedRatio <= 0 || speedRatio > 1.2) {
+    showToast('default_sea_speed_ratio phải > 0 và <= 1.2', 'warn');
+    return;
+  }
+
+  const ports = collectShipVoyagePorts();
+  if (!ports) return;
+
+  const payload = {
+    name,
+    ship_type: document.getElementById('sv-type').value,
+    year_built: yearBuilt,
+    rpm,
+    valve_type: document.getElementById('sv-valve').value,
+    is_man: document.getElementById('sv-isman').value === 'true',
+    buoy: Math.floor(buoyRaw),
+    v_trip: vTrip,
+    v_maneuver: vManeuver,
+    v_max: vMax,
+    P_main: pMain,
+    lf_aux_at_sea: lfAux,
+    sea_buffer_hours: seaBuffer,
+    default_sea_speed_ratio: speedRatio,
+    cap_speed_by_design: document.getElementById('sv-cap-speed').value === 'true',
+    ports,
+  };
+
+  if (pAux != null) payload.P_aux = pAux;
+  if (vSea != null) payload.v_sea = vSea;
+
+  const btn = document.getElementById('sv-calc-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tính...';
+
+  try {
+    const res = await fetch('/api/scope3/ships/voyage/calculate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+
+    const contentType = (res.headers.get('content-type') || '').toLowerCase();
+    if (res.redirected || contentType.includes('text/html')) {
+      throw new Error('Phiên đăng nhập đã hết hạn hoặc chưa đăng nhập. Vui lòng đăng nhập lại.');
+    }
+
+    const data = contentType.includes('application/json') ? await res.json().catch(() => ({})) : {};
+    if (!res.ok) {
+      throw new Error(scope3FormatApiDetail(data.detail || data.message || `Lỗi ${res.status}`));
+    }
+
+    renderShipVoyageResult(data);
+    showToast('✓ Đã tính phát thải tuyến liên cảng', 'success');
+  } catch (err) {
+    showToast('❌ ' + (err.message || 'Lỗi tính phát thải tuyến'), 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-route"></i> Tính phát thải tuyến liên cảng';
   }
 }
 
@@ -1040,7 +1664,7 @@ window.onGlobalFilterChange = async function(mode, searchParams) {
   await updateOverview();
 };
 
-const RECORDS_CHART_KEYS = ['truck', 'container-ship', 'harbor_craft'];
+const RECORDS_CHART_KEYS = ['truck', 'container-ship', 'harbor_craft', 'other_vehicle'];
 
 function setRecordsDonutVisibility(show) {
   const layout = document.getElementById('recordsLayout');
@@ -1058,13 +1682,13 @@ function setRecordsDonutVisibility(show) {
   if (chartCard) chartCard.style.display = '';
 }
 
-/** Chỉ 3 nhóm: xe container (+ PT khác gắn truck), tàu biển, tàu cảng — theo bản ghi đã truyền vào (thường là cả kỳ). */
+/** 4 nhóm: xe container, tàu biển, tàu cảng, xe thường — theo bản ghi đã truyền vào (thường là cả kỳ). */
 function renderRecordsEmissionThreeWay(periodRecords) {
   const canvas = document.getElementById('recordsEmissionDonut');
   const hint = document.getElementById('recordsEmissionHint');
   if (!canvas) return;
 
-  const totals = { truck: 0, 'container-ship': 0, harbor_craft: 0 };
+  const totals = { truck: 0, 'container-ship': 0, harbor_craft: 0, other_vehicle: 0 };
   periodRecords.forEach((r) => {
     const t = getRecordVehicleType(r);
     if (totals[t] === undefined) return;
@@ -1084,7 +1708,7 @@ function renderRecordsEmissionThreeWay(periodRecords) {
     if (hint) hint.textContent = 'Chưa có phát thải trong kỳ đang chọn.';
     return;
   }
-  if (hint) hint.textContent = 'Xe container, tàu biển, tàu trong cảng (theo kỳ topbar).';
+  if (hint) hint.textContent = 'Xe container, tàu biển, tàu trong cảng, xe thường (theo kỳ topbar).';
 
   recordsDonutRef = new Chart(canvas.getContext('2d'), {
     type: 'doughnut',
@@ -1130,12 +1754,18 @@ function renderRecordsTable() {
 
     const rowHtml = rows.map((r, idx) => {
       const emission = getRecordEmission(r);
-      const label = r.license_plate || r.device_name || r.name || '—';
+      let label = r.license_plate || r.device_name || r.name || '—';
+      if (type === 'other_vehicle') {
+        const tLabel = OTHER_VEHICLE_TYPES[r.vehicle_type] || 'Xe thường';
+        const count = r.vehicle_count != null ? r.vehicle_count : '';
+        label = count ? `${tLabel} (x${count})` : tLabel;
+      }
       const timeStr = formatDisplayDate(r.start_time || r.record_time); 
       
       let editFn = `startEditContainer(${r.id})`;
       if (type === 'harbor_craft') editFn = `startEditHarborCraft(${r.id})`;
-      const canEdit = (type === 'truck' && r.record_kind === 'container') || type === 'harbor_craft';
+      if (type === 'other_vehicle') editFn = `startEditOtherVehicle(${r.id})`;
+      const canEdit = (type === 'truck' && r.record_kind === 'container') || type === 'harbor_craft' || type === 'other_vehicle';
       
       const specificTypeLabel = getRecordSpecificType(r);
 
@@ -1178,6 +1808,7 @@ function downloadExcelTemplate() {
     let url = `/api/scope3/containers/template`;
     if (type === 'ship') url = `/api/scope3/ships/template`;
     else if (type === 'harbor_craft') url = `/api/scope3/harbor_crafts/template?year=${y}&month=${m}`;
+    else if (type === 'other_vehicle') url = `/api/scope3/other_vehicles/template`;
     window.location.href = url;
 }
 
@@ -1212,6 +1843,7 @@ async function submitImportExcel() {
     let endpoint = `/api/scope3/containers/import`;
     if (type === 'ship') endpoint = `/api/scope3/ships/import`;
     else if (type === 'harbor_craft') endpoint = `/api/scope3/harbor_crafts/import`;
+    else if (type === 'other_vehicle') endpoint = `/api/scope3/other_vehicles/import`;
 
     try {
         const res = await fetch(endpoint, { method: 'POST', body: fd });
@@ -1254,7 +1886,8 @@ function getSafeFilenameSuffix() {
         'all': 'Tat_ca',
         'truck': 'Xe_container',
         'container-ship': 'Tau_bien',
-        'harbor_craft': 'Tau_cang'
+        'harbor_craft': 'Tau_cang',
+        'other_vehicle': 'Xe_thuong'
     };
     return map[selectedRecordsFilter] || selectedRecordsFilter;
 }
@@ -1285,7 +1918,14 @@ function getGroupedExportRows() {
     label: VEHICLES[k]?.label || k,
     rows: (grouped[k] || []).map((r, idx) => ({
         '#': idx + 1,
-        'Biển số / Tên': r.license_plate || r.device_name || r.name || '—',
+        'Biển số / Tên': (() => {
+            if (k === 'other_vehicle') {
+                const tLabel = OTHER_VEHICLE_TYPES[r.vehicle_type] || 'Xe thường';
+                const count = r.vehicle_count != null ? r.vehicle_count : '';
+                return count ? `${tLabel} (x${count})` : tLabel;
+            }
+            return r.license_plate || r.device_name || r.name || '—';
+        })(),
         'Loại chi tiết': getRecordSpecificType(r),
         'Thời gian': formatDisplayDate(r.start_time || r.record_time),
         'CO2e (tCO2e)': Number(getRecordEmission(r).toFixed(5)),
@@ -1408,6 +2048,7 @@ async function confirmDelete() {
   let endpoint = `/api/scope3/containers/${deleteTarget.id}`;
   if (deleteTarget.type === 'container-ship') endpoint = `/api/scope3/ships/${deleteTarget.id}`;
   else if (deleteTarget.type === 'harbor_craft') endpoint = `/api/scope3/harbor_crafts/${deleteTarget.id}`;
+  else if (deleteTarget.type === 'other_vehicle') endpoint = `/api/scope3/other_vehicles/${deleteTarget.id}`;
   try {
     const res = await fetch(endpoint, { method: 'DELETE' });
     if (!res.ok) throw new Error('Lỗi xóa');
@@ -1431,12 +2072,14 @@ function clearContainerForm() {
 
 async function loadAllRecords() {
   try {
-    const [resCont, resShip] = await Promise.all([
+    const [resCont, resShip, resOther] = await Promise.all([
       fetch('/api/scope3/containers'),
       fetch('/api/scope3/ships'),
+      fetch('/api/scope3/other_vehicles'),
     ]);
     const contData = await resCont.json();
     const shipData = await resShip.json();
+    const otherData = resOther.ok ? await resOther.json() : { items: [] };
     let harborData = { items: [] };
     try {
       const rh = await fetch('/api/scope3/harbor_crafts');
@@ -1446,8 +2089,9 @@ async function loadAllRecords() {
     const cItems = (contData.items || []).map(i => ({ ...i, ui_type: 'truck' }));
     const sItems = (shipData.items || []).map(i => ({ ...i, ui_type: 'container-ship' }));
     const hItems = (harborData.items || []).map(i => ({ ...i, ui_type: 'harbor_craft' }));
+    const oItems = (otherData.items || []).map(i => ({ ...i, ui_type: 'other_vehicle' }));
 
-    containerRecords = [...cItems, ...sItems, ...hItems];
+    containerRecords = [...cItems, ...sItems, ...hItems, ...oItems];
     refreshYearFilterOptions();
     renderRecordsTable();
     await updateOverview();
@@ -1473,7 +2117,7 @@ function fmtCo2Vi(n) {
 function closeKpiDetailS3() {
   const panel = document.getElementById('kpiDetailPanelS3');
   if (panel) panel.classList.remove('show');
-  ['kpi-card-total', 'kpi-card-container', 'kpi-card-ship', 'kpi-card-harbor'].forEach((id) => {
+  ['kpi-card-total', 'kpi-card-container', 'kpi-card-ship', 'kpi-card-harbor', 'kpi-card-other'].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('active-kpi');
   });
@@ -1504,10 +2148,12 @@ function toggleKpiDetailScope3(metric) {
   const c = document.getElementById('kpi-card-container');
   const s = document.getElementById('kpi-card-ship');
   const h = document.getElementById('kpi-card-harbor');
+  const o = document.getElementById('kpi-card-other');
   if (t) t.classList.toggle('active-kpi', metric === 'total');
   if (c) c.classList.toggle('active-kpi', metric === 'container');
   if (s) s.classList.toggle('active-kpi', metric === 'ship');
   if (h) h.classList.toggle('active-kpi', metric === 'harbor');
+  if (o) o.classList.toggle('active-kpi', metric === 'other_vehicle');
   kpiDetailViewS3 = 'abs';
   const bAbs = document.getElementById('dtbtn-s3-abs');
   const bPct = document.getElementById('dtbtn-s3-pct');
@@ -1532,13 +2178,14 @@ function renderKpiDetailChartS3(metric) {
   } else {
     data = ser.values;
     label = 'tCO₂e';
-    const colors = { ship: '#0d1f3c', container: '#0ea5e9', harbor: '#8b5cf6', total: '#2e7df7' };
+    const colors = { ship: '#0d1f3c', container: '#0ea5e9', harbor: '#8b5cf6', other_vehicle: '#f97316', total: '#2e7df7' };
     color = colors[metric] || '#2e7df7';
     const titles = {
       total: '<i class="fa-solid fa-cloud" style="margin-right:6px;color:#2e7df7"></i>Xu hướng tổng CO₂e',
       container: '<i class="fa-solid fa-truck" style="margin-right:6px;color:#22c55e"></i>Container',
       ship: '<i class="fa-solid fa-ship" style="margin-right:6px;color:#0ea5e9"></i>Tàu biển',
       harbor: '<i class="fa-solid fa-anchor" style="margin-right:6px;color:#8b5cf6"></i>Tàu cảng',
+      other_vehicle: '<i class="fa-solid fa-car-side" style="margin-right:6px;color:#f97316"></i>Xe thường',
     };
     titleHtml = titles[metric] || titles.total;
   }
@@ -1588,7 +2235,7 @@ function renderKpiDetailChartS3(metric) {
 
 function applyScope3KpiChg() {
   if (!scope3Comparison || scope3Comparison.current_index == null) {
-    ['kpi-total-chg', 'kpi-container-chg', 'kpi-ship-chg', 'kpi-harbor-chg'].forEach((id) => {
+    ['kpi-total-chg', 'kpi-container-chg', 'kpi-ship-chg', 'kpi-harbor-chg', 'kpi-other-chg'].forEach((id) => {
       const el = document.getElementById(id);
       if (el) {
         el.innerHTML = '<i class="fa-solid fa-hand-pointer" style="font-size:0.6rem;margin-right:4px"></i>Nhấn xem xu hướng';
@@ -1603,6 +2250,7 @@ function applyScope3KpiChg() {
     { metric: 'container', id: 'kpi-container-chg' },
     { metric: 'ship', id: 'kpi-ship-chg' },
     { metric: 'harbor', id: 'kpi-harbor-chg' },
+    { metric: 'other_vehicle', id: 'kpi-other-chg' },
   ];
   map.forEach(({ metric, id }) => {
     const el = document.getElementById(id);
@@ -1639,8 +2287,8 @@ async function updateOverview() {
   if (globalPeriodMode === 'month' && globalFilterMonth) qs.set('month', globalFilterMonth);
   else if (globalPeriodMode === 'quarter' && globalFilterQuarter) qs.set('quarter', globalFilterQuarter);
 
-  let totalCo2e = 0, containerCo2e = 0, shipCo2e = 0, harborCo2e = 0;
-  let trendCont = Array(12).fill(0), trendShip = Array(12).fill(0), trendHarbor = Array(12).fill(0);
+  let totalCo2e = 0, containerCo2e = 0, shipCo2e = 0, harborCo2e = 0, otherVehicleCo2e = 0;
+  let trendCont = Array(12).fill(0), trendShip = Array(12).fill(0), trendHarbor = Array(12).fill(0), trendOther = Array(12).fill(0);
   try {
     const res = await fetch('/api/scope3/summary?' + qs.toString());
     if (!res.ok) return;
@@ -1649,9 +2297,11 @@ async function updateOverview() {
     containerCo2e = Number(s.container_co2e) || 0;
     shipCo2e = Number(s.ship_co2e) || 0;
     harborCo2e = Number(s.harbor_co2e) || 0;
+    otherVehicleCo2e = Number(s.other_vehicle_co2e) || 0;
     trendCont = s.trend_container_monthly || trendCont;
     trendShip = s.trend_ship_monthly || trendShip;
     trendHarbor = s.trend_harbor_monthly || trendHarbor;
+    trendOther = s.trend_other_vehicle_monthly || trendOther;
 
     const resCmp = await fetch('/api/scope3/comparison-series?' + qs.toString());
     if (resCmp.ok) {
@@ -1676,6 +2326,8 @@ async function updateOverview() {
   if (elShip) elShip.innerHTML = `${fmtCo2Vi(shipCo2e)}<span class="kpi-unit"> t</span>`;
   const elHarbor = document.getElementById('kpi-harbor');
   if (elHarbor) elHarbor.innerHTML = `${fmtCo2Vi(harborCo2e)}<span class="kpi-unit"> t</span>`;
+  const elOther = document.getElementById('kpi-other');
+  if (elOther) elOther.innerHTML = `${fmtCo2Vi(otherVehicleCo2e)}<span class="kpi-unit"> t</span>`;
 
   if (vehicleBarChartRef) vehicleBarChartRef.destroy();
   const ctxBar = document.getElementById('vehicleBar');
@@ -1683,8 +2335,8 @@ async function updateOverview() {
     vehicleBarChartRef = new Chart(ctxBar.getContext('2d'), {
       type: 'bar',
       data: {
-        labels: ['Container', 'Tàu biển', 'Tàu cảng'],
-        datasets: [{ data: [containerCo2e, shipCo2e, harborCo2e], backgroundColor: ['#0ea5e9', '#0d1f3c', '#8b5cf6'], borderRadius: 6 }]
+        labels: ['Container', 'Tàu biển', 'Tàu cảng', 'Xe thường'],
+        datasets: [{ data: [containerCo2e, shipCo2e, harborCo2e, otherVehicleCo2e], backgroundColor: ['#0ea5e9', '#0d1f3c', '#8b5cf6', '#f97316'], borderRadius: 6 }]
       },
       options: { plugins: { legend: { display: false } }, maintainAspectRatio: false }
     });
@@ -1700,7 +2352,8 @@ async function updateOverview() {
         datasets: [
           { label: 'Container', data: trendCont, borderColor: '#0ea5e9', borderWidth: 2, tension: 0.4 },
           { label: 'Tàu biển', data: trendShip, borderColor: '#0d1f3c', borderWidth: 2, tension: 0.4 },
-          { label: 'Tàu cảng', data: trendHarbor, borderColor: '#8b5cf6', borderWidth: 2, tension: 0.4 }
+          { label: 'Tàu cảng', data: trendHarbor, borderColor: '#8b5cf6', borderWidth: 2, tension: 0.4 },
+          { label: 'Xe thường', data: trendOther, borderColor: '#f97316', borderWidth: 2, tension: 0.4 }
         ]
       },
       options: { plugins: { legend: { position: 'bottom'} }, maintainAspectRatio: false }
@@ -1747,6 +2400,7 @@ async function init() {
   syncGlobalPeriodFromParams(sp);
   const yr = sp.get('year');
   if (yr) window.currentYear = yr;
+  resetShipVoyageForm();
   await loadAllRecords();
 }
 init();
