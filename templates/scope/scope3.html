@@ -4,7 +4,7 @@
 <link rel="icon" type="image/png" href="/static/favicon.png">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VPEI – Scope 3: Indirect Emissions</title>
+<title>SPEI – Scope 3: Indirect Emissions</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
@@ -1444,7 +1444,7 @@ function exportRecordsPdf() {
   const groups = getGroupedExportRows();
   if (!groups.length) { showToast('Không có dữ liệu', 'warn'); return; }
   const content = [
-    { text: 'VPEI - Scope 3 Records', style: 'header' },
+    { text: 'SPEI - Scope 3 Records', style: 'header' },
     { text: `Kỳ: ${getPeriodLabelForExport()}`, style: 'subheader', margin: [0, 0, 0, 10] }
   ];
   groups.forEach((g, idx) => {
