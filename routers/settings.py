@@ -24,7 +24,7 @@ async def settings_home(request: Request, db: Session = Depends(get_db)):
     from models.settings import CompanySetting
     company_setting = db.query(CompanySetting).first()
     if not company_setting:
-        company_setting = CompanySetting(company_name="Cảng VPEI – Việt Nam Port users = UserService.get_all(db) Energy Infrastructure", tax_code="0314852369", address="Số 1 Đường Cảng Biển, Khu kinh tế, TP. Hồ Chí Minh", logo_src="/static/VPEI-removebg-preview.png")
+        company_setting = CompanySetting(company_name="Cảng VPEI – Việt Nam Port users = UserService.get_all(db) Energy Infrastructure", tax_code="0314852369", address="Số 1 Đường Cảng Biển, Khu kinh tế, TP. Hồ Chí Minh", logo_src="/static/company_logo_uploaded.png")
         db.add(company_setting)
         db.commit()
         db.refresh(company_setting)
