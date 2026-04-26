@@ -28,9 +28,9 @@
 
 <div class="topbar">
   <div class="topbar-title">
-        {% set is_brand_title = (topbar_title is defined and topbar_title == 'VPEI – Vietnam Port Emission Inventory') or (topbar_title is not defined or not topbar_title) %}
+        {% set is_brand_title = (topbar_title is defined and topbar_title == 'SPEI – Vietnam Port Emission Inventory') or (topbar_title is not defined or not topbar_title) %}
         {% if is_brand_title %}
-            <span class="topbar-title-text">VPEI</span>
+            <span class="topbar-title-text">SPEI</span>
             <span class="topbar-title-text">– Vietnam Port Emission Inventory</span>
     {% else %}
             {{ topbar_title|safe }}
