@@ -261,6 +261,7 @@ window.addEventListener('click', function (event) {
             <div class="vehicle-tabs">
               <button class="vtab active" onclick="selectVehicleType('truck', this)"><span>🚛</span> Xe container</button>
               <button class="vtab" onclick="selectVehicleType('container-ship', this)"><span>🚢</span> Tàu biển</button>
+              <button class="vtab" onclick="selectVehicleType('ship-voyage', this)"><span>⛴️</span> Tàu hành trình</button>
               <button class="vtab" onclick="selectVehicleType('harbor_craft', this)"><span>🛥️</span> Tàu trong cảng</button>
               <button class="vtab" onclick="selectVehicleType('other_vehicle', this)"><span>🚗</span> Xe thường</button>
             </div>
@@ -365,6 +366,63 @@ window.addEventListener('click', function (event) {
                 <div class="form-group"><label class="form-label">Động cơ MAN?</label><select id="s-isman" class="form-select"><option value="true">Có</option><option value="false">Không</option></select></div>
             </div>
             <button class="btn-primary" onclick="saveShipData()" style="width:100%;justify-content:center;margin-top:16px"><i class="fa-solid fa-save"></i> Lưu dữ liệu Tàu biển</button>
+          </div>
+
+          <div id="form-ship-voyage" class="form-section hidden">
+            <div style="background:rgba(46,125,247,0.08);border-radius:8px;padding:12px;margin-bottom:16px;border-left:4px solid var(--accent)">
+              <div style="font-size:0.77rem;font-weight:700;color:var(--navy);margin-bottom:6px">📋 Nhập thông tin tàu hành trình</div>
+              <div style="font-size:0.74rem;color:var(--text-muted);line-height:1.4">Nhập thông tin chi tiết tuyến hành trình của tàu qua nhiều cảng (arrival/departure tại từng cảng)</div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group"><label class="form-label">Tên tàu</label><input id="sv-name" type="text" class="form-input" placeholder="VD: Tàu VPEI-01"></div>
+                <div class="form-group">
+                    <label class="form-label">Loại tàu</label>
+                    <select id="sv-type" class="form-select">
+                        <option value="container_ship">Container Ship</option>
+                        <option value="bulk_carrier">Bulk Carrier</option>
+                        <option value="cruiser_ship">Cruiser Ship</option>
+                        <option value="general_cargo_ship">General Cargo</option>
+                        <option value="roro_ship">RoRo</option>
+                        <option value="reefer_ship">Reefer Ship</option>
+                        <option value="oil_tanker">Oil Tanker</option>
+                        <option value="other_ship">Sà Lan</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row-3">
+                <div class="form-group"><label class="form-label">Năm đóng</label><input id="sv-year" type="number" class="form-input" value="2010"></div>
+                <div class="form-group"><label class="form-label">RPM</label><input id="sv-rpm" type="number" class="form-input" value="150"></div>
+                <div class="form-group"><label class="form-label">Công suất P_main (kW)</label><input id="sv-pmain" type="number" class="form-input" value="15000"></div>
+            </div>
+
+            <div class="form-row-3">
+                <div class="form-group"><label class="form-label">Loại Van</label><select id="sv-valve" class="form-select"><option value="C3">C3</option><option value="SV">SV</option></select></div>
+                <div class="form-group"><label class="form-label">Động cơ MAN?</label><select id="sv-isman" class="form-select"><option value="true">Có</option><option value="false">Không</option></select></div>
+            </div>
+
+            <div class="form-row-3">
+                <div class="form-group"><label class="form-label">V_trip (hành trình)</label><input id="sv-vtrip" type="number" step="0.1" class="form-input" value="15"></div>
+                <div class="form-group"><label class="form-label">V_maneuver (điều động)</label><input id="sv-vmaneuver" type="number" step="0.1" class="form-input" value="5"></div>
+                <div class="form-group"><label class="form-label">V_max (Tối đa)</label><input id="sv-vmax" type="number" step="0.1" class="form-input" value="20"></div>
+            </div>
+
+            <div style="margin-top:16px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--gray-border)">
+              <div class="form-label" style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+                <span>📍 Danh sách cảng (tối thiểu 2 cảng)</span>
+                <button type="button" class="btn-outline" onclick="addShipVoyagePort()" style="padding:4px 10px;font-size:0.72rem">
+                  <i class="fa-solid fa-plus"></i> Thêm cảng
+                </button>
+              </div>
+              <div id="sv-ports-container" style="display:flex;flex-direction:column;gap:12px"></div>
+            </div>
+
+            <div style="background:#f8f9fc;padding:12px;border-radius:8px;margin-bottom:16px;font-size:0.75rem;color:var(--text-muted)">
+              <strong>💡 Gợi ý:</strong> Nhập thông tin arrival/departure cho từng cảng theo thứ tự hành trình. Các cảng phải cách nhau ít nhất 2 giờ.
+            </div>
+
+            <button class="btn-primary" onclick="calculateShipVoyageEmissions()" style="width:100%;justify-content:center;"><i class="fa-solid fa-calculator"></i> Tính phát thải tàu hành trình</button>
           </div>
 
           <div id="form-harbor-craft" class="form-section hidden">
@@ -590,6 +648,7 @@ window.addEventListener('click', function (event) {
 const VEHICLES = {
   'truck': { label: 'Xe container', icon: '🚛', color: '#0ea5e9' },
   'container-ship': { label: 'Tàu biển', icon: '🚢', color: '#0d1f3c' },
+  'ship-voyage': { label: 'Tàu hành trình', icon: '⛴️', color: '#06b6d4' },
   'harbor_craft': { label: 'Tàu trong cảng', icon: '🛥️', color: '#8b5cf6' },
   'other_vehicle': { label: 'Xe thường', icon: '🚗', color: '#f97316' }
 };
@@ -720,11 +779,21 @@ function selectVehicleType(type, btn) {
   
   document.getElementById('form-truck').classList.add('hidden');
   document.getElementById('form-ship').classList.add('hidden');
+  document.getElementById('form-ship-voyage').classList.add('hidden');
   document.getElementById('form-harbor-craft').classList.add('hidden');
   document.getElementById('form-other-vehicle').classList.add('hidden');
   
   if (type === 'truck') document.getElementById('form-truck').classList.remove('hidden');
   else if (type === 'container-ship') document.getElementById('form-ship').classList.remove('hidden');
+  else if (type === 'ship-voyage') {
+    document.getElementById('form-ship-voyage').classList.remove('hidden');
+    // Initialize ports container if empty
+    const portsContainer = document.getElementById('sv-ports-container');
+    if (portsContainer && portsContainer.querySelectorAll('.port-entry').length === 0) {
+      addShipVoyagePort();
+      addShipVoyagePort();
+    }
+  }
   else if (type === 'harbor_craft') document.getElementById('form-harbor-craft').classList.remove('hidden');
   else if (type === 'other_vehicle') document.getElementById('form-other-vehicle').classList.remove('hidden');
 }
@@ -1896,6 +1965,182 @@ async function init() {
   if (yr) window.currentYear = yr;
   await loadAllRecords();
 }
+
+// ===== SHIP VOYAGE FUNCTIONS =====
+function addShipVoyagePort() {
+  const container = document.getElementById('sv-ports-container');
+  const currentCount = container.querySelectorAll('.port-entry').length;
+  const portIdx = currentCount + 1;
+  const portEntry = document.createElement('div');
+  portEntry.className = 'port-entry';
+  portEntry.style.cssText = 'border:1px solid var(--gray-border);border-radius:8px;padding:12px;background:#fafbfd';
+  portEntry.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <span style="font-weight:600;font-size:0.75rem;color:var(--navy)">Cảng #${portIdx}</span>
+      <button type="button" onclick="this.closest('.port-entry').remove()" class="btn-outline" style="padding:3px 8px;font-size:0.7rem;border-color:var(--red);color:var(--red)">
+        <i class="fa-solid fa-trash"></i> Xóa
+      </button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Mã cảng</label>
+        <input type="text" class="form-input port-code" placeholder="VD: HPH" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tên cảng</label>
+        <input type="text" class="form-input port-name" placeholder="VD: Hải Phòng">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Arrival (ETA)</label>
+        <input type="datetime-local" class="form-input port-eta" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Departure (ETD)</label>
+        <input type="datetime-local" class="form-input port-etd" required>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Channel Distance (km, optional)</label>
+        <input type="number" step="0.1" class="form-input port-channel-km" placeholder="VD: 15">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Sea Distance to Next (km, optional)</label>
+        <input type="number" step="0.1" class="form-input port-sea-km" placeholder="VD: 1300">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Latitude (optional)</label>
+        <input type="number" step="0.0001" min="-90" max="90" class="form-input port-lat" placeholder="VD: 20.85">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Longitude (optional)</label>
+        <input type="number" step="0.0001" min="-180" max="180" class="form-input port-lng" placeholder="VD: 106.68">
+      </div>
+    </div>
+  `;
+  container.appendChild(portEntry);
+}
+
+function getShipVoyageFormData() {
+  const name = document.getElementById('sv-name').value.trim();
+  const ship_type = document.getElementById('sv-type').value;
+  const year_built = parseInt(document.getElementById('sv-year').value || 0, 10);
+  const rpm = parseFloat(document.getElementById('sv-rpm').value || 0);
+  const P_main = parseFloat(document.getElementById('sv-pmain').value || 0);
+  const valve_type = document.getElementById('sv-valve').value;
+  const is_man = document.getElementById('sv-isman').value === 'true';
+  const v_trip = parseFloat(document.getElementById('sv-vtrip').value || 0);
+  const v_maneuver = parseFloat(document.getElementById('sv-vmaneuver').value || 0);
+  const v_max = parseFloat(document.getElementById('sv-vmax').value || 0);
+
+  const portElements = document.querySelectorAll('.port-entry');
+  const ports = [];
+  
+  for (const portEl of portElements) {
+    const port_code = portEl.querySelector('.port-code').value.trim();
+    const port_name = portEl.querySelector('.port-name').value.trim();
+    const eta_str = portEl.querySelector('.port-eta').value;
+    const etd_str = portEl.querySelector('.port-etd').value;
+    const channel_distance_km = portEl.querySelector('.port-channel-km').value ? parseFloat(portEl.querySelector('.port-channel-km').value) : null;
+    const sea_distance_to_next_km = portEl.querySelector('.port-sea-km').value ? parseFloat(portEl.querySelector('.port-sea-km').value) : null;
+    const latitude = portEl.querySelector('.port-lat').value ? parseFloat(portEl.querySelector('.port-lat').value) : null;
+    const longitude = portEl.querySelector('.port-lng').value ? parseFloat(portEl.querySelector('.port-lng').value) : null;
+
+    if (!port_code || !eta_str || !etd_str) {
+      showToast('❌ Mã cảng, ETA, và ETD là bắt buộc', 'error');
+      return null;
+    }
+
+    const eta = new Date(eta_str);
+    const etd = new Date(etd_str);
+    
+    if (isNaN(eta.getTime()) || isNaN(etd.getTime())) {
+      showToast('❌ Ngày giờ không hợp lệ', 'error');
+      return null;
+    }
+
+    ports.push({
+      port_code,
+      port_name: port_name || port_code,
+      eta: eta.toISOString(),
+      etd: etd.toISOString(),
+      channel_distance_km,
+      sea_distance_to_next_km,
+      latitude,
+      longitude
+    });
+  }
+
+  if (ports.length < 2) {
+    showToast('❌ Cần tối thiểu 2 cảng', 'error');
+    return null;
+  }
+
+  if (!name || !year_built || rpm <= 0 || P_main <= 0 || v_trip <= 0 || v_maneuver <= 0 || v_max <= 0) {
+    showToast('❌ Vui lòng điền đầy đủ thông tin tàu', 'error');
+    return null;
+  }
+
+  return {
+    name,
+    ship_type,
+    year_built,
+    rpm,
+    valve_type,
+    is_man,
+    P_main,
+    v_trip,
+    v_maneuver,
+    v_max,
+    ports
+  };
+}
+
+async function calculateShipVoyageEmissions() {
+  const payload = getShipVoyageFormData();
+  if (!payload) return;
+
+  const btn = event.target;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tính...';
+
+  try {
+    const res = await fetch('/api/scope3/ships/voyage/calculate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || `Lỗi ${res.status}`);
+    }
+
+    const result = await res.json();
+    showToast('✓ Tính toán phát thải thành công!', 'success');
+    
+    // Optionally show result in a modal or navigate to results
+    console.log('Ship Voyage Emissions Result:', result);
+    
+    // Here you could show the results in a modal or navigate to a results page
+    // For now, just refresh the records to show the new data
+    await loadAllRecords();
+    
+  } catch (e) {
+    showToast('❌ ' + (e.message || 'Lỗi'), 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-calculator"></i> Tính phát thải tàu hành trình';
+  }
+}
+
+// ===== END SHIP VOYAGE FUNCTIONS =====
+
 init();
 </script>
 </body>

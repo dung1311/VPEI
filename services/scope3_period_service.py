@@ -12,6 +12,7 @@ from models.container import Container
 from models.ship import Ship
 from models.harbor_craft import HarborCraft
 from models.other_vehicle import OtherVehicle
+from models.ship_voyage import ShipVoyage
 
 from services import (
     container_service,
@@ -114,18 +115,24 @@ def compute_scope3_period(
     other_filters = _get_period_filters(OtherVehicle, OtherVehicle.record_time, year, month, quarter)
     other_vehicles = db.query(OtherVehicle).filter(*other_filters).all()
 
+    voyage_filters = _get_period_filters(ShipVoyage, ShipVoyage.start_time, year, month, quarter)
+    ship_voyages = db.query(ShipVoyage).filter(*voyage_filters).all()
+
     truck_co2 = 0.0
     other_ve_co2 = 0.0
     ship_co2 = 0.0
+    voyage_co2 = 0.0
     harbor_co2 = 0.0
     s3_trend = [0.0] * 12
     truck_trend = [0.0] * 12
     ship_trend = [0.0] * 12
+    voyage_trend = [0.0] * 12
     other_trend = [0.0] * 12
     harbor_trend = [0.0] * 12
     
     n_cont = len(containers)
     n_ship = len(ships)
+    n_voyage = len(ship_voyages)
     n_other = len(other_vehicles)
     n_harbor = len(harbor_crafts)
 
@@ -150,6 +157,16 @@ def compute_scope3_period(
             s3_trend[m_idx] += val
             ship_trend[m_idx] += val
 
+    for sv in ship_voyages:
+        val = getattr(sv, "total_co2", 0.0) or 0.0
+        voyage_co2 += val
+        
+        dt = getattr(sv, "start_time", None)
+        if dt:
+            m_idx = dt.month - 1
+            s3_trend[m_idx] += val
+            voyage_trend[m_idx] += val
+
     for h in harbor_crafts:
         val = getattr(h, "e_total", 0.0) or 0.0
         harbor_co2 += val
@@ -171,7 +188,7 @@ def compute_scope3_period(
             other_trend[m_idx] += val
 
     container_co2e = truck_co2
-    total = container_co2e + ship_co2 + harbor_co2 + other_ve_co2
+    total = container_co2e + ship_co2 + voyage_co2 + harbor_co2 + other_ve_co2
 
     container_trend = truck_trend[:]
 
@@ -180,20 +197,24 @@ def compute_scope3_period(
         "other_vehicle_co2e": other_ve_co2,
         "container_co2e": container_co2e,
         "ship_co2e": ship_co2,
+        "voyage_co2e": voyage_co2,
         "total_co2e": total,
-        "record_count": n_cont + n_ship + n_other + n_harbor,
+        "record_count": n_cont + n_ship + n_voyage + n_other + n_harbor,
         "n_containers": n_cont,
         "n_ships": n_ship,
+        "n_voyages": n_voyage,
         "n_other_vehicles": n_other,
         "n_harbor_crafts": n_harbor,
         "harbor_co2e": harbor_co2,
         "trend_monthly": s3_trend,
         "trend_container_monthly": container_trend,
         "trend_ship_monthly": ship_trend,
+        "trend_voyage_monthly": voyage_trend,
         "trend_harbor_monthly": harbor_trend,
         "trend_other_vehicle_monthly": other_trend,
         "containers": [c.__dict__ for c in containers], # ensure dict format for existing UI
         "ships": [s.__dict__ for s in ships], # ensure dict format for existing UI
+        "voyages": [sv.__dict__ for sv in ship_voyages], # ensure dict format for existing UI
     }
 
 
