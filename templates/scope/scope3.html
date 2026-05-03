@@ -409,11 +409,28 @@ window.addEventListener('click', function (event) {
             </div>
 
             <div style="margin-top:16px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--gray-border)">
-              <div class="form-label" style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+              <div class="form-label" style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
                 <span>📍 Danh sách cảng (tối thiểu 2 cảng)</span>
-                <button type="button" class="btn-outline" onclick="addShipVoyagePort()" style="padding:4px 10px;font-size:0.72rem">
-                  <i class="fa-solid fa-plus"></i> Thêm cảng
-                </button>
+
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <button
+                    type="button"
+                    class="btn-outline"
+                    onclick="openShipVoyageMap()"
+                    style="padding:4px 10px;font-size:0.72rem"
+                  >
+                    <i class="fa-solid fa-map-location-dot"></i> Mở map
+                  </button>
+
+                  <button
+                    type="button"
+                    class="btn-outline"
+                    onclick="addShipVoyagePort()"
+                    style="padding:4px 10px;font-size:0.72rem"
+                  >
+                    <i class="fa-solid fa-plus"></i> Thêm cảng
+                  </button>
+                </div>
               </div>
               <div id="sv-ports-container" style="display:flex;flex-direction:column;gap:12px"></div>
             </div>
@@ -613,6 +630,40 @@ window.addEventListener('click', function (event) {
 <div id="toast" class="toast">
   <i id="toast-icon" class="fa-solid fa-check-circle"></i>
   <span id="toast-text">Thành công!</span>
+</div>
+
+<!-- Ship Voyage Map Modal -->
+<div id="shipVoyageMapModal" style="
+    display:none; position:fixed; inset:0; z-index:9999;
+    background:rgba(0,0,0,0.78); backdrop-filter:blur(4px);
+    align-items:center; justify-content:center;
+">
+    <div style="
+        position:relative; width:96vw; height:93vh;
+        background:#1a1a1a; border-radius:14px;
+        overflow:hidden; box-shadow:0 24px 80px rgba(0,0,0,0.6);
+        display:flex; flex-direction:column;
+    ">
+        <div style="
+            display:flex; align-items:center; justify-content:space-between;
+            padding:10px 16px; background:rgba(0,0,0,0.45);
+            border-bottom:1px solid rgba(255,255,255,0.1); flex-shrink:0;
+        ">
+            <span style="color:#fff; font-weight:700; font-size:0.85rem; font-family:monospace;">
+                🚢 Ship Voyage Map — Chọn hành trình qua nhiều cảng
+            </span>
+            <button onclick="closeShipVoyageMap()" style="
+                background:rgba(255,255,255,0.13); border:none; color:#fff;
+                width:30px; height:30px; border-radius:7px; cursor:pointer; font-size:16px;
+            ">✕</button>
+        </div>
+
+        <iframe
+            id="shipVoyageMapFrame"
+            src=""
+            style="flex:1; border:none; width:100%; background:#0b1220;"
+        ></iframe>
+    </div>
 </div>
 
 <!-- NDV Modal -->
@@ -1967,7 +2018,44 @@ async function init() {
 }
 
 // ===== SHIP VOYAGE FUNCTIONS =====
-function addShipVoyagePort() {
+function reindexShipVoyagePorts() {
+  const entries = document.querySelectorAll('#sv-ports-container .port-entry');
+  entries.forEach((entry, idx) => {
+    const title = entry.querySelector('span');
+    if (title) title.textContent = `Cảng #${idx + 1}`;
+  });
+}
+
+function applyShipVoyageFromMap(payload) {
+  const container = document.getElementById('sv-ports-container');
+  container.innerHTML = '';
+
+  if (!payload || !Array.isArray(payload.ports)) return;
+
+  payload.ports.forEach((port, idx) => {
+    let seaDist = port.seaDist || '';
+
+    if ((!seaDist || seaDist === '') && Array.isArray(payload.segments)) {
+      const seg = payload.segments.find(s => s.leg === idx + 1);
+      if (seg && seg.km != null) seaDist = seg.km;
+    }
+
+    addShipVoyagePort({
+      code: port.code || '',
+      name: port.name || '',
+      eta: port.eta || '',
+      etd: port.etd || '',
+      channelDist: port.channelDist || '',
+      seaDist: seaDist,
+      lat: port.lat || '',
+      lng: port.lng || ''
+    });
+  });
+
+  reindexShipVoyagePorts();
+}
+
+function addShipVoyagePort(data = {}) {
   const container = document.getElementById('sv-ports-container');
   const currentCount = container.querySelectorAll('.port-entry').length;
   const portIdx = currentCount + 1;
@@ -1977,48 +2065,48 @@ function addShipVoyagePort() {
   portEntry.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <span style="font-weight:600;font-size:0.75rem;color:var(--navy)">Cảng #${portIdx}</span>
-      <button type="button" onclick="this.closest('.port-entry').remove()" class="btn-outline" style="padding:3px 8px;font-size:0.7rem;border-color:var(--red);color:var(--red)">
+      <button type="button" onclick="this.closest('.port-entry').remove(); reindexShipVoyagePorts();" class="btn-outline" style="padding:3px 8px;font-size:0.7rem;border-color:var(--red);color:var(--red)">
         <i class="fa-solid fa-trash"></i> Xóa
       </button>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Mã cảng</label>
-        <input type="text" class="form-input port-code" placeholder="VD: HPH" required>
+        <input type="text" class="form-input port-code" placeholder="VD: HPH" value="${data.code || ''}" required>
       </div>
       <div class="form-group">
         <label class="form-label">Tên cảng</label>
-        <input type="text" class="form-input port-name" placeholder="VD: Hải Phòng">
+        <input type="text" class="form-input port-name" placeholder="VD: Hải Phòng" value="${data.name || ''}">
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Arrival (ETA)</label>
-        <input type="datetime-local" class="form-input port-eta" required>
+        <input type="datetime-local" class="form-input port-eta" value="${data.eta || ''}" required>
       </div>
       <div class="form-group">
         <label class="form-label">Departure (ETD)</label>
-        <input type="datetime-local" class="form-input port-etd" required>
+        <input type="datetime-local" class="form-input port-etd" value="${data.etd || ''}" required>
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Channel Distance (km, optional)</label>
-        <input type="number" step="0.1" class="form-input port-channel-km" placeholder="VD: 15">
+        <input type="number" step="0.1" class="form-input port-channel-km" placeholder="VD: 15" value="${data.channelDist || ''}">
       </div>
       <div class="form-group">
         <label class="form-label">Sea Distance to Next (km, optional)</label>
-        <input type="number" step="0.1" class="form-input port-sea-km" placeholder="VD: 1300">
+        <input type="number" step="0.1" class="form-input port-sea-km" placeholder="VD: 1300" value="${data.seaDist || ''}">
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Latitude (optional)</label>
-        <input type="number" step="0.0001" min="-90" max="90" class="form-input port-lat" placeholder="VD: 20.85">
+        <input type="number" step="0.0001" min="-90" max="90" class="form-input port-lat" placeholder="VD: 20.85" value="${data.lat || ''}">
       </div>
       <div class="form-group">
         <label class="form-label">Longitude (optional)</label>
-        <input type="number" step="0.0001" min="-180" max="180" class="form-input port-lng" placeholder="VD: 106.68">
+        <input type="number" step="0.0001" min="-180" max="180" class="form-input port-lng" placeholder="VD: 106.68" value="${data.lng || ''}">
       </div>
     </div>
   `;
@@ -2137,6 +2225,40 @@ async function calculateShipVoyageEmissions() {
     btn.disabled = false;
     btn.innerHTML = '<i class="fa-solid fa-calculator"></i> Tính phát thải tàu hành trình';
   }
+}
+
+window.addEventListener('message', function(e) {
+  if (!e.data || e.data.type !== 'SHIP_VOYAGE_RESULT') return;
+
+  applyShipVoyageFromMap(e.data);
+
+  if (typeof closeShipVoyageMap === 'function') {
+    closeShipVoyageMap();
+  }
+
+  if (typeof showToast === 'function') {
+    showToast('Đã nhập hành trình từ bản đồ', 'success');
+  } else {
+    alert('✅ Đã nhập hành trình từ bản đồ');
+  }
+});
+
+function openShipVoyageMap() {
+  const modal = document.getElementById('shipVoyageMapModal');
+  const frame = document.getElementById('shipVoyageMapFrame');
+
+  frame.src = '/scope3/ship_voyage_map';
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeShipVoyageMap() {
+  const modal = document.getElementById('shipVoyageMapModal');
+  const frame = document.getElementById('shipVoyageMapFrame');
+
+  modal.style.display = 'none';
+  frame.src = '';
+  document.body.style.overflow = '';
 }
 
 // ===== END SHIP VOYAGE FUNCTIONS =====

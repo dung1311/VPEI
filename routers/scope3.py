@@ -350,6 +350,30 @@ async def scope3_ndv_zone_data():
     file_path = Path(__file__).resolve().parent.parent / "templates" / "data" / "ndv_zone_data.js"
     return FileResponse(str(file_path), media_type="application/javascript")
 
+@router.get("/scope3/ship_voyage_map", response_class=HTMLResponse)
+async def scope3_ship_voyage_map_page(request: Request):
+    token = request.cookies.get("access_token")
+    if not token:
+        return RedirectResponse(url="/login", status_code=302)
+    try:
+        decode_token(token)
+    except Exception:
+        resp = RedirectResponse(url="/login", status_code=302)
+        resp.delete_cookie("access_token")
+        return resp
+
+    return templates.TemplateResponse(
+        "scope/voyage_map.html",
+        {
+            "request": request,
+        },
+    )
+
+@router.get("/scope3/voyage_route_data")    
+async def scope3_voyage_route_data():
+    file_path = Path(__file__).resolve().parent.parent / "templates" / "data" / "voyage_route_data.js"
+    return FileResponse(str(file_path), media_type="application/javascript")
+
 # =====================================================================
 # ─── EXCEL IMPORT & TEMPLATE ENDPOINTS ───────────────────────────────
 # =====================================================================
