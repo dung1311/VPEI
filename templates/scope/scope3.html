@@ -204,6 +204,12 @@ window.addEventListener('click', function (event) {
           <div class="kpi-value" id="kpi-ship">{{ "{:,.2f}".format(summary.ship_co2e|default(0)) }}<span class="kpi-unit"> t</span></div>
           <div class="kpi-change neutral" id="kpi-ship-chg"><i class="fa-solid fa-hand-pointer" style="font-size:0.6rem;margin-right:4px"></i>Nhấn xem xu hướng</div>
         </div>
+        <div class="kpi-card" onclick="toggleKpiDetailScope3('voyage')" id="kpi-card-voyage">
+          <div class="kpi-icon" style="background:rgba(6,182,212,.1);color:#06b6d4"><i class="fa-solid fa-route"></i></div>
+          <div class="kpi-label">Tàu liên cảng</div>
+          <div class="kpi-value" id="kpi-voyage">{{ "{:,.2f}".format(summary.voyage_co2e|default(0)) }}<span class="kpi-unit"> t</span></div>
+          <div class="kpi-change neutral" id="kpi-voyage-chg"><i class="fa-solid fa-hand-pointer" style="font-size:0.6rem;margin-right:4px"></i>Nhấn xem xu hướng</div>
+        </div>
         <div class="kpi-card" onclick="toggleKpiDetailScope3('harbor')" id="kpi-card-harbor">
           <div class="kpi-icon" style="background:rgba(139,92,246,.1);color:#8b5cf6"><i class="fa-solid fa-anchor"></i></div>
           <div class="kpi-label">Tàu cảng</div>
@@ -545,6 +551,7 @@ window.addEventListener('click', function (event) {
               <button class="vtab active" onclick="setRecordsFilter('all', this)"><span class="vtab-dot" style="background:var(--navy)"></span> Tất cả</button>
               <button class="vtab" onclick="setRecordsFilter('truck', this)"><span class="vtab-dot" style="background:#0ea5e9"></span> Xe container</button>
               <button class="vtab" onclick="setRecordsFilter('container-ship', this)"><span class="vtab-dot" style="background:#0d1f3c"></span> Tàu biển</button>
+              <button class="vtab" onclick="setRecordsFilter('ship-voyage', this)"><span class="vtab-dot" style="background:#06b6d4"></span> Tàu hành trình</button>
               <button class="vtab" onclick="setRecordsFilter('harbor_craft', this)"><span class="vtab-dot" style="background:#8b5cf6"></span> Tàu trong cảng</button>
               <button class="vtab" onclick="setRecordsFilter('other_vehicle', this)"><span class="vtab-dot" style="background:#f97316"></span> Xe thường</button>
             </div>
@@ -567,12 +574,12 @@ window.addEventListener('click', function (event) {
 
         <div class="section-card records-chart-card" id="recordsChartCard">
           <div class="section-header">
-            <div class="section-title" id="recordsChartTitle"><i class="fa-solid fa-chart-pie"></i> Tỷ trọng theo 4 nhóm</div>
+              <div class="section-title" id="recordsChartTitle"><i class="fa-solid fa-chart-pie"></i> Tỷ trọng theo 5 nhóm</div>
           </div>
           <div class="section-body">
             <canvas id="recordsEmissionDonut" height="220"></canvas>
             <div id="recordsEmissionHint" style="margin-top:10px;font-size:.74rem;color:var(--text-muted)">
-              Xe container, tàu biển, tàu trong cảng, xe thường (theo kỳ đang chọn). Chọn tab chi tiết bên trái để ẩn biểu đồ.
+                Xe container, tàu biển, tàu hành trình, tàu trong cảng, xe thường (theo kỳ đang chọn). Chọn tab chi tiết bên trái để ẩn biểu đồ.
             </div>
           </div>
         </div>
@@ -761,9 +768,10 @@ let trendLineChartRef = null;
 function getRecordSpecificType(r) {
     const type = getRecordVehicleType(r);
     if (type === 'container-ship') return SHIP_TYPES[r.ship_type] || r.ship_type || 'Tàu biển';
+  if (type === 'ship-voyage') return 'Tàu hành trình';
     if (type === 'harbor_craft') return HARBOR_CRAFT_TYPES[r.craft_type] || r.craft_type || 'Tàu trong cảng';
     if (type === 'truck') return r.is_refrigerated ? 'Container lạnh' : 'Container thường';
-    return 'Xe container';
+  return VEHICLES[type]?.label || '—';
 }
 
 function syncGlobalPeriodFromParams(searchParams) {
@@ -1278,7 +1286,7 @@ window.onGlobalFilterChange = async function(mode, searchParams) {
   await updateOverview();
 };
 
-const RECORDS_CHART_KEYS = ['truck', 'container-ship', 'harbor_craft', 'other_vehicle'];
+const RECORDS_CHART_KEYS = ['truck', 'container-ship', 'ship-voyage', 'harbor_craft', 'other_vehicle'];
 
 function setRecordsDonutVisibility(show) {
   const layout = document.getElementById('recordsLayout');
@@ -1296,13 +1304,13 @@ function setRecordsDonutVisibility(show) {
   if (chartCard) chartCard.style.display = '';
 }
 
-/** 4 nhóm: xe container, tàu biển, tàu cảng, xe thường — theo bản ghi đã truyền vào (thường là cả kỳ). */
+/** 5 nhóm: xe container, tàu biển, tàu hành trình, tàu cảng, xe thường — theo bản ghi đã truyền vào (thường là cả kỳ). */
 function renderRecordsEmissionThreeWay(periodRecords) {
   const canvas = document.getElementById('recordsEmissionDonut');
   const hint = document.getElementById('recordsEmissionHint');
   if (!canvas) return;
 
-  const totals = { truck: 0, 'container-ship': 0, harbor_craft: 0, other_vehicle: 0 };
+  const totals = { truck: 0, 'container-ship': 0, 'ship-voyage': 0, harbor_craft: 0, other_vehicle: 0 };
   periodRecords.forEach((r) => {
     const t = getRecordVehicleType(r);
     if (totals[t] === undefined) return;
@@ -1322,7 +1330,7 @@ function renderRecordsEmissionThreeWay(periodRecords) {
     if (hint) hint.textContent = 'Chưa có phát thải trong kỳ đang chọn.';
     return;
   }
-  if (hint) hint.textContent = 'Xe container, tàu biển, tàu trong cảng, xe thường (theo kỳ topbar).';
+  if (hint) hint.textContent = 'Xe container, tàu biển, tàu hành trình, tàu trong cảng, xe thường (theo kỳ topbar).';
 
   recordsDonutRef = new Chart(canvas.getContext('2d'), {
     type: 'doughnut',
@@ -1624,6 +1632,7 @@ async function bulkDeleteSelected() {
   const payloads = {
     truck: [],
     'container-ship': [],
+    'ship-voyage': [],
     harbor_craft: []
   };
 
@@ -1639,6 +1648,9 @@ async function bulkDeleteSelected() {
     }
     if (payloads['container-ship'].length > 0) {
       await fetch('/api/scope3/ships/bulk', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: payloads['container-ship'] }) });
+    }
+    if (payloads['ship-voyage'].length > 0) {
+      await fetch('/api/scope3/ship_voyages/bulk', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: payloads['ship-voyage'] }) });
     }
     if (payloads.harbor_craft.length > 0) {
       await fetch('/api/scope3/harbor_crafts/bulk', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: payloads.harbor_craft }) });
@@ -1661,6 +1673,7 @@ async function confirmDelete() {
   if (!deleteTarget.id) return;
   let endpoint = `/api/scope3/containers/${deleteTarget.id}`;
   if (deleteTarget.type === 'container-ship') endpoint = `/api/scope3/ships/${deleteTarget.id}`;
+  else if (deleteTarget.type === 'ship-voyage') endpoint = `/api/scope3/ship_voyages/${deleteTarget.id}`;
   else if (deleteTarget.type === 'harbor_craft') endpoint = `/api/scope3/harbor_crafts/${deleteTarget.id}`;
   else if (deleteTarget.type === 'other_vehicle') endpoint = `/api/scope3/other_vehicles/${deleteTarget.id}`;
   try {
@@ -1686,13 +1699,15 @@ function clearContainerForm() {
 
 async function loadAllRecords() {
   try {
-    const [resCont, resShip, resOther] = await Promise.all([
+    const [resCont, resShip, resVoyage, resOther] = await Promise.all([
       fetch('/api/scope3/containers'),
       fetch('/api/scope3/ships'),
+      fetch('/api/scope3/ship_voyages'),
       fetch('/api/scope3/other_vehicles'),
     ]);
     const contData = await resCont.json();
     const shipData = await resShip.json();
+    const voyageData = resVoyage.ok ? await resVoyage.json() : { items: [] };
     const otherData = resOther.ok ? await resOther.json() : { items: [] };
     let harborData = { items: [] };
     try {
@@ -1702,10 +1717,11 @@ async function loadAllRecords() {
 
     const cItems = (contData.items || []).map(i => ({ ...i, ui_type: 'truck' }));
     const sItems = (shipData.items || []).map(i => ({ ...i, ui_type: 'container-ship' }));
+    const vItems = (voyageData.items || []).map(i => ({ ...i, ui_type: 'ship-voyage' }));
     const hItems = (harborData.items || []).map(i => ({ ...i, ui_type: 'harbor_craft' }));
     const oItems = (otherData.items || []).map(i => ({ ...i, ui_type: 'other_vehicle' }));
 
-    containerRecords = [...cItems, ...sItems, ...hItems, ...oItems];
+    containerRecords = [...cItems, ...sItems, ...vItems, ...hItems, ...oItems];
     refreshYearFilterOptions();
     renderRecordsTable();
     await updateOverview();
@@ -1731,7 +1747,7 @@ function fmtCo2Vi(n) {
 function closeKpiDetailS3() {
   const panel = document.getElementById('kpiDetailPanelS3');
   if (panel) panel.classList.remove('show');
-  ['kpi-card-total', 'kpi-card-container', 'kpi-card-ship', 'kpi-card-harbor', 'kpi-card-other'].forEach((id) => {
+  ['kpi-card-total', 'kpi-card-container', 'kpi-card-ship', 'kpi-card-voyage', 'kpi-card-harbor', 'kpi-card-other'].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('active-kpi');
   });
@@ -1761,11 +1777,13 @@ function toggleKpiDetailScope3(metric) {
   const t = document.getElementById('kpi-card-total');
   const c = document.getElementById('kpi-card-container');
   const s = document.getElementById('kpi-card-ship');
+  const v = document.getElementById('kpi-card-voyage');
   const h = document.getElementById('kpi-card-harbor');
   const o = document.getElementById('kpi-card-other');
   if (t) t.classList.toggle('active-kpi', metric === 'total');
   if (c) c.classList.toggle('active-kpi', metric === 'container');
   if (s) s.classList.toggle('active-kpi', metric === 'ship');
+  if (v) v.classList.toggle('active-kpi', metric === 'voyage');
   if (h) h.classList.toggle('active-kpi', metric === 'harbor');
   if (o) o.classList.toggle('active-kpi', metric === 'other_vehicle');
   kpiDetailViewS3 = 'abs';
@@ -1798,6 +1816,7 @@ function renderKpiDetailChartS3(metric) {
       total: '<i class="fa-solid fa-cloud" style="margin-right:6px;color:#2e7df7"></i>Xu hướng tổng CO₂e',
       container: '<i class="fa-solid fa-truck" style="margin-right:6px;color:#22c55e"></i>Container',
       ship: '<i class="fa-solid fa-ship" style="margin-right:6px;color:#0ea5e9"></i>Tàu biển',
+      voyage: '<i class="fa-solid fa-route" style="margin-right:6px;color:#06b6d4"></i>Tàu liên cảng',
       harbor: '<i class="fa-solid fa-anchor" style="margin-right:6px;color:#8b5cf6"></i>Tàu cảng',
       other_vehicle: '<i class="fa-solid fa-car-side" style="margin-right:6px;color:#f97316"></i>Xe thường',
     };
@@ -1849,7 +1868,7 @@ function renderKpiDetailChartS3(metric) {
 
 function applyScope3KpiChg() {
   if (!scope3Comparison || scope3Comparison.current_index == null) {
-    ['kpi-total-chg', 'kpi-container-chg', 'kpi-ship-chg', 'kpi-harbor-chg', 'kpi-other-chg'].forEach((id) => {
+    ['kpi-total-chg', 'kpi-container-chg', 'kpi-ship-chg', 'kpi-voyage-chg', 'kpi-harbor-chg', 'kpi-other-chg'].forEach((id) => {
       const el = document.getElementById(id);
       if (el) {
         el.innerHTML = '<i class="fa-solid fa-hand-pointer" style="font-size:0.6rem;margin-right:4px"></i>Nhấn xem xu hướng';
@@ -1863,6 +1882,7 @@ function applyScope3KpiChg() {
     { metric: 'total', id: 'kpi-total-chg' },
     { metric: 'container', id: 'kpi-container-chg' },
     { metric: 'ship', id: 'kpi-ship-chg' },
+    { metric: 'voyage', id: 'kpi-voyage-chg' },
     { metric: 'harbor', id: 'kpi-harbor-chg' },
     { metric: 'other_vehicle', id: 'kpi-other-chg' },
   ];
@@ -1901,8 +1921,8 @@ async function updateOverview() {
   if (globalPeriodMode === 'month' && globalFilterMonth) qs.set('month', globalFilterMonth);
   else if (globalPeriodMode === 'quarter' && globalFilterQuarter) qs.set('quarter', globalFilterQuarter);
 
-  let totalCo2e = 0, containerCo2e = 0, shipCo2e = 0, harborCo2e = 0, otherVehicleCo2e = 0;
-  let trendCont = Array(12).fill(0), trendShip = Array(12).fill(0), trendHarbor = Array(12).fill(0), trendOther = Array(12).fill(0);
+  let totalCo2e = 0, containerCo2e = 0, shipCo2e = 0, voyageCo2e = 0, harborCo2e = 0, otherVehicleCo2e = 0;
+  let trendCont = Array(12).fill(0), trendShip = Array(12).fill(0), trendVoyage = Array(12).fill(0), trendHarbor = Array(12).fill(0), trendOther = Array(12).fill(0);
   try {
     const res = await fetch('/api/scope3/summary?' + qs.toString());
     if (!res.ok) return;
@@ -1910,10 +1930,12 @@ async function updateOverview() {
     totalCo2e = Number(s.total_co2e) || 0;
     containerCo2e = Number(s.container_co2e) || 0;
     shipCo2e = Number(s.ship_co2e) || 0;
+    voyageCo2e = Number(s.voyage_co2e) || 0;
     harborCo2e = Number(s.harbor_co2e) || 0;
     otherVehicleCo2e = Number(s.other_vehicle_co2e) || 0;
     trendCont = s.trend_container_monthly || trendCont;
     trendShip = s.trend_ship_monthly || trendShip;
+    trendVoyage = s.trend_voyage_monthly || trendVoyage;
     trendHarbor = s.trend_harbor_monthly || trendHarbor;
     trendOther = s.trend_other_vehicle_monthly || trendOther;
 
@@ -1938,6 +1960,8 @@ async function updateOverview() {
   if (elCont) elCont.innerHTML = `${fmtCo2Vi(containerCo2e)}<span class="kpi-unit"> t</span>`;
   const elShip = document.getElementById('kpi-ship');
   if (elShip) elShip.innerHTML = `${fmtCo2Vi(shipCo2e)}<span class="kpi-unit"> t</span>`;
+  const elVoyage = document.getElementById('kpi-voyage');
+  if (elVoyage) elVoyage.innerHTML = `${fmtCo2Vi(voyageCo2e)}<span class="kpi-unit"> t</span>`;
   const elHarbor = document.getElementById('kpi-harbor');
   if (elHarbor) elHarbor.innerHTML = `${fmtCo2Vi(harborCo2e)}<span class="kpi-unit"> t</span>`;
   const elOther = document.getElementById('kpi-other');
@@ -1949,8 +1973,8 @@ async function updateOverview() {
     vehicleBarChartRef = new Chart(ctxBar.getContext('2d'), {
       type: 'bar',
       data: {
-        labels: ['Container', 'Tàu biển', 'Tàu cảng', 'Xe thường'],
-        datasets: [{ data: [containerCo2e, shipCo2e, harborCo2e, otherVehicleCo2e], backgroundColor: ['#0ea5e9', '#0d1f3c', '#8b5cf6', '#f97316'], borderRadius: 6 }]
+        labels: ['Container', 'Tàu biển', 'Tàu liên cảng', 'Tàu cảng', 'Xe thường'],
+        datasets: [{ data: [containerCo2e, shipCo2e, voyageCo2e, harborCo2e, otherVehicleCo2e], backgroundColor: ['#0ea5e9', '#0d1f3c', '#06b6d4', '#8b5cf6', '#f97316'], borderRadius: 6 }]
       },
       options: { plugins: { legend: { display: false } }, maintainAspectRatio: false }
     });
@@ -1966,6 +1990,7 @@ async function updateOverview() {
         datasets: [
           { label: 'Container', data: trendCont, borderColor: '#0ea5e9', borderWidth: 2, tension: 0.4 },
           { label: 'Tàu biển', data: trendShip, borderColor: '#0d1f3c', borderWidth: 2, tension: 0.4 },
+          { label: 'Tàu liên cảng', data: trendVoyage, borderColor: '#06b6d4', borderWidth: 2, tension: 0.4 },
           { label: 'Tàu cảng', data: trendHarbor, borderColor: '#8b5cf6', borderWidth: 2, tension: 0.4 },
           { label: 'Xe thường', data: trendOther, borderColor: '#f97316', borderWidth: 2, tension: 0.4 }
         ]

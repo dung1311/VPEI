@@ -284,6 +284,7 @@ def build_scope3_comparison_payload(
             "total": pack("total"),
             "container": pack("container"),
             "ship": pack("ship"),
+            "voyage": pack("voyage"),
             "harbor": pack("harbor"),
             "other_vehicle": pack("other_vehicle"),
         },

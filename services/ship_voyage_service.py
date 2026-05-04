@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import json
 from datetime import timedelta
 from typing import Any, Dict
 
 from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
 
 import services.emission_ship as compute
+from models.ship_voyage import ShipVoyage
 from schemas.ship import ShipVoyageRequest, VoyagePortCall
 
 POLLUTANTS = ("CO2", "SO2", "PM10", "PM2.5")
@@ -336,3 +339,92 @@ def calculate_ship_voyage_emissions(payload: ShipVoyageRequest) -> Dict[str, Any
             "segments": map_segments,
         },
     }
+
+
+def save_ship_voyage_record(db: Session, payload: ShipVoyageRequest, result: Dict[str, Any]) -> Dict[str, Any]:
+    if not payload.ports:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Voyage must include at least 2 ports")
+
+    record = ShipVoyage(
+        name=payload.name,
+        ship_type=payload.ship_type,
+        year_built=payload.year_built,
+        rpm=payload.rpm,
+        valve_type=payload.valve_type,
+        is_man=payload.is_man,
+        buoy=payload.buoy,
+        P_main=payload.P_main,
+        P_aux=payload.P_aux if payload.P_aux is not None else payload.P_main / 5.0,
+        start_time=payload.ports[0].eta,
+        end_time=payload.ports[-1].etd,
+        total_co2=float(result.get("summary", {}).get("total_co2_tons", 0.0) or 0.0),
+        payload_json=json.dumps(
+            {
+                "request": payload.model_dump(mode="json"),
+                "result": result,
+            },
+            ensure_ascii=False,
+        ),
+    )
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+    return serialize_ship_voyage_record(record)
+
+
+def serialize_ship_voyage_record(voyage: ShipVoyage) -> Dict[str, Any]:
+    payload: Dict[str, Any] = {}
+    if voyage.payload_json:
+        try:
+            parsed = json.loads(voyage.payload_json)
+            if isinstance(parsed, dict):
+                payload = parsed
+        except Exception:
+            payload = {}
+
+    request_payload = payload.get("request") if isinstance(payload.get("request"), dict) else {}
+    result_payload = payload.get("result") if isinstance(payload.get("result"), dict) else {}
+    summary = result_payload.get("summary") if isinstance(result_payload.get("summary"), dict) else {}
+    ports = request_payload.get("ports") if isinstance(request_payload.get("ports"), list) else []
+
+    return {
+        "id": voyage.id,
+        "ui_type": "ship-voyage",
+        "record_kind": "ship_voyage",
+        "name": voyage.name,
+        "ship_type": getattr(voyage.ship_type, "value", voyage.ship_type),
+        "year_built": voyage.year_built,
+        "rpm": voyage.rpm,
+        "valve_type": getattr(voyage.valve_type, "value", voyage.valve_type),
+        "is_man": voyage.is_man,
+        "buoy": voyage.buoy,
+        "P_main": voyage.P_main,
+        "P_aux": voyage.P_aux,
+        "start_time": voyage.start_time.isoformat() if voyage.start_time else None,
+        "end_time": voyage.end_time.isoformat() if voyage.end_time else None,
+        "total_co2": float(voyage.total_co2 or 0.0),
+        "ports_count": len(ports),
+        "legs_count": summary.get("num_legs"),
+        "payload_json": voyage.payload_json,
+        "note": "Tàu liên cảng",
+    }
+
+
+def get_all_ship_voyages(db: Session) -> list[Dict[str, Any]]:
+    voyages = db.query(ShipVoyage).order_by(ShipVoyage.start_time.desc().nullslast(), ShipVoyage.id.desc()).all()
+    return [serialize_ship_voyage_record(v) for v in voyages]
+
+
+def get_ship_voyage_by_id(db: Session, record_id: int) -> Dict[str, Any] | None:
+    voyage = db.query(ShipVoyage).filter(ShipVoyage.id == record_id).first()
+    if not voyage:
+        return None
+    return serialize_ship_voyage_record(voyage)
+
+
+def delete_ship_voyage(record_id: int, db: Session) -> None:
+    voyage = db.query(ShipVoyage).filter(ShipVoyage.id == record_id).first()
+    if not voyage:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ship voyage not found")
+    db.delete(voyage)
+    db.commit()

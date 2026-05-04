@@ -32,6 +32,7 @@ def init_db():
     from models import audit_log as _  # noqa: F401
     from models import container as _  # noqa: F401
     from models import ship as _  # noqa: F401
+    from models import ship_voyage as _  # noqa: F401
     from models import harbor_craft as _  # noqa: F401
     from models import other_vehicle as _  # noqa: F401
     from models.settings import CompanySetting

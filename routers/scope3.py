@@ -845,9 +845,12 @@ async def delete_ship_endpoint(ship_id: int, request: Request, db: Session = Dep
 
 
 @router.post("/api/scope3/ships/voyage/calculate")
-async def calculate_ship_voyage(payload: ShipVoyageRequest):
+async def calculate_ship_voyage(payload: ShipVoyageRequest, request: Request, db: Session = Depends(get_db)):
     """Tính phát thải cho tuyến nhiều cảng (at sea + in port) và trả dữ liệu để vẽ map."""
-    return ship_voyage_service.calculate_ship_voyage_emissions(payload)
+    result = ship_voyage_service.calculate_ship_voyage_emissions(payload)
+    saved = ship_voyage_service.save_ship_voyage_record(db, payload, result)
+    result["record"] = saved
+    return result
 
 
 # ─── HARBOR CRAFT API (TÀU TRONG CẢNG) ───
@@ -913,6 +916,30 @@ async def delete_other_vehicle(record_id: int, request: Request, db: Session = D
     return other_vehicle_service.delete_other_vehicle(record_id, db, actor=_actor_from_request(request))
 
 
+@router.get("/api/scope3/ship_voyages")
+async def list_ship_voyages(db: Session = Depends(get_db)):
+    items = ship_voyage_service.get_all_ship_voyages(db)
+    return {"items": items, "count": len(items)}
+
+
+@router.delete("/api/scope3/ship_voyages/bulk")
+async def delete_ship_voyages_bulk(payload: BulkDeleteRequest, request: Request, db: Session = Depends(get_db)):
+    deleted_count = 0
+    for record_id in payload.ids:
+        try:
+            ship_voyage_service.delete_ship_voyage(record_id, db)
+            deleted_count += 1
+        except Exception:
+            pass
+    return {"message": f"Deleted {deleted_count} ship voyages"}
+
+
+@router.delete("/api/scope3/ship_voyages/{record_id}")
+async def delete_ship_voyage(record_id: int, request: Request, db: Session = Depends(get_db)):
+    ship_voyage_service.delete_ship_voyage(record_id, db)
+    return {"message": "Deleted ship voyage"}
+
+
 # ─── COMBINED SUMMARY & AUDIT API ENDPOINTS ──────────────────
 
 @router.get("/api/scope3/summary")
@@ -930,6 +957,7 @@ async def get_scope3_summary(
         "total_co2e": round(s3["total_co2e"], 2),
         "container_co2e": round(s3["container_co2e"], 2),
         "ship_co2e": round(s3["ship_co2e"], 2),
+        "voyage_co2e": round(s3.get("voyage_co2e", 0.0), 2),
         "harbor_co2e": round(s3["harbor_co2e"], 2),
         "truck_co2e": round(s3["truck_co2e"], 2),
         "other_vehicle_co2e": round(s3["other_vehicle_co2e"], 2),
@@ -941,6 +969,7 @@ async def get_scope3_summary(
         "n_harbor_crafts": s3["n_harbor_crafts"],
         "trend_container_monthly": s3["trend_container_monthly"],
         "trend_ship_monthly": s3["trend_ship_monthly"],
+        "trend_voyage_monthly": s3.get("trend_voyage_monthly", [0.0] * 12),
         "trend_harbor_monthly": s3["trend_harbor_monthly"],
         "trend_other_vehicle_monthly": s3["trend_other_vehicle_monthly"],
         "trend_monthly": s3["trend_monthly"],
