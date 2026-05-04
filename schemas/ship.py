@@ -121,4 +121,10 @@ class ShipVoyageRequest(BaseModel):
         for i, port in enumerate(self.ports, start=1):
             if port.etd < port.eta:
                 raise ValueError(f"Port call {i} has etd earlier than eta")
+
+        for i in range(1, len(self.ports)):
+            prev = self.ports[i - 1]
+            curr = self.ports[i]
+            if curr.eta < prev.eta:
+                raise ValueError(f"Port call {i + 1} has eta earlier than previous port")
         return self

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hải Trình - Tính Phát Thải</title>
+  <title>Tàu Liên Cảng - Tính Phát Thải</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     :root {
@@ -288,8 +288,8 @@
 </head>
 <body>
 <header>
-  <h1>🚢 Hải Trình</h1>
-  <span>Chọn cảng trên bản đồ để lập hải trình &amp; tính phát thải</span>
+  <h1>🚢 Tàu Liên Cảng</h1>
+  <span>Chọn cảng trên bản đồ để lập tuyến hải trình &amp; tính phát thải</span>
 </header>
 
 <div id="main-layout">
@@ -303,7 +303,7 @@
       ➕ Thêm cảng từ bản đồ
     </div>
     <button id="complete-btn" onclick="completeVoyage()">
-      ✅ Hoàn tất hải trình
+      ✅ Hoàn tất tuyến hải trình
     </button>
   </div>
 
@@ -607,19 +607,19 @@ function renderPortList() {
           <input type="text" value="${p.name}" readonly />
         </div>
         <div class="field-group">
-          <label>Arrival (ETA)</label>
+          <label>Thời gian đến (ETA)</label>
           <input type="datetime-local" value="${p.eta}" onchange="portList[${i}].eta=this.value" />
         </div>
         <div class="field-group">
-          <label>Departure (ETD)</label>
+          <label>Thời gian rời (ETD)</label>
           <input type="datetime-local" value="${p.etd}" onchange="portList[${i}].etd=this.value" />
         </div>
         <div class="field-group">
-          <label>Channel Dist (km)</label>
+          <label>Chiều dài luồng (km)</label>
           <input type="number" placeholder="VD: 15" value="${p.channelDist}" onchange="portList[${i}].channelDist=this.value" />
         </div>
         <div class="field-group">
-          <label>Sea Dist to Next (km)</label>
+          <label>Quãng biển đến cảng kế (km)</label>
           <input type="number" placeholder="—" value="${p.seaDist}" onchange="portList[${i}].seaDist=this.value" />
         </div>
       </div>`;

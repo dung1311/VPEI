@@ -406,7 +406,7 @@ def serialize_ship_voyage_record(voyage: ShipVoyage) -> Dict[str, Any]:
         "ports_count": len(ports),
         "legs_count": summary.get("num_legs"),
         "payload_json": voyage.payload_json,
-        "note": "Tàu liên cảng",
+        "note": "Hải trình",
     }
 
 
@@ -425,6 +425,6 @@ def get_ship_voyage_by_id(db: Session, record_id: int) -> Dict[str, Any] | None:
 def delete_ship_voyage(record_id: int, db: Session) -> None:
     voyage = db.query(ShipVoyage).filter(ShipVoyage.id == record_id).first()
     if not voyage:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ship voyage not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy bản ghi hải trình")
     db.delete(voyage)
     db.commit()

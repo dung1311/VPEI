@@ -72,6 +72,28 @@ def init_db():
             with engine.begin() as conn:
                 conn.execute(text("ALTER TABLE containers ADD COLUMN is_refrigerated BOOLEAN NOT NULL DEFAULT 0"))
 
+    if "ship_voyages" in inspector.get_table_names():
+        columns = [col["name"] for col in inspector.get_columns("ship_voyages")]
+        with engine.begin() as conn:
+            if "is_man" not in columns:
+                conn.execute(text("ALTER TABLE ship_voyages ADD COLUMN is_man BOOLEAN NOT NULL DEFAULT 0"))
+            if "buoy" not in columns:
+                conn.execute(text("ALTER TABLE ship_voyages ADD COLUMN buoy INTEGER DEFAULT 0"))
+            if "P_main" not in columns:
+                conn.execute(text("ALTER TABLE ship_voyages ADD COLUMN P_main FLOAT NOT NULL DEFAULT 0"))
+            if "P_aux" not in columns:
+                conn.execute(text("ALTER TABLE ship_voyages ADD COLUMN P_aux FLOAT"))
+            if "start_time" not in columns:
+                conn.execute(text("ALTER TABLE ship_voyages ADD COLUMN start_time DATETIME"))
+            if "end_time" not in columns:
+                conn.execute(text("ALTER TABLE ship_voyages ADD COLUMN end_time DATETIME"))
+            if "total_co2" not in columns:
+                conn.execute(text("ALTER TABLE ship_voyages ADD COLUMN total_co2 FLOAT DEFAULT 0.0"))
+            if "payload_json" not in columns:
+                conn.execute(text("ALTER TABLE ship_voyages ADD COLUMN payload_json TEXT"))
+
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_ship_voyages_start_time ON ship_voyages (start_time)"))
+
     from models.user import User
     from core.security import hash_password
 

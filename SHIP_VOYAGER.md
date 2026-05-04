@@ -1,4 +1,4 @@
-# Scope 3 Ship Voyage API Guide (Frontend)
+# Scope 3 Tàu Liên Cảng API Guide (Frontend)
 
 ## 1. Purpose
 This endpoint calculates route emissions for a ship across multiple ports.
@@ -231,7 +231,7 @@ async function calculateShipVoyage(payload) {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || 'Failed to calculate ship voyage emissions');
+    throw new Error(err.detail || 'Failed to calculate inter-port ship emissions');
   }
 
   return res.json();

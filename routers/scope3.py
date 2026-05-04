@@ -931,13 +931,13 @@ async def delete_ship_voyages_bulk(payload: BulkDeleteRequest, request: Request,
             deleted_count += 1
         except Exception:
             pass
-    return {"message": f"Deleted {deleted_count} ship voyages"}
+    return {"message": f"Đã xóa {deleted_count} bản ghi hải trình"}
 
 
 @router.delete("/api/scope3/ship_voyages/{record_id}")
 async def delete_ship_voyage(record_id: int, request: Request, db: Session = Depends(get_db)):
     ship_voyage_service.delete_ship_voyage(record_id, db)
-    return {"message": "Deleted ship voyage"}
+    return {"message": "Đã xóa bản ghi hải trình"}
 
 
 # ─── COMBINED SUMMARY & AUDIT API ENDPOINTS ──────────────────
