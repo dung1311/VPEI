@@ -19,8 +19,8 @@ from services.scope3_period_service import compute_scope3_period, build_scope3_c
 from schemas.container import ContainerCreate, ContainerUpdate
 
 # Ship Services & Schemas
-from services import ship_service, ship_activity_service
-from schemas.ship import ShipCreate, ShipUpdate
+from services import ship_service, ship_activity_service, ship_voyage_service
+from schemas.ship import ShipCreate, ShipUpdate, ShipVoyageRequest
 from models.audit_log import AuditLog
 
 # Harbor Craft Services & Schemas (TÀU TRONG CẢNG)
@@ -263,6 +263,7 @@ async def scope3_page(
         "total_co2e": round(s3["total_co2e"], 2),
         "container_co2e": round(s3["container_co2e"], 2),
         "ship_co2e": round(s3["ship_co2e"], 2),
+        "voyage_co2e": round(s3.get("voyage_co2e", 0.0), 2),
         "harbor_co2e": round(s3["harbor_co2e"], 2),
         "other_vehicle_co2e": round(s3["other_vehicle_co2e"], 2),
         "total_trips": s3["record_count"],
@@ -347,6 +348,30 @@ async def scope3_ndv_data():
 @router.get("/scope3/ndv/zone_data")
 async def scope3_ndv_zone_data():
     file_path = Path(__file__).resolve().parent.parent / "templates" / "data" / "ndv_zone_data.js"
+    return FileResponse(str(file_path), media_type="application/javascript")
+
+@router.get("/scope3/ship_voyage_map", response_class=HTMLResponse)
+async def scope3_ship_voyage_map_page(request: Request):
+    token = request.cookies.get("access_token")
+    if not token:
+        return RedirectResponse(url="/login", status_code=302)
+    try:
+        decode_token(token)
+    except Exception:
+        resp = RedirectResponse(url="/login", status_code=302)
+        resp.delete_cookie("access_token")
+        return resp
+
+    return templates.TemplateResponse(
+        "scope/voyage_map.html",
+        {
+            "request": request,
+        },
+    )
+
+@router.get("/scope3/voyage_route_data")    
+async def scope3_voyage_route_data():
+    file_path = Path(__file__).resolve().parent.parent / "templates" / "data" / "voyage_route_data.js"
     return FileResponse(str(file_path), media_type="application/javascript")
 
 # =====================================================================
@@ -819,6 +844,15 @@ async def delete_ship_endpoint(ship_id: int, request: Request, db: Session = Dep
     return ship_service.delete_ship(ship_id, db, actor=_actor_from_request(request))
 
 
+@router.post("/api/scope3/ships/voyage/calculate")
+async def calculate_ship_voyage(payload: ShipVoyageRequest, request: Request, db: Session = Depends(get_db)):
+    """Tính phát thải cho tuyến nhiều cảng (at sea + in port) và trả dữ liệu để vẽ map."""
+    result = ship_voyage_service.calculate_ship_voyage_emissions(payload)
+    saved = ship_voyage_service.save_ship_voyage_record(db, payload, result)
+    result["record"] = saved
+    return result
+
+
 # ─── HARBOR CRAFT API (TÀU TRONG CẢNG) ───
 @router.get("/api/scope3/harbor_crafts")
 async def get_harbor_crafts(db: Session = Depends(get_db)):
@@ -882,6 +916,30 @@ async def delete_other_vehicle(record_id: int, request: Request, db: Session = D
     return other_vehicle_service.delete_other_vehicle(record_id, db, actor=_actor_from_request(request))
 
 
+@router.get("/api/scope3/ship_voyages")
+async def list_ship_voyages(db: Session = Depends(get_db)):
+    items = ship_voyage_service.get_all_ship_voyages(db)
+    return {"items": items, "count": len(items)}
+
+
+@router.delete("/api/scope3/ship_voyages/bulk")
+async def delete_ship_voyages_bulk(payload: BulkDeleteRequest, request: Request, db: Session = Depends(get_db)):
+    deleted_count = 0
+    for record_id in payload.ids:
+        try:
+            ship_voyage_service.delete_ship_voyage(record_id, db)
+            deleted_count += 1
+        except Exception:
+            pass
+    return {"message": f"Đã xóa {deleted_count} bản ghi hải trình"}
+
+
+@router.delete("/api/scope3/ship_voyages/{record_id}")
+async def delete_ship_voyage(record_id: int, request: Request, db: Session = Depends(get_db)):
+    ship_voyage_service.delete_ship_voyage(record_id, db)
+    return {"message": "Đã xóa bản ghi hải trình"}
+
+
 # ─── COMBINED SUMMARY & AUDIT API ENDPOINTS ──────────────────
 
 @router.get("/api/scope3/summary")
@@ -899,6 +957,7 @@ async def get_scope3_summary(
         "total_co2e": round(s3["total_co2e"], 2),
         "container_co2e": round(s3["container_co2e"], 2),
         "ship_co2e": round(s3["ship_co2e"], 2),
+        "voyage_co2e": round(s3.get("voyage_co2e", 0.0), 2),
         "harbor_co2e": round(s3["harbor_co2e"], 2),
         "truck_co2e": round(s3["truck_co2e"], 2),
         "other_vehicle_co2e": round(s3["other_vehicle_co2e"], 2),
@@ -910,6 +969,7 @@ async def get_scope3_summary(
         "n_harbor_crafts": s3["n_harbor_crafts"],
         "trend_container_monthly": s3["trend_container_monthly"],
         "trend_ship_monthly": s3["trend_ship_monthly"],
+        "trend_voyage_monthly": s3.get("trend_voyage_monthly", [0.0] * 12),
         "trend_harbor_monthly": s3["trend_harbor_monthly"],
         "trend_other_vehicle_monthly": s3["trend_other_vehicle_monthly"],
         "trend_monthly": s3["trend_monthly"],

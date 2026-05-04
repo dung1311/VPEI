@@ -1,9 +1,16 @@
 # models/ship.py
 import enum
-from enum import StrEnum
+from enum import Enum
+
+try:
+    from enum import StrEnum
+except ImportError:
+    # Python < 3.11
+    class StrEnum(str, Enum):
+        pass
 
 from core.database import Base
-from sqlalchemy import Boolean, Column, DateTime, Enum, Float, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, Enum as SQLEnum, Float, Integer, String
 
 class ShipType(StrEnum):
     CONTAINER = "container_ship"
@@ -24,7 +31,7 @@ class Ship(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    ship_type = Column(Enum(ShipType), nullable=False)
+    ship_type = Column(SQLEnum(ShipType), nullable=False)
     year_built = Column(Integer, nullable=False)
     buoy = Column(Integer, nullable=False)
     deadweight_tonnage = Column(Float, nullable=False)
@@ -35,7 +42,7 @@ class Ship(Base):
     P_main = Column(Float, nullable=False)
     P_aux = Column(Float, nullable=False)
     rpm = Column(Float, nullable=False)
-    valve_type = Column(Enum(ValveType), nullable=False)
+    valve_type = Column(SQLEnum(ValveType), nullable=False)
     is_man = Column(Boolean, nullable=False, default=0)  
     start_time = Column(DateTime, nullable=True) 
     end_time = Column(DateTime, nullable=True)

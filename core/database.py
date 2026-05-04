@@ -32,6 +32,7 @@ def init_db():
     from models import audit_log as _  # noqa: F401
     from models import container as _  # noqa: F401
     from models import ship as _  # noqa: F401
+    from models import ship_voyage as _  # noqa: F401
     from models import harbor_craft as _  # noqa: F401
     from models import other_vehicle as _  # noqa: F401
     from models.settings import CompanySetting
@@ -70,6 +71,28 @@ def init_db():
         if "is_refrigerated" not in columns:
             with engine.begin() as conn:
                 conn.execute(text("ALTER TABLE containers ADD COLUMN is_refrigerated BOOLEAN NOT NULL DEFAULT 0"))
+
+    if "ship_voyages" in inspector.get_table_names():
+        columns = [col["name"] for col in inspector.get_columns("ship_voyages")]
+        with engine.begin() as conn:
+            if "is_man" not in columns:
+                conn.execute(text("ALTER TABLE ship_voyages ADD COLUMN is_man BOOLEAN NOT NULL DEFAULT 0"))
+            if "buoy" not in columns:
+                conn.execute(text("ALTER TABLE ship_voyages ADD COLUMN buoy INTEGER DEFAULT 0"))
+            if "P_main" not in columns:
+                conn.execute(text("ALTER TABLE ship_voyages ADD COLUMN P_main FLOAT NOT NULL DEFAULT 0"))
+            if "P_aux" not in columns:
+                conn.execute(text("ALTER TABLE ship_voyages ADD COLUMN P_aux FLOAT"))
+            if "start_time" not in columns:
+                conn.execute(text("ALTER TABLE ship_voyages ADD COLUMN start_time DATETIME"))
+            if "end_time" not in columns:
+                conn.execute(text("ALTER TABLE ship_voyages ADD COLUMN end_time DATETIME"))
+            if "total_co2" not in columns:
+                conn.execute(text("ALTER TABLE ship_voyages ADD COLUMN total_co2 FLOAT DEFAULT 0.0"))
+            if "payload_json" not in columns:
+                conn.execute(text("ALTER TABLE ship_voyages ADD COLUMN payload_json TEXT"))
+
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_ship_voyages_start_time ON ship_voyages (start_time)"))
 
     from models.user import User
     from core.security import hash_password

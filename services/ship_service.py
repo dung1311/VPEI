@@ -133,6 +133,8 @@ def update_ship(ship_id: int, ship_data: ShipUpdate, db: Session, actor: str = "
     end = update_dict.get('end_time', ship.end_time)
     if start and end:
         delta = end - start
+        if delta.total_seconds() < 0:
+            raise HTTPException(status_code=400, detail="Thời gian rời cảng phải sau thời gian vào cảng")
         update_dict['time_in_port'] = delta.total_seconds() / 3600.0
 
     for key, value in update_dict.items():

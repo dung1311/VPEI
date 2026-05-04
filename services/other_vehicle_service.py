@@ -23,12 +23,12 @@ def _normalize_vehicle_type(value: Any) -> OtherVehicleTypeEnum:
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="vehicle_type must be car or motorbike",
+            detail="Loại xe không hợp lệ, chỉ chấp nhận 'car' hoặc 'motorbike'",
         ) from exc
 
 
 def _vehicle_type_label(vtype: OtherVehicleTypeEnum) -> str:
-    return "O to thuong" if vtype == OtherVehicleTypeEnum.CAR else "Xe may"
+    return "Ô tô thường" if vtype == OtherVehicleTypeEnum.CAR else "Xe máy"
 
 
 def _compute_fields(data: Dict[str, Any]) -> Dict[str, Any]:
@@ -38,13 +38,13 @@ def _compute_fields(data: Dict[str, Any]) -> Dict[str, Any]:
     except (TypeError, ValueError) as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="vehicle_count must be a number",
+            detail="Số lượng xe phải là số",
         ) from exc
 
     if count <= 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="vehicle_count must be >= 1",
+            detail="Số lượng xe phải lớn hơn hoặc bằng 1",
         )
 
     ef = EMISSION_FACTOR_CAR if vtype == OtherVehicleTypeEnum.CAR else EMISSION_FACTOR_MOTORBIKE
@@ -83,8 +83,8 @@ def create_other_vehicle(
     container_activity_service.record_activity(
         db,
         actor,
-        "Them du lieu xe thuong",
-        f"Loai: {_vehicle_type_label(new_record.vehicle_type)}, So luong: {new_record.vehicle_count}, CO2e: {new_record.e_total:.4f} tan",
+        "Thêm dữ liệu xe thường",
+        f"Loại: {_vehicle_type_label(new_record.vehicle_type)}, Số lượng: {new_record.vehicle_count}, CO2e: {new_record.e_total:.4f} tấn",
     )
 
     return {
@@ -163,8 +163,8 @@ def update_other_vehicle(
     container_activity_service.record_activity(
         db,
         actor,
-        "Sua du lieu xe thuong",
-        f"Loai: {_vehicle_type_label(record.vehicle_type)}, So luong: {record.vehicle_count}, CO2e: {record.e_total:.4f} tan, Ly do: {str(reason).strip()}",
+        "Sửa dữ liệu xe thường",
+        f"Loại: {_vehicle_type_label(record.vehicle_type)}, Số lượng: {record.vehicle_count}, CO2e: {record.e_total:.4f} tấn, Lý do: {str(reason).strip()}",
     )
 
     return {"ok": True, "id": record.id, "e_total": record.e_total}
@@ -186,8 +186,8 @@ def delete_other_vehicle(
     container_activity_service.record_activity(
         db,
         actor,
-        "Xoa du lieu xe thuong",
-        f"Loai: {name}, So luong: {record.vehicle_count}",
+        "Xóa dữ liệu xe thường",
+        f"Loại: {name}, Số lượng: {record.vehicle_count}",
     )
 
     return {"ok": True, "deleted_id": record_id}
