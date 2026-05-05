@@ -9,24 +9,7 @@ conda create -n thesis python=3.11 -y
 conda activate thesis
 pip install -r requirements.txt
 ```
-
-## 2. Database migration (team-safe)
-
-### Option A (recommended)
-Run app entrypoint once, it will auto-init and auto-migrate missing columns/indexes:
-
+## 2. Run server
 ```bash
-python run.py
-```
-
-### Option B (manual SQL)
-For shared DB rollout, run SQL migration directly:
-
-```bash
-sqlite3 vpei.db < migrations/20260504_ship_voyages.sql
-```
-
-## 3. Run server
-```bash
-python run.py
+python run.py or docker-compose up -d --build
 ```
