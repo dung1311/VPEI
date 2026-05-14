@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <link rel="icon" type="image/png" href="/static/favicon.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scope 1 - Tier 1</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy:#0d1f3c; --navy-mid:#152850; --navy-light:#1e3a6e;
+      --accent:#2e7df7; --accent-light:#5a9bff;
+      --white:#ffffff; --gray-soft:#f4f6fb; --gray-border:#dde3ef;
+      --text-muted:#7a8aab; --green:#22c55e; --red:#ef4444;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'DM Sans',sans-serif;background:var(--gray-soft);color:var(--navy);display:flex;min-height:100vh;overflow:hidden;}
+    .main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+    .content{flex:1;overflow-y:auto;padding:24px 28px;}
+    .subnav{display:flex;gap:10px;padding:0 28px 14px;}
+    .subnav-tab{padding:8px 14px;border-radius:10px;background:white;border:1px solid var(--gray-border);font-weight:600;font-size:0.85rem;}
+    .subnav-tab.active{background:rgba(46,125,247,.08);color:var(--accent);border-color:rgba(46,125,247,.3);}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;}
+    .card{background:white;border:1px solid var(--gray-border);border-radius:14px;box-shadow:0 8px 28px rgba(13,31,60,.04);}
+    .pad{padding:18px;}
+    .span-4{grid-column:span 4;}
+    .span-5{grid-column:span 5;}
+    .span-7{grid-column:span 7;}
+    .span-12{grid-column:span 12;}
+    .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+    .section-title{font-family:'Sora',sans-serif;font-size:1rem;font-weight:800;color:var(--navy);}
+    .kpi{font-family:'Sora',sans-serif;font-size:1.8rem;font-weight:800;}
+    .muted{color:var(--text-muted);}
+    .btn{padding:9px 14px;border-radius:10px;border:1px solid var(--gray-border);background:white;font-weight:600;cursor:pointer;}
+    .btn.primary{background:var(--navy);border-color:var(--navy);color:white;}
+    .btn.primary:hover{background:var(--navy-light);}
+    .table{width:100%;border-collapse:collapse;}
+    .table th,.table td{padding:10px 12px;border-bottom:1px solid #eef2f8;text-align:left;font-size:0.85rem;vertical-align:top;}
+    .table th{font-size:0.78rem;color:var(--text-muted);background:#fafbfd;}
+    .row-click{cursor:pointer;}
+    .row-click:hover{background:rgba(46,125,247,.04);}
+    .pill{display:inline-flex;padding:3px 9px;border-radius:999px;background:rgba(46,125,247,.08);color:var(--accent);font-weight:700;font-size:0.75rem;}
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:100;}
+    .modal-overlay.show{display:flex;}
+    .modal-card{background:white;border-radius:16px;padding:24px;width:min(980px,96vw);max-height:92vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+    .modal-title{font-family:'Sora',sans-serif;font-weight:800;font-size:1.1rem;margin-bottom:16px;}
+    .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+    .form-grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;}
+    label{display:block;font-size:0.8rem;font-weight:600;color:#3a4a6b;margin-bottom:6px;}
+    input,select,textarea{width:100%;padding:10px 12px;border:1.5px solid var(--gray-border);border-radius:10px;font-size:0.85rem;outline:none;}
+    input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+    .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;}
+    .stack{display:flex;flex-direction:column;gap:12px;}
+    .detail-box{background:#fafbfd;border:1px solid var(--gray-border);border-radius:12px;padding:14px;}
+    .method-hint{padding:12px 14px;border-radius:12px;background:rgba(46,125,247,.06);border:1px solid rgba(46,125,247,.18);color:#26436f;font-size:0.85rem;}
+  </style>
+</head>
+<body>
+{% set active_page = 'scope1' %}
+{% include 'components/sidebar.html' %}
+
+<div class="main">
+  {% set topbar_title = '<i class="fa-solid fa-layer-group" style="color:var(--accent);margin-right:6px;font-size:0.9rem"></i>Scope 1 - Tier 1' %}
+  {% include 'components/topbar.html' %}
+
+  <div class="subnav">
+    <div class="subnav-tab active">Tier 1</div>
+  </div>
+
+  <div class="content">
+    <div class="grid" style="margin-bottom:16px;">
+      <div class="card pad span-4">
+        <div class="muted" style="font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;">Tổng phát thải Scope 1</div>
+        <div class="kpi">{{ "{:,.2f}".format(total_scope1_co2|default(0)) }}</div>
+        <div class="muted">tCO₂e</div>
+      </div>
+      <div class="card pad span-4">
+        <div class="muted" style="font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;">Thiết bị đã tạo</div>
+        <div class="kpi">{{ equipments_json|length }}</div>
+        <div class="muted">mã theo định dạng 1.A.1, 1.B.1...</div>
+      </div>
+      <div class="card pad span-4">
+        <div class="muted" style="font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;">Bản ghi phát thải</div>
+        <div class="kpi">{{ records_json|length }}</div>
+        <div class="muted">lọc theo ngày ghi nhận</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card pad span-7">
+        <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div class="section-title">Danh mục phạm vi</div>
+          <button class="btn primary" onclick="openCategoryModal()">+ Thêm phạm vi</button>
+        </div>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Mã</th>
+              <th>Tên phạm vi</th>
+              <th>Tổng CO₂e</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for category in categories_json %}
+            <tr>
+              <td><span class="pill">{{ category.code }}</span></td>
+              <td>{{ category.name }}</td>
+              <td>{{ "{:,.2f}".format(category.total_co2e|default(0)) }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="muted">Chưa có phạm vi nào.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card pad span-5">
+        <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div class="section-title">Thiết bị Tier 1</div>
+          <button class="btn primary" onclick="openEquipmentModal()">+ Tạo thiết bị</button>
+        </div>
+        <div class="method-hint">
+          Thiết bị được gán mã tự động theo quy tắc <b>1.Phạm vi.STT</b>. Bấm vào 1 dòng để mở chi tiết và nhập dữ liệu phát thải.
+        </div>
+        <div class="stack" style="margin-top:12px;max-height:260px;overflow:auto;">
+          {% for equipment in equipments_json %}
+          <div class="detail-box row-click" onclick="openEquipmentDetail({{ equipment.id }})">
+            <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+              <div>
+                <div style="font-weight:800;">{{ equipment.code }} - {{ equipment.name }}</div>
+                <div class="muted" style="font-size:0.82rem;">{{ equipment.category_name }} · {{ equipment.quantity }} {{ equipment.unit }}</div>
+              </div>
+              <div style="font-weight:800;color:var(--accent);">{{ "{:,.2f}".format(equipment.total_co2e|default(0)) }} t</div>
+            </div>
+          </div>
+          {% else %}
+          <div class="muted">Chưa có thiết bị nào trong Tier 1.</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="card pad span-12">
+        <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div class="section-title">Danh sách thiết bị Tier 1</div>
+          <button class="btn" onclick="location.reload()">Làm mới</button>
+        </div>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Mã thiết bị</th>
+              <th>Tên thiết bị</th>
+              <th>Phạm vi</th>
+              <th>Số lượng</th>
+              <th>Đơn vị</th>
+              <th>Cách tính</th>
+              <th>Tổng CO₂e</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for equipment in equipments_json %}
+            <tr class="row-click" onclick="openEquipmentDetail({{ equipment.id }})">
+              <td><b>{{ equipment.code }}</b></td>
+              <td>{{ equipment.name }}</td>
+              <td>{{ equipment.category_code }} - {{ equipment.category_name }}</td>
+              <td>{{ equipment.quantity }}</td>
+              <td>{{ equipment.unit }}</td>
+              <td>{{ equipment.calculation_method }}</td>
+              <td>{{ "{:,.2f}".format(equipment.total_co2e|default(0)) }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="muted">Chưa có thiết bị nào.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="categoryModal">
+  <div class="modal-card">
+    <div class="modal-title">+ Tạo phạm vi</div>
+    <div class="form-grid">
+      <div>
+        <label>Scope</label>
+        <select id="categoryScope">
+          <option value="1" selected>Scope 1</option>
+        </select>
+      </div>
+      <div>
+        <label>Mã phạm vi</label>
+        <input id="categoryCode" placeholder="A, B, C...">
+      </div>
+      <div style="grid-column:1 / -1;">
+        <label>Tên phạm vi</label>
+        <input id="categoryName" placeholder="1A. Phát thải trực tiếp từ quá trình đốt cháy tĩnh">
+      </div>
+      <div style="grid-column:1 / -1;">
+        <label>Mô tả</label>
+        <textarea id="categoryDesc" rows="3"></textarea>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn" onclick="closeModal('categoryModal')">Đóng</button>
+      <button class="btn primary" onclick="createCategory()">Lưu phạm vi</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="equipmentModal">
+  <div class="modal-card">
+    <div class="modal-title">+ Tạo thiết bị</div>
+    <div class="form-grid">
+      <div>
+        <label>Phạm vi</label>
+        <select id="equipmentCategory">
+          {% for category in categories_json %}
+          <option value="{{ category.id }}">{{ category.code }} - {{ category.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Tên thiết bị</label>
+        <input id="equipmentName" placeholder="Tủ lạnh, máy bơm PCCC...">
+      </div>
+      <div>
+        <label>Số lượng</label>
+        <input id="equipmentQuantity" type="number" step="0.01" value="1">
+      </div>
+      <div>
+        <label>Đơn vị</label>
+        <input id="equipmentUnit" placeholder="Cái, Xe, Cẩu...">
+      </div>
+      <div>
+        <label>Cách tính</label>
+        <select id="equipmentMethod">
+          {% for method in calculation_methods %}
+          <option value="{{ method }}">{{ method }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Hệ số phát thải</label>
+        <input id="equipmentEf" placeholder='{"default": 1.0}'>
+      </div>
+      <div style="grid-column:1 / -1;">
+        <label>Mô tả</label>
+        <textarea id="equipmentDesc" rows="3"></textarea>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn" onclick="closeModal('equipmentModal')">Đóng</button>
+      <button class="btn primary" onclick="createEquipment()">Lưu thiết bị</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="detailModal">
+  <div class="modal-card">
+    <div class="modal-title" id="detailTitle">Chi tiết thiết bị</div>
+    <div id="detailBody" class="stack"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="recordModal">
+  <div class="modal-card">
+    <div class="modal-title">Nhập dữ liệu phát thải</div>
+    <div id="recordFormHint" class="method-hint" style="margin-bottom:12px;"></div>
+    <div class="form-grid-4">
+      <div>
+        <label>Ngày ghi nhận</label>
+        <input id="recordTime" type="datetime-local">
+      </div>
+      <div>
+        <label>EF CO2</label>
+        <input id="recordEfCo2" type="number" step="0.000001">
+      </div>
+      <div>
+        <label>EF CH4</label>
+        <input id="recordEfCh4" type="number" step="0.000001">
+      </div>
+      <div>
+        <label>EF N2O</label>
+        <input id="recordEfN2o" type="number" step="0.000001">
+      </div>
+      <div>
+        <label>DO (lít)</label>
+        <input id="recordDo" type="number" step="0.01">
+      </div>
+      <div>
+        <label>Khối lượng</label>
+        <input id="recordMass" type="number" step="0.01">
+      </div>
+      <div>
+        <label>EF</label>
+        <input id="recordEf" type="number" step="0.000001">
+      </div>
+      <div>
+        <label>Số lít</label>
+        <input id="recordLiters" type="number" step="0.01">
+      </div>
+    </div>
+    <div style="margin-top:12px;">
+      <label>Ghi chú</label>
+      <textarea id="recordNote" rows="3"></textarea>
+    </div>
+    <div class="actions">
+      <button class="btn" onclick="closeModal('recordModal')">Đóng</button>
+      <button class="btn primary" onclick="createRecord()">Lưu bản ghi</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const equipmentData = {{ equipments_json | tojson }};
+let currentEquipmentId = null;
+let currentMethod = null;
+
+function closeModal(id) {
+  const modal = document.getElementById(id);
+  if (modal) modal.classList.remove('show');
+}
+
+function openCategoryModal() {
+  document.getElementById('categoryModal').classList.add('show');
+}
+
+function openEquipmentModal() {
+  document.getElementById('equipmentModal').classList.add('show');
+}
+
+function methodHint(method) {
+  if (method === 'method_1') return 'Cách tính 1: nhập EF CO2, EF CH4, EF N2O và DO (lít).';
+  if (method === 'method_2' || method === 'method_3') return 'Cách tính 2/3: nhập khối lượng và EF.';
+  if (method === 'method_4') return 'Cách tính 4: nhập số lít và EF.';
+  return 'Chưa xác định cách tính.';
+}
+
+function toggleRecordFields(method) {
+  const isMethod1 = method === 'method_1';
+  const isMethod23 = method === 'method_2' || method === 'method_3';
+  const isMethod4 = method === 'method_4';
+  document.getElementById('recordEfCo2').parentElement.style.display = isMethod1 ? 'block' : 'none';
+  document.getElementById('recordEfCh4').parentElement.style.display = isMethod1 ? 'block' : 'none';
+  document.getElementById('recordEfN2o').parentElement.style.display = isMethod1 ? 'block' : 'none';
+  document.getElementById('recordDo').parentElement.style.display = isMethod1 ? 'block' : 'none';
+  document.getElementById('recordMass').parentElement.style.display = isMethod23 ? 'block' : 'none';
+  document.getElementById('recordEf').parentElement.style.display = (isMethod23 || isMethod4) ? 'block' : 'none';
+  document.getElementById('recordLiters').parentElement.style.display = isMethod4 ? 'block' : 'none';
+}
+
+async function createCategory() {
+  const payload = {
+    scope: Number(document.getElementById('categoryScope').value),
+    code: document.getElementById('categoryCode').value.trim(),
+    name: document.getElementById('categoryName').value.trim(),
+    description: document.getElementById('categoryDesc').value.trim(),
+  };
+  const res = await fetch('/api/scope1/tier1/categories', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    credentials: 'include',
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    alert(data.detail || 'Không tạo được phạm vi');
+    return;
+  }
+  location.reload();
+}
+
+async function createEquipment() {
+  let emissionFactorJson = null;
+  const rawEf = document.getElementById('equipmentEf').value.trim();
+  if (rawEf) {
+    try {
+      emissionFactorJson = JSON.parse(rawEf);
+    } catch (e) {
+      alert('Hệ số phát thải phải là JSON hợp lệ');
+      return;
+    }
+  }
+
+  const payload = {
+    category_id: Number(document.getElementById('equipmentCategory').value),
+    name: document.getElementById('equipmentName').value.trim(),
+    quantity: Number(document.getElementById('equipmentQuantity').value || 1),
+    unit: document.getElementById('equipmentUnit').value.trim(),
+    calculation_method: document.getElementById('equipmentMethod').value,
+    emission_factor_json: emissionFactorJson,
+    description: document.getElementById('equipmentDesc').value.trim(),
+  };
+  const res = await fetch('/api/scope1/tier1/equipments', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    credentials: 'include',
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    alert(data.detail || 'Không tạo được thiết bị');
+    return;
+  }
+  location.reload();
+}
+
+async function openEquipmentDetail(id) {
+  currentEquipmentId = id;
+  const res = await fetch(`/api/scope1/tier1/equipments/${id}`, { credentials: 'include' });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    alert(data.detail || 'Không mở được chi tiết thiết bị');
+    return;
+  }
+  const data = await res.json();
+  currentMethod = data.equipment.calculation_method;
+  document.getElementById('detailTitle').textContent = `${data.equipment.code} - ${data.equipment.name}`;
+  document.getElementById('detailBody').innerHTML = `
+    <div class="detail-box">
+      <div><b>Phạm vi:</b> ${data.category.code} - ${data.category.name}</div>
+      <div><b>Số lượng:</b> ${data.equipment.quantity} ${data.equipment.unit}</div>
+      <div><b>Cách tính:</b> ${data.equipment.calculation_method}</div>
+      <div><b>Tổng phát thải:</b> ${Number(data.total_co2e || 0).toFixed(2)} tCO₂e</div>
+    </div>
+    <div class="detail-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+        <div style="font-weight:800;">Bản ghi phát thải</div>
+        <button class="btn primary" onclick="openRecordModal()">+ Nhập dữ liệu</button>
+      </div>
+      <div style="margin-top:12px;max-height:320px;overflow:auto;">
+        <table class="table">
+          <thead><tr><th>Ngày</th><th>CO₂e</th><th>Input</th></tr></thead>
+          <tbody>
+            ${(data.records || []).map(record => `<tr><td>${record.record_time}</td><td>${Number(record.co2e || 0).toFixed(2)}</td><td><pre style="white-space:pre-wrap;font-size:0.78rem;">${JSON.stringify(record.input_json, null, 2)}</pre></td></tr>`).join('') || '<tr><td colspan="3" class="muted">Chưa có bản ghi nào.</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+  document.getElementById('detailModal').classList.add('show');
+}
+
+function openRecordModal() {
+  const equipment = equipmentData.find(item => item.id === currentEquipmentId);
+  if (!equipment) {
+    alert('Không tìm thấy thiết bị đang chọn');
+    return;
+  }
+  currentMethod = equipment.calculation_method;
+  document.getElementById('recordFormHint').textContent = methodHint(currentMethod);
+  toggleRecordFields(currentMethod);
+  document.getElementById('recordModal').classList.add('show');
+}
+
+async function createRecord() {
+  if (!currentEquipmentId) {
+    alert('Chưa chọn thiết bị');
+    return;
+  }
+  const payload = {
+    equipment_id: currentEquipmentId,
+    record_time: document.getElementById('recordTime').value,
+    ef_co2: document.getElementById('recordEfCo2').value ? Number(document.getElementById('recordEfCo2').value) : null,
+    ef_ch4: document.getElementById('recordEfCh4').value ? Number(document.getElementById('recordEfCh4').value) : null,
+    ef_n2o: document.getElementById('recordEfN2o').value ? Number(document.getElementById('recordEfN2o').value) : null,
+    do_liters: document.getElementById('recordDo').value ? Number(document.getElementById('recordDo').value) : null,
+    mass: document.getElementById('recordMass').value ? Number(document.getElementById('recordMass').value) : null,
+    ef: document.getElementById('recordEf').value ? Number(document.getElementById('recordEf').value) : null,
+    liters: document.getElementById('recordLiters').value ? Number(document.getElementById('recordLiters').value) : null,
+    note: document.getElementById('recordNote').value.trim(),
+  };
+  const res = await fetch('/api/scope1/tier1/records', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    credentials: 'include',
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    alert(data.detail || 'Không lưu được bản ghi');
+    return;
+  }
+  location.reload();
+}
+
+window.addEventListener('click', function (event) {
+  if (event.target.classList.contains('modal-overlay')) {
+    event.target.classList.remove('show');
+  }
+});
+</script>
+</body>
+</html>
