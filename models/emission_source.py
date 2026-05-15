@@ -8,10 +8,10 @@ from core.database import Base
 
 
 class CalculationMethodEnum(str, enum.Enum):
-    METHOD_1 = "method_1"
-    METHOD_2 = "method_2"
-    METHOD_3 = "method_3"
-    METHOD_4 = "method_4"
+    METHOD_1 = "Cách tính 1"
+    METHOD_2 = "Cách tính 2"
+    METHOD_3 = "Cách tính 3"
+    METHOD_4 = "Cách tính 4"
 
 
 class ScopeCategory(Base):
