@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Optional, Type
 
 from fastapi import HTTPException
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy import extract, func
 from sqlalchemy.orm import Session
 
@@ -24,6 +25,16 @@ from schemas.emission_source import (
 
 GWP_CH4 = 28.0
 GWP_N2O = 265.0
+
+DEFAULT_SCOPE3_CATEGORIES = (
+    ("A", "Phát thải từ vận chuyển và phân phối ngược dòng cho hàng hóa"),
+    ("B", "Phát thải từ vận chuyển và phân phối upstream/downstream cho hàng hóa"),
+    ("C", "Phát thải từ việc đi lại của nhân viên"),
+    ("D", "Phát thải từ việc vận chuyển khách hàng và khách"),
+    ("E", "Phát thải do đi công tác"),
+    ("F", "Phát thải từ hàng hóa đã mua"),
+    ("G", "Phát thải từ mua các dịch vụ"),
+)
 
 
 def _scope_models(scope: int) -> tuple[Type[Scope1Equipment], Type[Scope1EmissionRecord]]:
@@ -51,7 +62,8 @@ def _format_code(scope: int, category_code: str, sequence_no: int) -> str:
 def _record_input(payload: EquipmentRecordCreate) -> dict[str, Any]:
     data = payload.model_dump()
     data.pop("equipment_id", None)
-    return {key: value for key, value in data.items() if value is not None}
+    data.pop("record_time", None)
+    return jsonable_encoder({key: value for key, value in data.items() if value is not None})
 
 
 def _calculate_co2e(method: CalculationMethodEnum, data: dict[str, Any]) -> float:
@@ -77,6 +89,29 @@ def list_categories(db: Session, scope: int) -> list[ScopeCategory]:
         ScopeCategory.sort_order.asc(),
         ScopeCategory.code.asc(),
     ).all()
+
+
+def ensure_default_scope3_categories(db: Session) -> None:
+    existing_codes = {
+        row[0]
+        for row in db.query(ScopeCategory.code).filter(ScopeCategory.scope == 3).all()
+    }
+    changed = False
+    for idx, (code, name) in enumerate(DEFAULT_SCOPE3_CATEGORIES, start=1):
+        if code in existing_codes:
+            continue
+        db.add(
+            ScopeCategory(
+                scope=3,
+                code=code,
+                name=name,
+                sort_order=idx,
+                is_active=1,
+            )
+        )
+        changed = True
+    if changed:
+        db.commit()
 
 
 def create_category(db: Session, payload: ScopeCategoryCreate) -> ScopeCategory:
@@ -150,6 +185,27 @@ def _sync_equipment_codes(db: Session, category: ScopeCategory) -> None:
 def create_equipment(db: Session, scope: int, payload: EquipmentCreate) -> Any:
     equipment_model, _ = _scope_models(scope)
     category = _resolve_category(db, scope, payload.category_id)
+
+    normalized_name = payload.name.strip().casefold()
+    existing = next(
+        (
+            equipment
+            for equipment in db.query(equipment_model).all()
+            if (equipment.name or "").strip().casefold() == normalized_name
+        ),
+        None,
+    )
+    if existing:
+        existing.quantity = float(existing.quantity or 0.0) + float(payload.quantity or 0.0)
+        if payload.unit:
+            existing.unit = payload.unit
+        if payload.description:
+            existing.description = payload.description
+        db.commit()
+        db.refresh(existing)
+        setattr(existing, "_was_quantity_incremented", True)
+        return existing
+
     sequence_no = _next_sequence(db, equipment_model, category.id)
     code = _format_code(scope, category.code, sequence_no)
 
@@ -243,6 +299,16 @@ def create_record(db: Session, scope: int, payload: EquipmentRecordCreate) -> An
     db.commit()
     db.refresh(record)
     return record
+
+
+def delete_record(db: Session, scope: int, record_id: int) -> dict[str, str]:
+    _, record_model = _scope_models(scope)
+    record = db.query(record_model).filter(record_model.id == record_id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bản ghi thiết bị để xóa")
+    db.delete(record)
+    db.commit()
+    return {"message": "Đã xóa bản ghi thiết bị"}
 
 
 def list_records(db: Session, scope: int, year: Optional[int] = None, month: Optional[int] = None, quarter: Optional[int] = None) -> list[Any]:
