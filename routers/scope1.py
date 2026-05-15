@@ -50,6 +50,52 @@ def _scope1_period_ctx(y: int, month: Optional[int], quarter: Optional[int], mon
         "activity_month": min(months),
     }
 
+
+def _scope1_emission_source_context(db: Session, y: int, month: Optional[int], quarter: Optional[int], months: List[int]) -> dict:
+    devices = scope1_services.DeviceService.get_all(db)
+    activities = scope1_services.ActivityDataService.get_by_record_time(db, y, months)
+
+    device_rows = []
+    for device in devices:
+        device_activities = [act for act in activities if act.device_id == device.id]
+        device_rows.append({
+            "id": device.id,
+            "name": device.name,
+            "device_type": device.device_type.value if device.device_type else "",
+            "fuel_type": device.fuel_type.value if device.fuel_type else "",
+            "capacity": device.nominal_capacity,
+            "total_emissions": sum(float(act.total_co2e or 0.0) for act in device_activities),
+        })
+
+    activity_rows = []
+    for act in activities:
+        device = next((item for item in devices if item.id == act.device_id), None)
+        activity_rows.append({
+            "id": act.id,
+            "device_id": act.device_id,
+            "device_name": device.name if device else act.device_id,
+            "device_type": act.device_type.value if act.device_type else "",
+            "power": act.recorded_power,
+            "hours": act.operating_hours,
+            "lf": float(act.load_factor or 0.0) * 100.0,
+            "record_time": act.record_time.strftime("%d/%m/%Y %H:%M") if act.record_time else "",
+            "total_co": act.total_co2e,
+        })
+
+    monthly_values = []
+    for m in range(1, 13):
+        month_rows = scope1_services.ActivityDataService.get_by_record_time(db, y, [m])
+        monthly_values.append(sum(float(act.total_co2e or 0.0) for act in month_rows))
+
+    return {
+        "categories": device_rows,
+        "activities": activity_rows,
+        "device_types": [item.value for item in DeviceTypeEnum],
+        "fuel_types": [item.value for item in FuelTypeEnum],
+        "total_scope1_co2": sum(float(act.total_co2e or 0.0) for act in activities),
+        "trend_data": {"labels": [f"T{i}" for i in range(1, 13)], "values": monthly_values},
+    }
+
 # --- UI PAGES ---
 @router.get("/scope1", response_class=HTMLResponse)
 async def scope1_dashboard_page(
@@ -84,8 +130,32 @@ async def scope1_emission_source_page(
     now = datetime.utcnow()
     y = year or now.year
     months = _resolve_scope1_months(month, quarter)
+    context = _scope1_emission_source_context(db, y, month, quarter, months)
+
+    return templates.TemplateResponse("scope/scope_01_emission_source.html", {
+        "request": request,
+        "user": _user_from_request(request),
+        "current_year": y,
+        "current_month": month if month is not None else min(months),
+        "period_ctx": _scope1_period_ctx(y, month, quarter, months),
+        **context,
+    })
+
+
+@router.get("/scope1/tier1", response_class=HTMLResponse)
+async def scope1_tier1_page(
+    request: Request,
+    year: int = Query(None),
+    month: int = Query(None),
+    quarter: int = Query(None),
+    db: Session = Depends(get_db),
+):
+    now = datetime.utcnow()
+    y = year or now.year
+    months = _resolve_scope1_months(month, quarter)
     current_month = month if month is not None else min(months)
 
+    equipment_service.ensure_default_scope1_categories(db)
     summary = equipment_service.summary_by_scope(db, 1, year=y, month=month, quarter=quarter)
     categories = equipment_service.list_categories(db, 1)
     equipments = equipment_service.list_equipments(db, 1)

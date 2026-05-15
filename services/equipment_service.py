@@ -36,6 +36,14 @@ DEFAULT_SCOPE3_CATEGORIES = (
     ("G", "Phát thải từ mua các dịch vụ"),
 )
 
+DEFAULT_SCOPE1_CATEGORIES = (
+    ("A", "Phát thải trực tiếp từ quá trình đốt cháy tĩnh"),
+    ("B", "Phát thải trực tiếp từ quá trình đốt cháy di động"),
+    ("C", "Phát thải trực tiếp từ các quá trình công nghiệp"),
+    ("D", "Phát thải trực tiếp từ việc giải phóng KNK trong các hệ thống do con người gây ra"),
+    ("E", "Phát thải và loại bỏ trực tiếp từ sử dụng đất, thay đổi sử dụng đất và lâm nghiệp (LULUCF)"),
+)
+
 
 def _scope_models(scope: int) -> tuple[Type[Scope1Equipment], Type[Scope1EmissionRecord]]:
     if int(scope) == 1:
@@ -92,17 +100,25 @@ def list_categories(db: Session, scope: int) -> list[ScopeCategory]:
 
 
 def ensure_default_scope3_categories(db: Session) -> None:
+    _ensure_default_categories(db, 3, DEFAULT_SCOPE3_CATEGORIES)
+
+
+def ensure_default_scope1_categories(db: Session) -> None:
+    _ensure_default_categories(db, 1, DEFAULT_SCOPE1_CATEGORIES)
+
+
+def _ensure_default_categories(db: Session, scope: int, defaults: tuple[tuple[str, str], ...]) -> None:
     existing_codes = {
         row[0]
-        for row in db.query(ScopeCategory.code).filter(ScopeCategory.scope == 3).all()
+        for row in db.query(ScopeCategory.code).filter(ScopeCategory.scope == scope).all()
     }
     changed = False
-    for idx, (code, name) in enumerate(DEFAULT_SCOPE3_CATEGORIES, start=1):
+    for idx, (code, name) in enumerate(defaults, start=1):
         if code in existing_codes:
             continue
         db.add(
             ScopeCategory(
-                scope=3,
+                scope=scope,
                 code=code,
                 name=name,
                 sort_order=idx,
