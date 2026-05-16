@@ -1368,8 +1368,17 @@
                     <div class="form-row">
                       <div class="form-group"><label class="form-label">Tên thiết bị</label><input
                           id="s3EquipmentNameInline" class="form-input" placeholder="VD: Tủ lạnh, máy bơm PCCC"></div>
-                      <div class="form-group"><label class="form-label">Đơn vị</label><input id="s3EquipmentUnitInline"
-                          class="form-input" placeholder="VD: Cái, Xe, Bình, Chuyến"></div>
+                      <div class="form-group">
+                        <label class="form-label">Đơn vị</label>
+                        <input list="unit-options-s3" id="s3EquipmentUnitInline" class="form-input" placeholder="VD: Cái, Xe, Bình, Chuyến">
+                        <datalist id="unit-options-s3">
+                          <option value="Cái">
+                          <option value="Chuyến">
+                          <option value="Chiếc">
+                          <option value="Bình">
+                          <option value="Xe">
+                        </datalist>
+                      </div>
                     </div>
                     <div class="form-row">
                       <div class="form-group"><label class="form-label">Số lượng</label><input

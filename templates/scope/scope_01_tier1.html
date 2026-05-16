@@ -626,7 +626,14 @@
         </div>
         <div>
           <label>Đơn vị</label>
-          <input id="equipmentUnitInline" placeholder="VD: Cái, Xe, Bình, Chuyến">
+          <input list="unit-options" id="equipmentUnitInline" placeholder="VD: Cái, Xe, Bình, Chuyến">
+          <datalist id="unit-options">
+            <option value="Cái">
+            <option value="Chuyến">
+            <option value="Chiếc">
+            <option value="Bình">
+            <option value="Xe">
+          </datalist>
         </div>
         <div style="grid-column: span 2;">
           <label>Ghi chú</label>
