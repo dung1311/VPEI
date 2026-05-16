@@ -1,121 +1,534 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
-<link rel="icon" type="image/png" href="/static/favicon.png">
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SPEI – Scope 1: Emission Source Management</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --navy:#0d1f3c; --navy-mid:#152850; --navy-light:#1e3a6e;
-    --accent:#2e7df7; --accent-light:#5a9bff;
-    --white:#ffffff; --gray-soft:#f4f6fb; --gray-border:#dde3ef;
-    --text-muted:#7a8aab; --green:#22c55e; --red:#ef4444;
-  }
-  *{margin:0;padding:0;box-sizing:border-box;}
-  body{font-family:'DM Sans',sans-serif;background:var(--gray-soft);color:var(--navy);display:flex;height:100vh;overflow:hidden;}
+  <link rel="icon" type="image/png" href="/static/favicon.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SPEI – Scope 1: Emission Source Management</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --navy: #0d1f3c;
+      --navy-mid: #152850;
+      --navy-light: #1e3a6e;
+      --accent: #2e7df7;
+      --accent-light: #5a9bff;
+      --white: #ffffff;
+      --gray-soft: #f4f6fb;
+      --gray-border: #dde3ef;
+      --text-muted: #7a8aab;
+      --green: #22c55e;
+      --red: #ef4444;
+    }
 
-  /* SCROLLBAR CUSTOM */
-  ::-webkit-scrollbar { width:5px; }
-  ::-webkit-scrollbar-track { background:transparent; }
-  ::-webkit-scrollbar-thumb { background:var(--gray-border); border-radius:10px; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-  /* SIDEBAR */
-  .sidebar{width:220px;background:var(--white);border-right:1px solid var(--gray-border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
-  .sidebar-logo { height: 60px; padding: 0 24px; display: flex; align-items: center; border-bottom: 1px solid var(--gray-border); gap: 10px; flex-shrink: 0; }
-  .logo-box{background:linear-gradient(135deg,var(--navy),var(--navy-light));border-radius:10px;padding:7px 12px;font-family:'Sora',sans-serif;font-weight:800;font-size:1.1rem;color:white;}
-  .nav-items{padding:16px 0;flex:1;}
-  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:0.88rem;font-weight:500;color:#4a5a7b;transition:all 0.2s;text-decoration:none;border-left:3px solid transparent;}
-  .nav-item:hover{background:var(--gray-soft);color:var(--navy);}
-  .nav-item.active{background:rgba(46,125,247,0.08);color:var(--accent);border-left-color:var(--accent);font-weight:600;}
-  .nav-item.sub{padding-left:44px;font-size:0.83rem;}
-  .nav-item.sub.active{background:rgba(46,125,247,0.06);color:var(--accent);}
-  .nav-section{padding:6px 20px 4px;font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;}
-  .nav-bottom{padding:16px 0;border-top:1px solid var(--gray-border);}
-  .nav-expand{font-size:0.7rem;margin-left:auto;}
-  .submenu { max-height:0; overflow:hidden; transition:max-height 0.3s ease; }
-  .submenu.open { max-height:120px; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--gray-soft);
+      color: var(--navy);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
 
-  /* MAIN */
-  .main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
-  .content{flex:1;overflow-y:auto;padding:24px 28px;}
+    /* SCROLLBAR CUSTOM */
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
 
-  /* SECTION HEADER */
-  .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
-  .section-title{font-family:'Sora',sans-serif;font-size:1rem;font-weight:700;color:var(--navy);}
-  .btn-primary{padding:9px 18px;background:var(--navy);color:white;border:none;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif;display:flex;align-items:center;gap:6px;transition:all 0.2s;}
-  .btn-primary:hover:not(:disabled){background:var(--navy-light);}
-  .btn-outline{padding:9px 18px;background:white;color:var(--navy);border:1.5px solid var(--gray-border);border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.2s;}
-  .btn-outline:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
-  button:disabled { opacity: 0.5; cursor: not-allowed !important; }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
 
-  /* DEVICE CARDS */
-  .device-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
-  .device-card{background:white;border:1.5px solid var(--gray-border);border-radius:12px;padding:16px 18px;transition:all 0.2s;}
-  .device-card:hover{border-color:var(--accent);box-shadow:0 2px 12px rgba(46,125,247,0.1);}
-  .device-name{font-family:'Sora',sans-serif;font-weight:700;font-size:0.95rem;color:var(--navy);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;}
-  .device-count{display:flex;align-items:center;gap:6px;margin-bottom:10px;}
-  .count-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:var(--gray-soft);border:2px solid #000080;border-radius:5px;font-size:0.82rem;font-weight:600;color:var(--navy);}
-  .device-emission-label{font-size:0.75rem;color:var(--text-muted);margin-bottom:3px;}
-  .device-emission-val{font-family:'Sora',sans-serif;font-size:0.95rem;font-weight:700;color:var(--navy);}
+    ::-webkit-scrollbar-thumb {
+      background: var(--gray-border);
+      border-radius: 10px;
+    }
 
-  /* DATA INPUT */
-  .data-section{background:white;border-radius:14px;border:2px solid #000080;margin-bottom:20px;overflow:hidden;}
-  .data-section-header{padding:16px 20px;border-bottom:1px solid var(--gray-border);display:flex;align-items:center;justify-content:space-between;}
-  .data-table{width:100%;border-collapse:collapse;}
-  .data-table th{padding:11px 18px;text-align:left;font-size:0.8rem;font-weight:600;color:var(--text-muted);background:#fafbfd;border-bottom:1px solid var(--gray-border);}
-  .data-table td{padding:10px 18px;font-size:0.85rem;color:#2a3a6b;border-bottom:1px solid #f0f2f8;}
-  .data-table tr:last-child td{border-bottom:none;}
-  .emission-val{font-weight:600;color:var(--navy);}
-  .icon-btn{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:0.85rem;padding:2px;}
-  .icon-btn:hover:not(:disabled){color:var(--accent);}
-  .device-badge { display:inline-block; padding:3px 9px; border-radius:5px; background:rgba(46,125,247,0.1); color:var(--accent); font-weight:600; font-size:0.75rem; border: 1px solid var(--gray-border);}
+    /* SIDEBAR */
+    .sidebar {
+      width: 220px;
+      background: var(--white);
+      border-right: 1px solid var(--gray-border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      overflow-y: auto;
+    }
 
-  /* BOTTOM SUMMARY */
-  .summary-row{display:grid;grid-template-columns:1.2fr 1.5fr 1.5fr;gap:16px;margin-bottom:20px;}
-  .summary-card{background:white;border-radius:14px;border: 2px solid #000080;padding:20px;}
-  .summary-total{font-family:'Sora',sans-serif;font-size:2rem;font-weight:800;color:var(--navy);}
-  .chart-mini-title{font-size:0.85rem;font-weight:600;color:var(--navy);margin-bottom:12px;}
+    .sidebar-logo {
+      height: 60px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid var(--gray-border);
+      gap: 10px;
+      flex-shrink: 0;
+    }
 
-  /* Modal */
-  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:100;}
-  .modal-overlay.show{display:flex;}
-  .modal-card{background:white;border-radius:16px;padding:28px;width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.2);}
-  .modal-title{font-family:'Sora',sans-serif;font-weight:700;font-size:1.1rem;color:var(--navy);margin-bottom:20px;}
-  .modal-form label{display:block;font-size:0.82rem;font-weight:500;color:#3a4a6b;margin-bottom:5px;margin-top:12px;}
-  .modal-form input,.modal-form select{width:100%;padding:10px 12px;border:1.5px solid var(--gray-border);border-radius:8px;font-size:0.85rem;color:var(--navy);outline:none;}
-  .modal-form input:focus,.modal-form select:focus{border-color:var(--accent);}
-  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
-</style>
+    .logo-box {
+      background: linear-gradient(135deg, var(--navy), var(--navy-light));
+      border-radius: 10px;
+      padding: 7px 12px;
+      font-family: 'Sora', sans-serif;
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: white;
+    }
+
+    .nav-items {
+      padding: 16px 0;
+      flex: 1;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: #4a5a7b;
+      transition: all 0.2s;
+      text-decoration: none;
+      border-left: 3px solid transparent;
+    }
+
+    .nav-item:hover {
+      background: var(--gray-soft);
+      color: var(--navy);
+    }
+
+    .nav-item.active {
+      background: rgba(46, 125, 247, 0.08);
+      color: var(--accent);
+      border-left-color: var(--accent);
+      font-weight: 600;
+    }
+
+    .nav-item.sub {
+      padding-left: 44px;
+      font-size: 0.83rem;
+    }
+
+    .nav-item.sub.active {
+      background: rgba(46, 125, 247, 0.06);
+      color: var(--accent);
+    }
+
+    .nav-section {
+      padding: 6px 20px 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .nav-bottom {
+      padding: 16px 0;
+      border-top: 1px solid var(--gray-border);
+    }
+
+    .nav-expand {
+      font-size: 0.7rem;
+      margin-left: auto;
+    }
+
+    .submenu {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+
+    .submenu.open {
+      max-height: 120px;
+    }
+
+    /* MAIN */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 28px;
+    }
+
+    /* SECTION HEADER */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      font-family: 'Sora', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    .btn-primary {
+      padding: 9px 18px;
+      background: var(--navy);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Sora', sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--navy-light);
+    }
+
+    .btn-outline {
+      padding: 9px 18px;
+      background: white;
+      color: var(--navy);
+      border: 1.5px solid var(--gray-border);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-outline:hover:not(:disabled) {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed !important;
+    }
+
+    /* DEVICE CARDS */
+    .device-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .device-card {
+      background: white;
+      border: 1.5px solid var(--gray-border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      transition: all 0.2s;
+    }
+
+    .device-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 2px 12px rgba(46, 125, 247, 0.1);
+    }
+
+    .device-name {
+      font-family: 'Sora', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--navy);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .device-count {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .count-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      background: var(--gray-soft);
+      border: 2px solid #000080;
+      border-radius: 5px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--navy);
+    }
+
+    .device-emission-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+    }
+
+    .device-emission-val {
+      font-family: 'Sora', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    /* KPI CARDS */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 16px;
+    }
+
+    .card {
+      background: white;
+      border: 2px solid #000080;
+      border-radius: 14px;
+      box-shadow: 0 8px 28px rgba(13, 31, 60, .04);
+    }
+
+    .pad {
+      padding: 18px;
+    }
+
+    .span-4 {
+      grid-column: span 4;
+    }
+
+    .muted {
+      color: var(--text-muted);
+    }
+
+    .kpi {
+      font-family: 'Sora', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--navy);
+    }
+
+    /* DATA INPUT */
+    .data-section {
+      background: white;
+      border-radius: 14px;
+      border: 2px solid #000080;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .data-section-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--gray-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .data-table th {
+      padding: 11px 18px;
+      text-align: left;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: #fafbfd;
+      border-bottom: 1px solid var(--gray-border);
+    }
+
+    .data-table td {
+      padding: 10px 18px;
+      font-size: 0.85rem;
+      color: #2a3a6b;
+      border-bottom: 1px solid #f0f2f8;
+    }
+
+    .data-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .emission-val {
+      font-weight: 600;
+      color: var(--navy);
+    }
+
+    .icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      padding: 2px;
+    }
+
+    .icon-btn:hover:not(:disabled) {
+      color: var(--accent);
+    }
+
+    .device-badge {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 5px;
+      background: rgba(46, 125, 247, 0.1);
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 0.75rem;
+      border: 1px solid var(--gray-border);
+    }
+
+    /* BOTTOM SUMMARY */
+    .summary-row {
+      display: grid;
+      grid-template-columns: 1.2fr 1.5fr 1.5fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .summary-card {
+      background: white;
+      border-radius: 14px;
+      border: 2px solid #000080;
+      padding: 20px;
+    }
+
+    .summary-total {
+      font-family: 'Sora', sans-serif;
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--navy);
+    }
+
+    .chart-mini-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 12px;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal-card {
+      background: white;
+      border-radius: 16px;
+      padding: 28px;
+      width: 420px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-title {
+      font-family: 'Sora', sans-serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--navy);
+      margin-bottom: 20px;
+    }
+
+    .modal-form label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: #3a4a6b;
+      margin-bottom: 5px;
+      margin-top: 12px;
+    }
+
+    .modal-form input,
+    .modal-form select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--gray-border);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: var(--navy);
+      outline: none;
+    }
+
+    .modal-form input:focus,
+    .modal-form select:focus {
+      border-color: var(--accent);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+  </style>
 </head>
+
 <body>
 
-{% set active_page = 'scope1' %}
-{% include 'components/sidebar.html' %}
+  {% set active_page = 'scope1' %}
+  {% include 'components/sidebar.html' %}
 
-<div class="main">
-  {% set topbar_title = '<i class="fa-solid fa-layer-group" style="color:var(--accent);margin-right:6px;font-size:0.9rem"></i>Scope 1 – Quản lý nguồn phát thải' %}
-  {% include 'components/topbar.html' %}
+  <div class="main">
+    {% set topbar_title = '<i class="fa-solid fa-layer-group"
+      style="color:var(--accent);margin-right:6px;font-size:0.9rem"></i>Scope 1 – Quản lý nguồn phát thải' %}
+    {% include 'components/topbar.html' %}
 
-  <div class="content">
-    <div class="section-header">
-      <div class="section-title">Tổng quan phân bổ thiết bị</div>
+    <div class="content">
+    <div style="margin-bottom: 20px;">
+      <div style="display: inline-block; background: white; border: 1.5px solid var(--accent); border-radius: 14px; padding: 18px 26px; min-width: 260px; box-shadow: 0 4px 12px rgba(46, 125, 247, 0.04);">
+        <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; line-height: 1.4; margin-bottom: 8px;">
+          Tổng phát thải<br>Scope 1 (tCO₂e)
+        </div>
+        <div style="font-family: 'Sora', sans-serif; font-size: 2.2rem; font-weight: 800; color: var(--navy); line-height: 1.2;">
+          {{ "{:,.2f}".format(total_scope1_co2|default(0)) }}
+        </div>
+      </div>
     </div>
 
-    <div class="device-grid">
-      {% for dt in device_types %}
+      <div class="section-header">
+        <div class="section-title">Tổng quan phân bổ thiết bị</div>
+      </div>
+
+      <div class="device-grid">
+        {% for dt in device_types %}
         {% set dt_categories = categories | selectattr('device_type', 'equalto', dt) | list %}
         {% set count = dt_categories | length %}
         {% set total_co2 = dt_categories | map(attribute='total_emissions') | sum %}
-        
+
         {% set act_list = activities | selectattr('device_type', 'equalto', dt) | list %}
         {% set total_hours = act_list | map(attribute='hours') | sum %}
-        
+
         <div class="device-card">
           <div class="device-name">
             {{ dt }}
@@ -124,554 +537,571 @@
             <div class="count-badge">Tổng: {{ count }} thiết bị</div>
           </div>
           <div class="device-emission-label">Thời gian hoạt động</div>
-          <div class="device-emission-val" style="margin-bottom: 8px; color: var(--accent);">{{ "{:,.1f}".format(total_hours) }} h</div>
+          <div class="device-emission-val" style="margin-bottom: 8px; color: var(--accent);">{{
+            "{:,.1f}".format(total_hours) }} h</div>
           <div class="device-emission-label">Tổng phát thải</div>
           <div class="device-emission-val">{{ "{:,.1f}".format(total_co2) }} tCO₂e</div>
         </div>
-      {% endfor %}
-    </div>
-
-    <div class="data-section">
-      <div class="data-section-header">
-        <div class="section-title" style="margin:0;">Nhập dữ liệu hoạt động</div>
-        <div style="display:flex;gap:10px;">
-          <button id="bulkDeleteBtnAct" class="btn-outline action-require-edit" style="color:var(--red); display:none;" onclick="bulkDeleteActivities()">[ Xóa đã chọn ]</button>
-          <button class="btn-primary action-require-edit" onclick="document.getElementById('catModal').classList.add('show')">[ + Tạo Thiết Bị ]</button>
-          <button class="btn-primary action-require-edit" onclick="openActivityModal()">[ Nhập hoạt động ]</button>
-          <button class="btn-outline action-require-edit" onclick="document.getElementById('importModal').classList.add('show')">[ Import Excel ]</button>
-        </div>
+        {% endfor %}
       </div>
 
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th style="width: 40px;"><input type="checkbox" id="selectAllAct" onclick="toggleSelectAllAct(this)"></th>
-            <th>ID B/Ghi</th>
-            <th>Tên thiết bị</th>
-            <th>Power (kW)</th>
-            <th>Thời gian hoạt động (h)</th>
-            <th>LF (%)</th>
-            <th>Thời gian ghi nhận</th>
-            <th>Tổng phát thải (tCO₂e)</th>
-            <th style="width:100px;">Thao tác</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for act in activities %}
-          <tr>
-            <td><input type="checkbox" class="act-checkbox" value="{{ act.id }}" onchange="updateBulkDeleteBtn('act-checkbox', 'bulkDeleteBtnAct', 'selectAllAct')"></td>
-            <td>{{ loop.index }}</td>
-            <td style="font-weight:600;">[{{ act.device_id }}] {{ act.device_name }}</td>
-            <td>{{ act.power }}</td>
-            <td>{{ act.hours }}</td>
-            <td>{{ "{:,.1f}".format(act.lf) }}</td>
-            <td>{{ act.record_time }}</td>
-            <td><span class="emission-val">{{ "{:,.1f}".format(act.total_co) }}</span></td>
-            <td>
-              <div style="display:flex; gap:8px;">
-                <button class="icon-btn action-require-edit" onclick="openEditActModal({{ act.id }}, '{{ act.device_name }}', {{ act.power }}, {{ act.hours }}, {{ act.lf }}, '{{ act.record_time }}')">
+      <div class="data-section">
+        <div class="data-section-header">
+          <div class="section-title" style="margin:0;">Nhập dữ liệu hoạt động</div>
+          <div style="display:flex;gap:10px;">
+            <button id="bulkDeleteBtnAct" class="btn-outline action-require-edit"
+              style="color:var(--red); display:none;" onclick="bulkDeleteActivities()">[ Xóa đã chọn ]</button>
+            <button class="btn-primary action-require-edit"
+              onclick="document.getElementById('catModal').classList.add('show')">[ + Tạo Thiết Bị ]</button>
+            <button class="btn-primary action-require-edit" onclick="openActivityModal()">[ Nhập hoạt động ]</button>
+            <button class="btn-outline action-require-edit"
+              onclick="document.getElementById('importModal').classList.add('show')">[ Import Excel ]</button>
+          </div>
+        </div>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 40px;"><input type="checkbox" id="selectAllAct" onclick="toggleSelectAllAct(this)"></th>
+              <th>ID B/Ghi</th>
+              <th>Tên thiết bị</th>
+              <th>Power (kW)</th>
+              <th>Thời gian hoạt động (h)</th>
+              <th>LF (%)</th>
+              <th>Thời gian ghi nhận</th>
+              <th>Tổng phát thải (tCO₂e)</th>
+              <th style="width:100px;">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for act in activities %}
+            <tr>
+              <td><input type="checkbox" class="act-checkbox" value="{{ act.id }}"
+                  onchange="updateBulkDeleteBtn('act-checkbox', 'bulkDeleteBtnAct', 'selectAllAct')"></td>
+              <td>{{ loop.index }}</td>
+              <td style="font-weight:600;">[{{ act.device_id }}] {{ act.device_name }}</td>
+              <td>{{ act.power }}</td>
+              <td>{{ act.hours }}</td>
+              <td>{{ "{:,.1f}".format(act.lf) }}</td>
+              <td>{{ act.record_time }}</td>
+              <td><span class="emission-val">{{ "{:,.1f}".format(act.total_co) }}</span></td>
+              <td>
+                <div style="display:flex; gap:8px;">
+                  <button class="icon-btn action-require-edit"
+                    onclick="openEditActModal({{ act.id }}, '{{ act.device_name }}', {{ act.power }}, {{ act.hours }}, {{ act.lf }}, '{{ act.record_time }}')">
                     <i class="fa-solid fa-pen-to-square"></i>
-                </button>
-                <button class="icon-btn action-require-edit" onclick="deleteActivity({{ act.id }})">
+                  </button>
+                  <button class="icon-btn action-require-edit" onclick="deleteActivity({{ act.id }})">
                     <i class="fa-solid fa-trash-can"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
-          {% else %}
-          <tr>
-            <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 20px;">Chưa có dữ liệu hoạt động trong kỳ này.</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 20px;">Chưa có dữ liệu hoạt
+                động trong kỳ này.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
 
-    <div class="summary-row">
-      <div class="summary-card">
-        <div class="chart-mini-title">Total Scope 1 Emissions</div>
-        <div class="summary-total">{{ "{:,.2f}".format(total_scope1_co2) }}</div>
-        <div style="font-size:0.9rem;color:var(--text-muted);font-weight:500;margin-top:4px;">tCO₂e</div>
-      </div>
-      <div class="summary-card">
-        <div class="chart-mini-title">Emission by Equipment</div>
-        <canvas id="equipBar" height="100"></canvas>
-      </div>
-      <div class="summary-card">
-        <div class="chart-mini-title">Emission Trend</div>
-        <canvas id="miniTrend" height="100"></canvas>
+      <div class="summary-row">
+        <div class="summary-card">
+          <div class="chart-mini-title">Total Scope 1 Emissions</div>
+          <div class="summary-total">{{ "{:,.2f}".format(total_scope1_co2) }}</div>
+          <div style="font-size:0.9rem;color:var(--text-muted);font-weight:500;margin-top:4px;">tCO₂e</div>
+        </div>
+        <div class="summary-card">
+          <div class="chart-mini-title">Emission by Equipment</div>
+          <canvas id="equipBar" height="100"></canvas>
+        </div>
+        <div class="summary-card">
+          <div class="chart-mini-title">Emission Trend</div>
+          <canvas id="miniTrend" height="100"></canvas>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<div class="modal-overlay" id="catModal">
-  <div class="modal-card">
-    <div class="modal-title">+ Thêm thiết bị mới</div>
-    <div class="modal-form">
-      <label>ID / Mã thiết bị</label>
-      <input type="text" id="catId" placeholder="VD: KALMAR-01">
-      <label>Tên thiết bị định danh</label>
-      <input type="text" id="catName" placeholder="VD: Xe nâng KALMAR 01">
-      <label>Loại thiết bị (Hệ thống)</label>
-      <select id="catType">
-        {% for type in device_types %}
+  <div class="modal-overlay" id="catModal">
+    <div class="modal-card">
+      <div class="modal-title">+ Thêm thiết bị mới</div>
+      <div class="modal-form">
+        <label>ID / Mã thiết bị</label>
+        <input type="text" id="catId" placeholder="VD: KALMAR-01">
+        <label>Tên thiết bị định danh</label>
+        <input type="text" id="catName" placeholder="VD: Xe nâng KALMAR 01">
+        <label>Loại thiết bị (Hệ thống)</label>
+        <select id="catType">
+          {% for type in device_types %}
           <option value="{{ type }}">{{ type }}</option>
-        {% endfor %}
-      </select>
-      <label>Loại nhiên liệu</label>
-      <select id="catFuel">
-        {% for fuel in fuel_types %}
+          {% endfor %}
+        </select>
+        <label>Loại nhiên liệu</label>
+        <select id="catFuel">
+          {% for fuel in fuel_types %}
           <option value="{{ fuel }}">{{ fuel }}</option>
-        {% endfor %}
-      </select>
-      <div style="display:flex; gap:10px;">
-        <div style="flex:1;">
-          <label>Công suất định mức (kW)</label>
-          <input type="number" id="catCap" placeholder="0">
+          {% endfor %}
+        </select>
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1;">
+            <label>Công suất định mức (kW)</label>
+            <input type="number" id="catCap" placeholder="0">
+          </div>
         </div>
       </div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-outline" onclick="document.getElementById('catModal').classList.remove('show')">Hủy</button>
-      <button class="btn-primary" onclick="submitCategory()">Tạo thiết bị</button>
+      <div class="modal-actions">
+        <button class="btn-outline" onclick="document.getElementById('catModal').classList.remove('show')">Hủy</button>
+        <button class="btn-primary" onclick="submitCategory()">Tạo thiết bị</button>
+      </div>
     </div>
   </div>
-</div>
 
-<div class="modal-overlay" id="editCatModal">
-  <div class="modal-card">
-    <div class="modal-title">✏️ Chỉnh sửa Thiết Bị</div>
-    <div class="modal-form">
-      <label>Mã thiết bị (ID)</label>
-      <input type="text" id="editCatId" readonly style="background:#f4f6fb; color:var(--text-muted);">
-      <label>Tên định danh</label>
-      <input type="text" id="editCatName">
-      <label>Loại thiết bị</label>
-      <select id="editCatType">
-        {% for type in device_types %}<option value="{{ type }}">{{ type }}</option>{% endfor %}
-      </select>
-      <label>Loại nhiên liệu</label>
-      <select id="editCatFuel">
-        {% for fuel in fuel_types %}<option value="{{ fuel }}">{{ fuel }}</option>{% endfor %}
-      </select>
-      <div style="display:flex; gap:10px;">
-        <div style="flex:1;">
-          <label>Công suất (kW)</label>
-          <input type="number" id="editCatCap" min="0">
+  <div class="modal-overlay" id="editCatModal">
+    <div class="modal-card">
+      <div class="modal-title">✏️ Chỉnh sửa Thiết Bị</div>
+      <div class="modal-form">
+        <label>Mã thiết bị (ID)</label>
+        <input type="text" id="editCatId" readonly style="background:#f4f6fb; color:var(--text-muted);">
+        <label>Tên định danh</label>
+        <input type="text" id="editCatName">
+        <label>Loại thiết bị</label>
+        <select id="editCatType">
+          {% for type in device_types %}<option value="{{ type }}">{{ type }}</option>{% endfor %}
+        </select>
+        <label>Loại nhiên liệu</label>
+        <select id="editCatFuel">
+          {% for fuel in fuel_types %}<option value="{{ fuel }}">{{ fuel }}</option>{% endfor %}
+        </select>
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1;">
+            <label>Công suất (kW)</label>
+            <input type="number" id="editCatCap" min="0">
+          </div>
         </div>
       </div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-outline" onclick="document.getElementById('editCatModal').classList.remove('show')">Hủy</button>
-      <button class="btn-primary" onclick="submitEditCategory()">Cập nhật</button>
+      <div class="modal-actions">
+        <button class="btn-outline"
+          onclick="document.getElementById('editCatModal').classList.remove('show')">Hủy</button>
+        <button class="btn-primary" onclick="submitEditCategory()">Cập nhật</button>
+      </div>
     </div>
   </div>
-</div>
 
-<div class="modal-overlay" id="actModal">
-  <div class="modal-card">
-    <div class="modal-title">+ Nhập Dữ Liệu Hoạt Động</div>
-    <div class="modal-form">
-      <label>Chọn Thiết Bị</label>
-      <select id="actCatId" onchange="updatePowerInput()">
-        {% for cat in categories %}
-          <option value="{{ cat.id }}" data-cap="{{ cat.capacity }}">{{ cat.id }} - {{ cat.name }} ({{ cat.device_type }})</option>
-        {% endfor %}
-      </select>
-      <div style="display:flex; gap:10px;">
-        <div style="flex:1;">
-          <label>Thời gian ghi nhận</label>
-          <input type="datetime-local" id="actRecordTime">
+  <div class="modal-overlay" id="actModal">
+    <div class="modal-card">
+      <div class="modal-title">+ Nhập Dữ Liệu Hoạt Động</div>
+      <div class="modal-form">
+        <label>Chọn Thiết Bị</label>
+        <select id="actCatId" onchange="updatePowerInput()">
+          {% for cat in categories %}
+          <option value="{{ cat.id }}" data-cap="{{ cat.capacity }}">{{ cat.id }} - {{ cat.name }} ({{ cat.device_type
+            }})</option>
+          {% endfor %}
+        </select>
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1;">
+            <label>Thời gian ghi nhận</label>
+            <input type="datetime-local" id="actRecordTime">
+          </div>
+          <div style="flex:1;">
+            <label>Công suất (kW)</label>
+            <input type="number" step="0.1" min="0" id="actPower" placeholder="Nhập công suất">
+          </div>
         </div>
-        <div style="flex:1;">
-          <label>Công suất (kW)</label>
-          <input type="number" step="0.1" min="0" id="actPower" placeholder="Nhập công suất">
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1;">
+            <label>Thời gian HĐ (h)</label>
+            <input type="number" id="actHours" value="120" min="0">
+          </div>
+          <div style="flex:1;">
+            <label>Load Factor (%)</label>
+            <input type="number" id="actLf" value="75" step="0.1" min="0" max="100">
+          </div>
         </div>
       </div>
-      <div style="display:flex; gap:10px;">
-        <div style="flex:1;">
-          <label>Thời gian HĐ (h)</label>
-          <input type="number" id="actHours" value="120" min="0">
-        </div>
-        <div style="flex:1;">
-          <label>Load Factor (%)</label>
-          <input type="number" id="actLf" value="75" step="0.1" min="0" max="100">
-        </div>
+      <div class="modal-actions">
+        <button class="btn-outline" onclick="document.getElementById('actModal').classList.remove('show')">Hủy</button>
+        <button class="btn-primary" onclick="submitActivity()">Xác nhận</button>
       </div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-outline" onclick="document.getElementById('actModal').classList.remove('show')">Hủy</button>
-      <button class="btn-primary" onclick="submitActivity()">Xác nhận</button>
     </div>
   </div>
-</div>
 
-<div class="modal-overlay" id="editActModal">
-  <div class="modal-card">
-    <div class="modal-title">✏️ Chỉnh sửa Hoạt động</div>
-    <div class="modal-form">
-      <input type="hidden" id="editActId">
-      <label>Tên thiết bị</label>
-      <input type="text" id="editActCatName" readonly style="background:#f4f6fb; color:var(--text-muted);">
-      <div style="display:flex; gap:10px;">
-        <div style="flex:1;">
-          <label>Thời gian ghi nhận</label>
-          <input type="datetime-local" id="editActRecordTime">
+  <div class="modal-overlay" id="editActModal">
+    <div class="modal-card">
+      <div class="modal-title">✏️ Chỉnh sửa Hoạt động</div>
+      <div class="modal-form">
+        <input type="hidden" id="editActId">
+        <label>Tên thiết bị</label>
+        <input type="text" id="editActCatName" readonly style="background:#f4f6fb; color:var(--text-muted);">
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1;">
+            <label>Thời gian ghi nhận</label>
+            <input type="datetime-local" id="editActRecordTime">
+          </div>
+          <div style="flex:1;">
+            <label>Công suất (kW)</label>
+            <input type="number" step="0.1" min="0" id="editActPower" placeholder="Nhập công suất">
+          </div>
         </div>
-        <div style="flex:1;">
-          <label>Công suất (kW)</label>
-          <input type="number" step="0.1" min="0" id="editActPower" placeholder="Nhập công suất">
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1;">
+            <label>Thời gian HĐ (h)</label>
+            <input type="number" id="editActHours" min="0" step="0.1">
+          </div>
+          <div style="flex:1;">
+            <label>Load Factor (%)</label>
+            <input type="number" id="editActLf" step="0.1" min="0" max="100">
+          </div>
         </div>
       </div>
-      <div style="display:flex; gap:10px;">
-        <div style="flex:1;">
-          <label>Thời gian HĐ (h)</label>
-          <input type="number" id="editActHours" min="0" step="0.1">
-        </div>
-        <div style="flex:1;">
-          <label>Load Factor (%)</label>
-          <input type="number" id="editActLf" step="0.1" min="0" max="100">
-        </div>
+      <div class="modal-actions">
+        <button class="btn-outline"
+          onclick="document.getElementById('editActModal').classList.remove('show')">Hủy</button>
+        <button class="btn-primary" onclick="submitEditActivity()">Cập nhật</button>
       </div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-outline" onclick="document.getElementById('editActModal').classList.remove('show')">Hủy</button>
-      <button class="btn-primary" onclick="submitEditActivity()">Cập nhật</button>
     </div>
   </div>
-</div>
 
-<div class="modal-overlay" id="importModal">
-  <div class="modal-card">
-    <div class="modal-title">📥 Import Excel Dữ Liệu</div>
-    <div class="modal-form">
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+  <div class="modal-overlay" id="importModal">
+    <div class="modal-card">
+      <div class="modal-title">📥 Import Excel Dữ Liệu</div>
+      <div class="modal-form">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
           <p style="font-size:0.85rem; color:var(--text-muted); width: 68%;">
-            File Excel cần chứa các cột: <b>Mã thiết bị (ID), Loại thiết bị, Power (kW), Giờ hoạt động, LF (%), Thời gian (YYYY-MM-DD HH:MM)</b>.
+            File Excel cần chứa các cột: <b>Mã thiết bị (ID), Loại thiết bị, Power (kW), Giờ hoạt động, LF (%), Thời
+              gian (YYYY-MM-DD HH:MM)</b>.
           </p>
-          <button class="btn-outline" style="padding: 5px 10px; font-size: 0.75rem; border-color: var(--green); color: var(--green);" onclick="downloadExcelTemplate()">
-              <i class="fa-solid fa-download"></i> Tải file mẫu
+          <button class="btn-outline"
+            style="padding: 5px 10px; font-size: 0.75rem; border-color: var(--green); color: var(--green);"
+            onclick="downloadExcelTemplate()">
+            <i class="fa-solid fa-download"></i> Tải file mẫu
           </button>
+        </div>
+        <div style="border: 2px dashed var(--gray-border); padding: 20px; border-radius: 8px; text-align: center;">
+          <input type="file" id="excelFile" accept=".xlsx, .xls"
+            style="width: 100%; font-size: 0.85rem; cursor: pointer;">
+        </div>
       </div>
-      <div style="border: 2px dashed var(--gray-border); padding: 20px; border-radius: 8px; text-align: center;">
-          <input type="file" id="excelFile" accept=".xlsx, .xls" style="width: 100%; font-size: 0.85rem; cursor: pointer;">
+      <div class="modal-actions">
+        <button class="btn-outline"
+          onclick="document.getElementById('importModal').classList.remove('show')">Hủy</button>
+        <button class="btn-primary" onclick="submitImportExcel()" id="btnSubmitImport">Bắt đầu Import</button>
       </div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-outline" onclick="document.getElementById('importModal').classList.remove('show')">Hủy</button>
-      <button class="btn-primary" onclick="submitImportExcel()" id="btnSubmitImport">Bắt đầu Import</button>
     </div>
   </div>
-</div>
 
-<script id="categories-data" type="application/json">{{ categories | default([]) | tojson | safe }}</script>
-<script id="trend-data" type="application/json">{{ trend_data | default({"labels":[], "values":[]}) | tojson | safe }}</script>
+  <script id="categories-data" type="application/json">{{ categories | default([]) | tojson | safe }}</script>
+  <script id="trend-data"
+    type="application/json">{{ trend_data | default({"labels":[], "values":[]}) | tojson | safe }}</script>
 
-<script>
-function toggleMenu(id){
-  const menu = document.getElementById(id);
-  if(menu.classList.contains("open")){
-      menu.classList.remove("open");
-  }else{
-      menu.classList.add("open");
-  }
-}
+  <script>
+    function toggleMenu(id) {
+      const menu = document.getElementById(id);
+      if (menu.classList.contains("open")) {
+        menu.classList.remove("open");
+      } else {
+        menu.classList.add("open");
+      }
+    }
 
-window.addEventListener('click', function (event) {
-  if (event.target.classList.contains('modal-overlay')) {
-    event.target.classList.remove('show');
-  }
-});
+    window.addEventListener('click', function (event) {
+      if (event.target.classList.contains('modal-overlay')) {
+        event.target.classList.remove('show');
+      }
+    });
 
-// ---------------------------------------------------------
-// TÍNH TOÁN BOUNDARY THỜI GIAN THEO URL PARAMS
-// ---------------------------------------------------------
-function getPeriodBoundaries() {
-    let minDate, maxDate;
-    const urlParams = new URLSearchParams(window.location.search);
-    const y = parseInt(urlParams.get('year') || new Date().getFullYear(), 10);
-    
-    if (urlParams.has('month')) {
+    // ---------------------------------------------------------
+    // TÍNH TOÁN BOUNDARY THỜI GIAN THEO URL PARAMS
+    // ---------------------------------------------------------
+    function getPeriodBoundaries() {
+      let minDate, maxDate;
+      const urlParams = new URLSearchParams(window.location.search);
+      const y = parseInt(urlParams.get('year') || new Date().getFullYear(), 10);
+
+      if (urlParams.has('month')) {
         const m = parseInt(urlParams.get('month'), 10);
         minDate = new Date(y, m - 1, 1, 0, 0);
         maxDate = new Date(y, m, 0, 23, 59);
-    } else if (urlParams.has('quarter')) {
+      } else if (urlParams.has('quarter')) {
         const q = parseInt(urlParams.get('quarter'), 10);
         minDate = new Date(y, (q - 1) * 3, 1, 0, 0);
         maxDate = new Date(y, q * 3, 0, 23, 59);
-    } else {
+      } else {
         minDate = new Date(y, 0, 1, 0, 0);
         maxDate = new Date(y, 11, 31, 23, 59);
+      }
+
+      const pad = (n) => String(n).padStart(2, '0');
+      const format = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+      return { min: format(minDate), max: format(maxDate), minDate: minDate, maxDate: maxDate };
     }
 
-    const pad = (n) => String(n).padStart(2, '0');
-    const format = (d) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-
-    return { min: format(minDate), max: format(maxDate), minDate: minDate, maxDate: maxDate };
-}
-
-document.addEventListener("DOMContentLoaded", function() {
-    const categoriesData = JSON.parse(document.getElementById('categories-data').textContent);
-    const groupedData = categoriesData.reduce((acc, cat) => {
+    document.addEventListener("DOMContentLoaded", function () {
+      const categoriesData = JSON.parse(document.getElementById('categories-data').textContent);
+      const groupedData = categoriesData.reduce((acc, cat) => {
         if (!acc[cat.device_type]) acc[cat.device_type] = 0;
         acc[cat.device_type] += cat.total_emissions;
         return acc;
-    }, {});
-    
-    const chartLabels = Object.keys(groupedData);
-    const chartValues = Object.values(groupedData);
+      }, {});
 
-    const eb = document.getElementById('equipBar').getContext('2d');
-    new Chart(eb,{
-      type:'bar',
-      data:{ labels:chartLabels, datasets:[{data:chartValues, backgroundColor:'#2e7df7', borderRadius:4}] },
-      options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{display:false}}}
+      const chartLabels = Object.keys(groupedData);
+      const chartValues = Object.values(groupedData);
+
+      const eb = document.getElementById('equipBar').getContext('2d');
+      new Chart(eb, {
+        type: 'bar',
+        data: { labels: chartLabels, datasets: [{ data: chartValues, backgroundColor: '#2e7df7', borderRadius: 4 }] },
+        options: { plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 9 } } }, y: { display: false } } }
+      });
+
+      const trendData = JSON.parse(document.getElementById('trend-data').textContent);
+      const mt = document.getElementById('miniTrend').getContext('2d');
+      new Chart(mt, {
+        type: 'line',
+        data: {
+          labels: trendData.labels,
+          datasets: [{ data: trendData.values, borderColor: '#2e7df7', borderWidth: 2, pointRadius: 0, fill: false, tension: 0.4 }]
+        },
+        options: { plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
+      });
     });
 
-    const trendData = JSON.parse(document.getElementById('trend-data').textContent);
-    const mt = document.getElementById('miniTrend').getContext('2d');
-    new Chart(mt,{
-      type:'line',
-      data:{
-        labels: trendData.labels,
-        datasets:[{data: trendData.values, borderColor:'#2e7df7', borderWidth:2, pointRadius:0, fill:false, tension:0.4}]
-      },
-      options:{plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}}}
-    });
-});
+    // ---------------------------------------------------------
+    // CATEGORY (DEVICE) CRUD
+    // ---------------------------------------------------------
+    async function submitCategory() {
+      const payload = {
+        id: document.getElementById('catId').value.trim(),
+        name: document.getElementById('catName').value.trim(),
+        device_type: document.getElementById('catType').value,
+        fuel_type: document.getElementById('catFuel').value,
+        nominal_capacity: parseFloat(document.getElementById('catCap').value) || 0
+      };
 
-// ---------------------------------------------------------
-// CATEGORY (DEVICE) CRUD
-// ---------------------------------------------------------
-async function submitCategory() {
-  const payload = {
-    id: document.getElementById('catId').value.trim(),
-    name: document.getElementById('catName').value.trim(),
-    device_type: document.getElementById('catType').value,
-    fuel_type: document.getElementById('catFuel').value,
-    nominal_capacity: parseFloat(document.getElementById('catCap').value) || 0
-  };
-  
-  if(!payload.id) { alert("Vui lòng nhập Mã thiết bị"); return; }
-  
-  const res = await fetch('/scope1/categories', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-  });
-  
-  if(res.ok) {
-    window.location.reload(); 
-  } else {
-    const err = await res.json();
-    alert("Lỗi thêm thiết bị: " + (err.detail || ""));
-  }
-}
+      if (!payload.id) { alert("Vui lòng nhập Mã thiết bị"); return; }
 
-// ---------------------------------------------------------
-// ACTIVITY CRUD
-// ---------------------------------------------------------
-function openActivityModal() {
-  const select = document.getElementById('actCatId');
-  if(select.options.length === 0) { alert("Chưa có thiết bị nào trong hệ thống! Vui lòng tạo thiết bị."); return; }
-  
-  const bounds = getPeriodBoundaries();
-  const timeInput = document.getElementById('actRecordTime');
-  
-  // Áp dụng Boundary để giới hạn chọn lịch
-  timeInput.min = bounds.min;
-  timeInput.max = bounds.max;
-  
-  // Set thời gian mặc định thông minh (nếu đang ở tháng quá khứ thì mặc định lấy ngày 1 của tháng đó)
-  const now = new Date();
-  let defaultTime = now;
-  if (now < bounds.minDate || now > bounds.maxDate) {
-      defaultTime = bounds.minDate;
-  }
-  defaultTime.setMinutes(defaultTime.getMinutes() - defaultTime.getTimezoneOffset());
-  timeInput.value = defaultTime.toISOString().slice(0,16);
-  
-  updatePowerInput();
-  document.getElementById('actModal').classList.add('show');
-}
+      const res = await fetch('/scope1/categories', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      });
 
-function updatePowerInput() {
-  const select = document.getElementById('actCatId');
-  if(select.selectedIndex >= 0) {
-    document.getElementById('actPower').value = select.options[select.selectedIndex].getAttribute('data-cap');
-  }
-}
-
-async function submitActivity() {
-  const rtVal = document.getElementById('actRecordTime').value;
-  if (!rtVal) { alert("Vui lòng chọn thời gian ghi nhận hợp lệ."); return; }
-
-  const selectedDate = new Date(rtVal);
-  const bounds = getPeriodBoundaries();
-  
-  // Rào chắn bảo vệ ở phía JS: Báo lỗi nếu người dùng cố tình nhập tay ngày ngoài khung
-  if (selectedDate < bounds.minDate || selectedDate > bounds.maxDate) {
-      alert(`Thời gian ghi nhận phải nằm trong kỳ báo cáo hiện tại (Từ ${bounds.min} đến ${bounds.max})`);
-      return;
-  }
-
-  const payload = {
-    period_year: selectedDate.getFullYear(),
-    period_month: selectedDate.getMonth() + 1, 
-    device_id: document.getElementById('actCatId').value, 
-    recorded_power: parseFloat(document.getElementById('actPower').value) || 0,
-    operating_hours: parseFloat(document.getElementById('actHours').value) || 0,
-    load_factor: parseFloat(document.getElementById('actLf').value) || 0,
-    total_co2e: 0,
-    record_time: new Date(rtVal).toISOString()
-  };
-  const res = await fetch('/scope1/activities', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-  });
-  if(res.ok) window.location.reload(); else alert("Lỗi thêm dữ liệu hoạt động.");
-}
-
-function parseVNDateToLocal(dateStr) {
-    if (!dateStr) return "";
-    const parts = dateStr.split(" ");
-    if (parts.length < 2) return "";
-    const [d, m, y] = parts[0].split("/");
-    return `${y}-${m}-${d}T${parts[1]}`;
-}
-
-function openEditActModal(id, name, power, hours, lf, recordTime) {
-  document.getElementById('editActId').value = id;
-  document.getElementById('editActCatName').value = name;
-  document.getElementById('editActPower').value = power;
-  document.getElementById('editActHours').value = hours;
-  document.getElementById('editActLf').value = lf;
-  
-  const timeInput = document.getElementById('editActRecordTime');
-  const bounds = getPeriodBoundaries();
-  timeInput.min = bounds.min;
-  timeInput.max = bounds.max;
-  timeInput.value = parseVNDateToLocal(recordTime);
-  
-  document.getElementById('editActModal').classList.add('show');
-}
-
-async function submitEditActivity() {
-  const id = document.getElementById('editActId').value;
-  const rtVal = document.getElementById('editActRecordTime').value;
-  if (!rtVal) { alert("Vui lòng chọn thời gian ghi nhận hợp lệ."); return; }
-
-  const selectedDate = new Date(rtVal);
-  const bounds = getPeriodBoundaries();
-  
-  if (selectedDate < bounds.minDate || selectedDate > bounds.maxDate) {
-      alert(`Thời gian ghi nhận phải nằm trong kỳ báo cáo hiện tại (Từ ${bounds.min} đến ${bounds.max})`);
-      return;
-  }
-
-  const payload = {
-    recorded_power: parseFloat(document.getElementById('editActPower').value) || 0,
-    operating_hours: parseFloat(document.getElementById('editActHours').value) || 0,
-    load_factor: parseFloat(document.getElementById('editActLf').value) || 0,
-    period_month: selectedDate.getMonth() + 1,
-    total_co2e: 0,
-    record_time: new Date(rtVal).toISOString()
-  };
-  const res = await fetch(`/scope1/activities/${id}`, {
-    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-  });
-  if(res.ok) window.location.reload(); else alert("Lỗi cập nhật dữ liệu.");
-}
-
-async function deleteActivity(id) {
-  if (!confirm("Bạn có chắc muốn xóa bản ghi này?")) return;
-  const res = await fetch(`/scope1/activities/${id}`, { method: 'DELETE' });
-  if (res.ok) window.location.reload(); else alert("Lỗi khi xóa.");
-}
-
-function toggleSelectAllAct(source) {
-  const checkboxes = document.querySelectorAll('.act-checkbox');
-  checkboxes.forEach(cb => cb.checked = source.checked);
-  updateBulkDeleteBtn('act-checkbox', 'bulkDeleteBtnAct', 'selectAllAct');
-}
-
-function updateBulkDeleteBtn(className, btnId, selectAllId) {
-  const checkboxes = document.querySelectorAll(`.${className}`);
-  const btn = document.getElementById(btnId);
-  const selectAll = document.getElementById(selectAllId);
-  if (!btn) return;
-  
-  const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
-  const allChecked = Array.from(checkboxes).every(cb => cb.checked) && checkboxes.length > 0;
-  
-  btn.style.display = anyChecked ? "inline-block" : "none";
-  if (selectAll) selectAll.checked = allChecked;
-}
-
-async function bulkDeleteActivities() {
-  const checkboxes = document.querySelectorAll('.act-checkbox:checked');
-  const ids = Array.from(checkboxes).map(cb => parseInt(cb.value));
-  if (ids.length === 0) return;
-  if (!confirm(`Bạn có chắc muốn xóa ${ids.length} bản ghi đã chọn?`)) return;
-  
-  try {
-    const res = await fetch('/api/scope1/activities/bulk', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids })
-    });
-    if (res.ok) {
-      window.location.reload();
-    } else {
-      alert("Lỗi khi xóa nhiều bản ghi.");
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        const err = await res.json();
+        alert("Lỗi thêm thiết bị: " + (err.detail || ""));
+      }
     }
-  } catch (err) {
-    alert("Xóa nhiều lỗi: " + err.message);
-  }
-}
 
-// ---------------------------------------------------------
-// IMPORT EXCEL
-// ---------------------------------------------------------
-function downloadExcelTemplate() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const y = urlParams.get('year') || new Date().getFullYear();
-    let m = urlParams.get('month');
-    
-    // Fallback thông minh: Nếu lọc quý, lấy tháng đầu tiên của quý. Nếu lọc Năm, mặc định lấy tháng 1
-    if (!m) {
-        if (urlParams.has('quarter')) {
-            m = (parseInt(urlParams.get('quarter')) - 1) * 3 + 1;
+    // ---------------------------------------------------------
+    // ACTIVITY CRUD
+    // ---------------------------------------------------------
+    function openActivityModal() {
+      const select = document.getElementById('actCatId');
+      if (select.options.length === 0) { alert("Chưa có thiết bị nào trong hệ thống! Vui lòng tạo thiết bị."); return; }
+
+      const bounds = getPeriodBoundaries();
+      const timeInput = document.getElementById('actRecordTime');
+
+      // Áp dụng Boundary để giới hạn chọn lịch
+      timeInput.min = bounds.min;
+      timeInput.max = bounds.max;
+
+      // Set thời gian mặc định thông minh (nếu đang ở tháng quá khứ thì mặc định lấy ngày 1 của tháng đó)
+      const now = new Date();
+      let defaultTime = now;
+      if (now < bounds.minDate || now > bounds.maxDate) {
+        defaultTime = bounds.minDate;
+      }
+      defaultTime.setMinutes(defaultTime.getMinutes() - defaultTime.getTimezoneOffset());
+      timeInput.value = defaultTime.toISOString().slice(0, 16);
+
+      updatePowerInput();
+      document.getElementById('actModal').classList.add('show');
+    }
+
+    function updatePowerInput() {
+      const select = document.getElementById('actCatId');
+      if (select.selectedIndex >= 0) {
+        document.getElementById('actPower').value = select.options[select.selectedIndex].getAttribute('data-cap');
+      }
+    }
+
+    async function submitActivity() {
+      const rtVal = document.getElementById('actRecordTime').value;
+      if (!rtVal) { alert("Vui lòng chọn thời gian ghi nhận hợp lệ."); return; }
+
+      const selectedDate = new Date(rtVal);
+      const bounds = getPeriodBoundaries();
+
+      // Rào chắn bảo vệ ở phía JS: Báo lỗi nếu người dùng cố tình nhập tay ngày ngoài khung
+      if (selectedDate < bounds.minDate || selectedDate > bounds.maxDate) {
+        alert(`Thời gian ghi nhận phải nằm trong kỳ báo cáo hiện tại (Từ ${bounds.min} đến ${bounds.max})`);
+        return;
+      }
+
+      const payload = {
+        period_year: selectedDate.getFullYear(),
+        period_month: selectedDate.getMonth() + 1,
+        device_id: document.getElementById('actCatId').value,
+        recorded_power: parseFloat(document.getElementById('actPower').value) || 0,
+        operating_hours: parseFloat(document.getElementById('actHours').value) || 0,
+        load_factor: parseFloat(document.getElementById('actLf').value) || 0,
+        total_co2e: 0,
+        record_time: new Date(rtVal).toISOString()
+      };
+      const res = await fetch('/scope1/activities', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      });
+      if (res.ok) window.location.reload(); else alert("Lỗi thêm dữ liệu hoạt động.");
+    }
+
+    function parseVNDateToLocal(dateStr) {
+      if (!dateStr) return "";
+      const parts = dateStr.split(" ");
+      if (parts.length < 2) return "";
+      const [d, m, y] = parts[0].split("/");
+      return `${y}-${m}-${d}T${parts[1]}`;
+    }
+
+    function openEditActModal(id, name, power, hours, lf, recordTime) {
+      document.getElementById('editActId').value = id;
+      document.getElementById('editActCatName').value = name;
+      document.getElementById('editActPower').value = power;
+      document.getElementById('editActHours').value = hours;
+      document.getElementById('editActLf').value = lf;
+
+      const timeInput = document.getElementById('editActRecordTime');
+      const bounds = getPeriodBoundaries();
+      timeInput.min = bounds.min;
+      timeInput.max = bounds.max;
+      timeInput.value = parseVNDateToLocal(recordTime);
+
+      document.getElementById('editActModal').classList.add('show');
+    }
+
+    async function submitEditActivity() {
+      const id = document.getElementById('editActId').value;
+      const rtVal = document.getElementById('editActRecordTime').value;
+      if (!rtVal) { alert("Vui lòng chọn thời gian ghi nhận hợp lệ."); return; }
+
+      const selectedDate = new Date(rtVal);
+      const bounds = getPeriodBoundaries();
+
+      if (selectedDate < bounds.minDate || selectedDate > bounds.maxDate) {
+        alert(`Thời gian ghi nhận phải nằm trong kỳ báo cáo hiện tại (Từ ${bounds.min} đến ${bounds.max})`);
+        return;
+      }
+
+      const payload = {
+        recorded_power: parseFloat(document.getElementById('editActPower').value) || 0,
+        operating_hours: parseFloat(document.getElementById('editActHours').value) || 0,
+        load_factor: parseFloat(document.getElementById('editActLf').value) || 0,
+        period_month: selectedDate.getMonth() + 1,
+        total_co2e: 0,
+        record_time: new Date(rtVal).toISOString()
+      };
+      const res = await fetch(`/scope1/activities/${id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      });
+      if (res.ok) window.location.reload(); else alert("Lỗi cập nhật dữ liệu.");
+    }
+
+    async function deleteActivity(id) {
+      if (!confirm("Bạn có chắc muốn xóa bản ghi này?")) return;
+      const res = await fetch(`/scope1/activities/${id}`, { method: 'DELETE' });
+      if (res.ok) window.location.reload(); else alert("Lỗi khi xóa.");
+    }
+
+    function toggleSelectAllAct(source) {
+      const checkboxes = document.querySelectorAll('.act-checkbox');
+      checkboxes.forEach(cb => cb.checked = source.checked);
+      updateBulkDeleteBtn('act-checkbox', 'bulkDeleteBtnAct', 'selectAllAct');
+    }
+
+    function updateBulkDeleteBtn(className, btnId, selectAllId) {
+      const checkboxes = document.querySelectorAll(`.${className}`);
+      const btn = document.getElementById(btnId);
+      const selectAll = document.getElementById(selectAllId);
+      if (!btn) return;
+
+      const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+      const allChecked = Array.from(checkboxes).every(cb => cb.checked) && checkboxes.length > 0;
+
+      btn.style.display = anyChecked ? "inline-block" : "none";
+      if (selectAll) selectAll.checked = allChecked;
+    }
+
+    async function bulkDeleteActivities() {
+      const checkboxes = document.querySelectorAll('.act-checkbox:checked');
+      const ids = Array.from(checkboxes).map(cb => parseInt(cb.value));
+      if (ids.length === 0) return;
+      if (!confirm(`Bạn có chắc muốn xóa ${ids.length} bản ghi đã chọn?`)) return;
+
+      try {
+        const res = await fetch('/api/scope1/activities/bulk', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids })
+        });
+        if (res.ok) {
+          window.location.reload();
         } else {
-            m = new Date().getMonth() + 1;
+          alert("Lỗi khi xóa nhiều bản ghi.");
         }
+      } catch (err) {
+        alert("Xóa nhiều lỗi: " + err.message);
+      }
     }
-    window.location.href = `/api/scope1/activities/import-template?year=${y}&month=${m}`;
-}
 
-async function submitImportExcel() {
-    const file = document.getElementById('excelFile').files[0];
-    if (!file) { alert("Vui lòng chọn file Excel!"); return; }
+    // ---------------------------------------------------------
+    // IMPORT EXCEL
+    // ---------------------------------------------------------
+    function downloadExcelTemplate() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const y = urlParams.get('year') || new Date().getFullYear();
+      let m = urlParams.get('month');
 
-    const btnSubmit = document.getElementById('btnSubmitImport');
-    btnSubmit.innerHTML = 'Đang xử lý...';
-    btnSubmit.disabled = true;
+      // Fallback thông minh: Nếu lọc quý, lấy tháng đầu tiên của quý. Nếu lọc Năm, mặc định lấy tháng 1
+      if (!m) {
+        if (urlParams.has('quarter')) {
+          m = (parseInt(urlParams.get('quarter')) - 1) * 3 + 1;
+        } else {
+          m = new Date().getMonth() + 1;
+        }
+      }
+      window.location.href = `/api/scope1/activities/import-template?year=${y}&month=${m}`;
+    }
 
-    const formData = new FormData();
-    formData.append("file", file);
+    async function submitImportExcel() {
+      const file = document.getElementById('excelFile').files[0];
+      if (!file) { alert("Vui lòng chọn file Excel!"); return; }
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const y = urlParams.get('year') || new Date().getFullYear();
-    let m = urlParams.get('month') || 1; 
+      const btnSubmit = document.getElementById('btnSubmitImport');
+      btnSubmit.innerHTML = 'Đang xử lý...';
+      btnSubmit.disabled = true;
 
-    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const y = urlParams.get('year') || new Date().getFullYear();
+      let m = urlParams.get('month') || 1;
+
+      try {
         const res = await fetch(`/scope1/activities/import?period_year=${y}&period_month=${parseInt(m)}`, { method: 'POST', body: formData });
         if (res.ok) window.location.reload();
         else { const err = await res.json(); alert("Lỗi Import: " + (err.detail || "Định dạng sai.")); }
-    } catch (err) { alert("Lỗi kết nối."); } 
-    finally {
+      } catch (err) { alert("Lỗi kết nối."); }
+      finally {
         btnSubmit.innerHTML = 'Bắt đầu Import';
         btnSubmit.disabled = false;
+      }
     }
-}
-</script>
+  </script>
 </body>
+
 </html>
