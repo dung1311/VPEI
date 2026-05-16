@@ -402,6 +402,63 @@
       flex-direction: column;
       gap: 6px;
     }
+
+    .device-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .device-card {
+      background: white;
+      border: 1.5px solid var(--gray-border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      transition: all 0.2s;
+    }
+    .device-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 2px 12px rgba(46, 125, 247, 0.1);
+    }
+    .device-name {
+      font-family: 'Sora', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--navy);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .device-count {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .count-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      background: var(--gray-soft);
+      border: 2px solid #000080;
+      border-radius: 5px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--navy);
+    }
+    .device-emission-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+    }
+    .device-emission-val {
+      font-family: 'Sora', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--navy);
+    }
   </style>
 </head>
 
@@ -424,9 +481,8 @@
       <div class="grid" style="margin-bottom:16px;">
         <div class="card pad span-4">
           <div class="muted" style="font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;">
-            Tổng phát thải Scope 1</div>
+            Tổng phát thải Scope 1 (tCO₂e)</div>
           <div class="kpi">{{ "{:,.2f}".format(total_scope1_co2|default(0)) }}</div>
-          <div class="muted">tCO₂e</div>
         </div>
         <div class="card pad span-4">
           <div class="muted" style="font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;">
@@ -437,8 +493,32 @@
           <div class="muted" style="font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;">Bản
             ghi phát thải</div>
           <div class="kpi">{{ records_json|length }}</div>
-          <div class="muted">lọc theo ngày ghi nhận</div>
         </div>
+      </div>
+
+      <div class="section-header" style="margin-top: 8px; display:flex; align-items:center; justify-content:space-between;">
+        <div class="section-title">Tổng quan thiết bị</div>
+        <button class="btn primary" onclick="openEquipmentModal()">+ Tạo thiết bị</button>
+      </div>
+      <div class="device-grid">
+        {% for equipment in equipments_json %}
+        <div class="device-card row-click" style="cursor: pointer; position: relative;" onclick="openRecordModalFor({{ equipment.id }})">
+          <div style="position: absolute; top: 12px; right: 12px; display: flex; gap: 8px;">
+            <button onclick="event.stopPropagation(); startEditEquipment({{ equipment.id }})" style="color:#f59e0b; border:none; background:transparent; cursor:pointer;" title="Sửa"><i class="fa-solid fa-pencil"></i></button>
+            <button onclick="event.stopPropagation(); deleteEquipment({{ equipment.id }})" style="color:var(--red); border:none; background:transparent; cursor:pointer;" title="Xóa"><i class="fa-solid fa-trash"></i></button>
+          </div>
+          <div class="device-name" style="padding-right: 40px;">{{ equipment.name }}</div>
+          <div class="device-count">
+            <div class="count-badge">Tổng: {{ equipment.quantity | int }} {{ equipment.unit }}</div>
+          </div>
+          <div class="device-emission-label">Mã thiết bị</div>
+          <div class="device-emission-val" style="margin-bottom: 8px; color: var(--accent); font-size: 0.85rem;">{{ equipment.code }}</div>
+          <div class="device-emission-label">Tổng phát thải</div>
+          <div class="device-emission-val">{{ "{:,.2f}".format(equipment.total_co2e|default(0)) }} tCO₂e</div>
+        </div>
+        {% else %}
+        <div class="muted" style="grid-column: 1 / -1; font-size: 0.85rem;">Chưa có thiết bị nào.</div>
+        {% endfor %}
       </div>
 
       <div class="grid">
@@ -472,104 +552,90 @@
       </div>
       -->
 
-        <div class="card pad span-12">
-          <div class="section-header" style="margin-bottom:12px; background:#f8f9fd; padding:12px; border-radius:10px;">
-            <div class="section-title" style="text-transform:none; letter-spacing:0; font-size:0.85rem;"><i
-                class="fa-solid fa-cubes"></i> Tạo thiết bị Scope 1</div>
-          </div>
-          <div style="padding:0 12px;">
-            <div class="form-row">
-              <div class="form-group">
-                <label>Phạm vi</label>
-                <select id="equipmentCategoryInline">
-                  {% for category in categories_json %}
-                  <option value="{{ category.id }}">{{ category.code }} - {{ category.name }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Cách tính</label>
-                <select id="equipmentMethodInline">
-                  {% for method in calculation_methods %}
-                  <option value="{{ method }}">{{ method }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Tên thiết bị</label>
-                <input id="equipmentNameInline" placeholder="VD: Tủ lạnh, máy bơm PCCC">
-              </div>
-              <div class="form-group">
-                <label>Đơn vị</label>
-                <input id="equipmentUnitInline" placeholder="VD: Cái, Xe, Bình, Chuyến">
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Số lượng</label>
-                <input type="number" id="equipmentQuantityInline" min="0.0001" step="0.01" value="1">
-              </div>
-              <div class="form-group">
-                <label>Ghi chú</label>
-                <input id="equipmentDescInline">
-              </div>
-            </div>
-
-            <div class="actions" style="margin-top:16px; display:flex; gap:12px;">
-              <button id="equipmentCancelEditBtn" class="btn" style="display:none;" onclick="cancelEditEquipment()">Hủy
-                sửa</button>
-              <button id="equipmentCreateBtn" class="btn primary" onclick="createEquipmentInline()"
-                style="flex:1; justify-content:center;">+ Tạo thiết bị</button>
-            </div>
-          </div>
-        </div>
 
         <div class="card pad span-12">
           <div class="section-header"
             style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div class="section-title">Danh sách thiết bị Tier 1</div>
-            <button class="btn" onclick="location.reload()">Làm mới</button>
+            <div class="section-title">Danh sách dữ liệu hoạt động</div>
           </div>
           <table class="table">
             <thead>
               <tr>
-                <th>Mã thiết bị</th>
-                <th>Tên thiết bị</th>
-                <th>Phạm vi</th>
-                <th>Số lượng</th>
-                <th>Đơn vị</th>
+                <th>ID B/Ghi</th>
+                <th>Thiết bị</th>
                 <th>Cách tính</th>
+                <th>Thời gian ghi nhận</th>
+                <th>Tổng phát thải (tCO₂e)</th>
                 <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
-              {% for equipment in equipments_json %}
-              <tr class="row-click" onclick="openEquipmentDetail({{ equipment.id }})">
-                <td><b>{{ equipment.code }}</b></td>
-                <td>{{ equipment.name }}</td>
-                <td>{{ equipment.category_code }} - {{ equipment.category_name }}</td>
-                <td>{{ equipment.quantity | int }}</td>
-                <td>{{ equipment.unit }}</td>
-                <td>{{ equipment.calculation_method }}</td>
-                <td style="display:flex;gap:12px;">
-                  <button onclick="event.stopPropagation(); startEditEquipment({{ equipment.id }})"
-                    style="color:#f59e0b; border:none; background:transparent; cursor:pointer;" title="Sửa"><i
-                      class="fa-solid fa-pencil"></i></button>
-                  <button onclick="event.stopPropagation(); deleteEquipment({{ equipment.id }})"
-                    style="color:var(--red); border:none; background:transparent; cursor:pointer;" title="Xóa"><i
-                      class="fa-solid fa-trash"></i></button>
+              {% for record in records_json %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td><b>[{{ record.equipment_code }}]</b> {{ record.equipment_name }}</td>
+                <td>
+                  {% set eq = equipments_json | selectattr('id', 'equalto', record.equipment_id) | first %}
+                  {{ eq.calculation_method if eq else '' }}
+                </td>
+                <td>{{ record.record_time }}</td>
+                <td><span style="font-weight:600; color:var(--navy);">{{ "{:,.2f}".format(record.co2e) }}</span></td>
+                <td style="display:flex;gap:12px;align-items:center;height:100%;">
+                  <button onclick="deleteRecord({{ record.id }})" style="color:var(--red); border:none; background:transparent; cursor:pointer;" title="Xóa"><i class="fa-solid fa-trash"></i></button>
                 </td>
               </tr>
               {% else %}
               <tr>
-                <td colspan="7" class="muted">Chưa có thiết bị nào.</td>
+                <td colspan="6" class="muted">Chưa có dữ liệu hoạt động.</td>
               </tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="equipmentModal">
+    <div class="modal-card">
+      <div class="modal-title" id="equipmentModalTitle">+ Tạo thiết bị Scope 1</div>
+      <div class="form-grid">
+        <div style="grid-column: span 2;">
+          <label>Phạm vi</label>
+          <select id="equipmentCategoryInline">
+            {% for category in categories_json %}
+            <option value="{{ category.id }}">{{ category.code }} - {{ category.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Cách tính</label>
+          <select id="equipmentMethodInline">
+            {% for method in calculation_methods %}
+            <option value="{{ method }}">{{ method }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Số lượng</label>
+          <input type="number" id="equipmentQuantityInline" min="0.0001" step="0.01" value="1">
+        </div>
+        <div>
+          <label>Tên thiết bị</label>
+          <input id="equipmentNameInline" placeholder="VD: Tủ lạnh, máy bơm PCCC">
+        </div>
+        <div>
+          <label>Đơn vị</label>
+          <input id="equipmentUnitInline" placeholder="VD: Cái, Xe, Bình, Chuyến">
+        </div>
+        <div style="grid-column: span 2;">
+          <label>Ghi chú</label>
+          <input id="equipmentDescInline">
+        </div>
+      </div>
+      <div class="actions" style="margin-top:20px; display:flex; gap:12px; justify-content:flex-end;">
+        <button class="btn" onclick="cancelEditEquipment()">Hủy</button>
+        <button id="equipmentCreateBtn" class="btn primary" onclick="createEquipmentInline()">+ Tạo thiết bị</button>
       </div>
     </div>
   </div>
@@ -782,6 +848,11 @@
       document.getElementById('detailModal').classList.add('show');
     }
 
+    function openRecordModalFor(id) {
+      currentEquipmentId = id;
+      openRecordModal();
+    }
+
     function openRecordModal() {
       const equipment = equipmentData.find(item => item.id === currentEquipmentId);
       if (!equipment) {
@@ -827,6 +898,18 @@
 
     let editingEquipmentId = null;
 
+    function openEquipmentModal() {
+      editingEquipmentId = null;
+      document.getElementById('equipmentNameInline').value = '';
+      document.getElementById('equipmentUnitInline').value = '';
+      document.getElementById('equipmentQuantityInline').value = '1';
+      document.getElementById('equipmentDescInline').value = '';
+
+      document.getElementById('equipmentModalTitle').textContent = '+ Tạo thiết bị Scope 1';
+      document.getElementById('equipmentCreateBtn').textContent = '+ Tạo thiết bị';
+      document.getElementById('equipmentModal').classList.add('show');
+    }
+
     function startEditEquipment(id) {
       const equipment = equipmentData.find(item => item.id === id);
       if (!equipment) return;
@@ -838,8 +921,9 @@
       document.getElementById('equipmentQuantityInline').value = equipment.quantity || 1;
       document.getElementById('equipmentDescInline').value = equipment.description || '';
 
+      document.getElementById('equipmentModalTitle').textContent = 'Sửa thiết bị Scope 1';
       document.getElementById('equipmentCreateBtn').textContent = 'Lưu thay đổi';
-      document.getElementById('equipmentCancelEditBtn').style.display = 'block';
+      document.getElementById('equipmentModal').classList.add('show');
     }
 
     function cancelEditEquipment() {
@@ -850,7 +934,7 @@
       document.getElementById('equipmentDescInline').value = '';
 
       document.getElementById('equipmentCreateBtn').textContent = '+ Tạo thiết bị';
-      document.getElementById('equipmentCancelEditBtn').style.display = 'none';
+      document.getElementById('equipmentModal').classList.remove('show');
     }
 
     async function deleteEquipment(id) {
@@ -862,6 +946,20 @@
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         alert(data.detail || 'Không xóa được thiết bị');
+        return;
+      }
+      location.reload();
+    }
+
+    async function deleteRecord(id) {
+      if (!confirm('Bạn có chắc chắn muốn xóa bản ghi này không?')) return;
+      const res = await fetch(`/api/scope1/tier1/records/${id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.detail || 'Không xóa được bản ghi');
         return;
       }
       location.reload();

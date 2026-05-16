@@ -936,6 +936,15 @@
             <div class="kpi-change neutral" id="kpi-other-chg"><i class="fa-solid fa-hand-pointer"
                 style="font-size:0.6rem;margin-right:4px"></i>Nhấn xem xu hướng</div>
           </div>
+          <div class="kpi-card" onclick="toggleKpiDetailScope3('equipment')" id="kpi-card-equipment">
+            <div class="kpi-icon" style="background:rgba(236,72,153,.1);color:#ec4899"><i class="fa-solid fa-gears"></i>
+            </div>
+            <div class="kpi-label">Thiết bị</div>
+            <div class="kpi-value" id="kpi-equipment">{{ "{:,.2f}".format(summary.equipment_co2e|default(0)) }}<span
+                class="kpi-unit"> t</span></div>
+            <div class="kpi-change neutral" id="kpi-equipment-chg"><i class="fa-solid fa-hand-pointer"
+                style="font-size:0.6rem;margin-right:4px"></i>Nhấn xem xu hướng</div>
+          </div>
         </div>
 
         <div class="kpi-detail" id="kpiDetailPanelS3">
@@ -3218,12 +3227,14 @@
       const v = document.getElementById('kpi-card-voyage');
       const h = document.getElementById('kpi-card-harbor');
       const o = document.getElementById('kpi-card-other');
+      const eq = document.getElementById('kpi-card-equipment');
       if (t) t.classList.toggle('active-kpi', metric === 'total');
       if (c) c.classList.toggle('active-kpi', metric === 'container');
       if (s) s.classList.toggle('active-kpi', metric === 'ship');
       if (v) v.classList.toggle('active-kpi', metric === 'voyage');
       if (h) h.classList.toggle('active-kpi', metric === 'harbor');
       if (o) o.classList.toggle('active-kpi', metric === 'other_vehicle');
+      if (eq) eq.classList.toggle('active-kpi', metric === 'equipment');
       kpiDetailViewS3 = 'abs';
       const bAbs = document.getElementById('dtbtn-s3-abs');
       const bPct = document.getElementById('dtbtn-s3-pct');
@@ -3248,7 +3259,7 @@
       } else {
         data = ser.values;
         label = 'tCO₂e';
-        const colors = { ship: '#0d1f3c', container: '#0ea5e9', harbor: '#8b5cf6', other_vehicle: '#f97316', total: '#2e7df7' };
+        const colors = { ship: '#0d1f3c', container: '#0ea5e9', harbor: '#8b5cf6', other_vehicle: '#f97316', total: '#2e7df7', equipment: '#ec4899' };
         color = colors[metric] || '#2e7df7';
         const titles = {
           total: '<i class="fa-solid fa-cloud" style="margin-right:6px;color:#2e7df7"></i>Xu hướng tổng CO₂e',
@@ -3257,6 +3268,7 @@
           voyage: '<i class="fa-solid fa-route" style="margin-right:6px;color:#06b6d4"></i>Hải trình',
           harbor: '<i class="fa-solid fa-anchor" style="margin-right:6px;color:#8b5cf6"></i>Tàu cảng',
           other_vehicle: '<i class="fa-solid fa-car-side" style="margin-right:6px;color:#f97316"></i>Xe thường',
+          equipment: '<i class="fa-solid fa-gears" style="margin-right:6px;color:#ec4899"></i>Thiết bị',
         };
         titleHtml = titles[metric] || titles.total;
       }
@@ -3413,7 +3425,7 @@
         vehicleBarChartRef = new Chart(ctxBar.getContext('2d'), {
           type: 'bar',
           data: {
-            labels: ['Container', 'Tàu biển', 'Hải trình', 'Tàu cảng', 'Xe thường', 'Thiết bị'],
+            labels: ['Container', 'Tàu biển', 'Hải trình', 'Tàu cảng', 'Xe thường', 'Thiết bị Tier 1'],
             datasets: [{ data: [containerCo2e, shipCo2e, voyageCo2e, harborCo2e, otherVehicleCo2e, equipmentCo2e], backgroundColor: ['#0ea5e9', '#0d1f3c', '#06b6d4', '#8b5cf6', '#f97316', '#2e7df7'], borderRadius: 6 }]
           },
           options: { plugins: { legend: { display: false } }, maintainAspectRatio: false }
@@ -3433,7 +3445,7 @@
               { label: 'Hải trình', data: trendVoyage, borderColor: '#06b6d4', borderWidth: 2, tension: 0.4 },
               { label: 'Tàu cảng', data: trendHarbor, borderColor: '#8b5cf6', borderWidth: 2, tension: 0.4 },
               { label: 'Xe thường', data: trendOther, borderColor: '#f97316', borderWidth: 2, tension: 0.4 },
-              { label: 'Thiết bị', data: trendEquipment, borderColor: '#2e7df7', borderWidth: 2, tension: 0.4 }
+              { label: 'Thiết bị Tier 1', data: trendEquipment, borderColor: '#2e7df7', borderWidth: 2, tension: 0.4 }
             ]
           },
           options: { plugins: { legend: { position: 'bottom' } }, maintainAspectRatio: false }

@@ -239,6 +239,8 @@ def _metric_from_payload(p: Dict[str, Any], key: str) -> float:
         return float(p.get("harbor_co2e") or 0.0)
     if key == "other_vehicle":
         return float(p.get("other_vehicle_co2e") or 0.0)
+    if key == "equipment":
+        return float(p.get("equipment_co2e") or 0.0)
     return 0.0
 
 
@@ -297,5 +299,6 @@ def build_scope3_comparison_payload(
             "voyage": pack("voyage"),
             "harbor": pack("harbor"),
             "other_vehicle": pack("other_vehicle"),
+            "equipment": pack("equipment"),
         },
     }

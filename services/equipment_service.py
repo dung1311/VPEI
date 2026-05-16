@@ -4,7 +4,7 @@ from typing import Any, Optional, Type
 
 from fastapi import HTTPException
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import extract, func
+from sqlalchemy import extract, func, or_, and_
 from sqlalchemy.orm import Session
 
 from models.emission_source import (

@@ -110,6 +110,16 @@ async def scope1_dashboard_page(
     months = _resolve_scope1_months(month, quarter)
     dashboard = scope1_services.DashboardService.get_dashboard_data_for_months(db, y, months)
 
+    # Mix in Tier 1 Equipments
+    s1_summary = equipment_service.summary_by_scope(db, 1, year=y, month=month, quarter=quarter)
+    t1_total = float(s1_summary["total_co2e"] or 0.0)
+    t1_trend = [float(v) for v in s1_summary["monthly_totals"]]
+
+    dashboard["kpis"]["total_co2e"] += t1_total
+    
+    # Update line chart
+    if dashboard["line_chart"]["values"] and len(dashboard["line_chart"]["values"]) == 12:
+        dashboard["line_chart"]["values"] = [a + b for a, b in zip(dashboard["line_chart"]["values"], t1_trend)]
     return templates.TemplateResponse("scope/scope_01.html", {
         "request": request,
         "user": _user_from_request(request),
@@ -396,6 +406,9 @@ async def create_tier1_record(payload: EquipmentRecordCreate, db: Session = Depe
         "co2e": record.co2e,
     }
 
+@router.delete("/api/scope1/tier1/records/{record_id}")
+async def delete_tier1_record(record_id: int, db: Session = Depends(get_db)):
+    return equipment_service.delete_record(db, 1, record_id)
 
 # --- API ENDPOINTS ---
 @router.post("/scope1/categories")
