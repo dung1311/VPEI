@@ -9,8 +9,9 @@ from typing import Optional, Set
 from core.database import get_db
 from core.security import decode_token
 
-from services import scope1 as scope1_services
 from services import electrical_items_service
+from services import equipment_service
+from services import scope1 as scope1_services
 from services.scope3_period_service import compute_scope3_period
 
 router = APIRouter()
@@ -68,13 +69,27 @@ async def dashboard_page(
 
     s1_trend = [0.0] * 12
     s1_total = 0.0
-    s1_months = sorted(mf) if mf is not None else list(range(1, 13))
     try:
-        s1_summary = scope1_services.DashboardService.get_dashboard_data_for_months(
-            db, current_year, s1_months
-        )
-        s1_total = float(s1_summary["kpis"]["total_co2e"] or 0.0)
-        s1_trend = [float(v) for v in s1_summary["line_chart"]["values"]]
+        # Tier 1 Equipment emissions
+        s1_summary = equipment_service.summary_by_scope(db, 1, year=current_year, month=month, quarter=quarter)
+        t1_total = float(s1_summary["total_co2e"] or 0.0)
+        t1_trend = [float(v) for v in s1_summary["monthly_totals"]]
+        
+        # Emission Source (ActivityData) emissions
+        if month is not None:
+            months = [month]
+        elif quarter is not None:
+            q = int(quarter)
+            months = list(range((q - 1) * 3 + 1, q * 3 + 1))
+        else:
+            months = list(range(1, 13))
+            
+        act_summary = scope1_services.DashboardService.get_dashboard_data_for_months(db, current_year, months)
+        act_total = float(act_summary["kpis"]["total_co2e"] or 0.0)
+        act_trend = [float(v) for v in act_summary["line_chart"]["values"]]
+
+        s1_total = t1_total + act_total
+        s1_trend = [a + b for a, b in zip(t1_trend, act_trend)]
     except Exception as e:
         print("Lỗi Dashboard Scope 1:", e)
 
@@ -108,8 +123,8 @@ async def dashboard_page(
     total_trips = 0
     try:
         s3_payload = compute_scope3_period(db, current_year, month, quarter)
-        s3_trend = s3_payload["trend_monthly"]
-        s3_total = s3_payload["total_co2e"]
+        s3_trend = [float(a) for a in s3_payload["trend_monthly"]]
+        s3_total = float(s3_payload["total_co2e"])
         total_trips = s3_payload["record_count"]
     except Exception as e:
         print("Lỗi Scope 3:", e)

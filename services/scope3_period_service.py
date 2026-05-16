@@ -103,6 +103,8 @@ def compute_scope3_period(
     """
     Otimized DB-level filtering and computation.
     """
+    from services import equipment_service
+
     cont_filters = _get_period_filters(Container, Container.start_time, year, month, quarter)
     containers = db.query(Container).filter(*cont_filters).all()
     
@@ -117,6 +119,7 @@ def compute_scope3_period(
 
     voyage_filters = _get_period_filters(ShipVoyage, ShipVoyage.start_time, year, month, quarter)
     ship_voyages = db.query(ShipVoyage).filter(*voyage_filters).all()
+    equipment_summary = equipment_service.summary_by_scope(db, 3, year=year, month=month, quarter=quarter)
 
     truck_co2 = 0.0
     other_ve_co2 = 0.0
@@ -129,6 +132,7 @@ def compute_scope3_period(
     voyage_trend = [0.0] * 12
     other_trend = [0.0] * 12
     harbor_trend = [0.0] * 12
+    equipment_trend = [float(v or 0.0) for v in equipment_summary["monthly_totals"]]
     
     n_cont = len(containers)
     n_ship = len(ships)
@@ -188,7 +192,9 @@ def compute_scope3_period(
             other_trend[m_idx] += val
 
     container_co2e = truck_co2
-    total = container_co2e + ship_co2 + voyage_co2 + harbor_co2 + other_ve_co2
+    equipment_co2 = float(equipment_summary["total_co2e"] or 0.0)
+    total = container_co2e + ship_co2 + voyage_co2 + harbor_co2 + other_ve_co2 + equipment_co2
+    s3_trend = [s3_trend[idx] + equipment_trend[idx] for idx in range(12)]
 
     container_trend = truck_trend[:]
 
@@ -198,8 +204,9 @@ def compute_scope3_period(
         "container_co2e": container_co2e,
         "ship_co2e": ship_co2,
         "voyage_co2e": voyage_co2,
+        "equipment_co2e": equipment_co2,
         "total_co2e": total,
-        "record_count": n_cont + n_ship + n_voyage + n_other + n_harbor,
+        "record_count": n_cont + n_ship + n_voyage + n_other + n_harbor + len(equipment_summary["records"]),
         "n_containers": n_cont,
         "n_ships": n_ship,
         "n_voyages": n_voyage,
@@ -212,6 +219,7 @@ def compute_scope3_period(
         "trend_voyage_monthly": voyage_trend,
         "trend_harbor_monthly": harbor_trend,
         "trend_other_vehicle_monthly": other_trend,
+        "trend_equipment_monthly": equipment_trend,
         "containers": [c.__dict__ for c in containers], # ensure dict format for existing UI
         "ships": [s.__dict__ for s in ships], # ensure dict format for existing UI
         "voyages": [sv.__dict__ for sv in ship_voyages], # ensure dict format for existing UI
@@ -225,10 +233,14 @@ def _metric_from_payload(p: Dict[str, Any], key: str) -> float:
         return float(p.get("container_co2e") or 0.0)
     if key == "ship":
         return float(p.get("ship_co2e") or 0.0)
+    if key == "voyage":
+        return float(p.get("voyage_co2e") or 0.0)
     if key == "harbor":
         return float(p.get("harbor_co2e") or 0.0)
     if key == "other_vehicle":
         return float(p.get("other_vehicle_co2e") or 0.0)
+    if key == "equipment":
+        return float(p.get("equipment_co2e") or 0.0)
     return 0.0
 
 
@@ -287,5 +299,6 @@ def build_scope3_comparison_payload(
             "voyage": pack("voyage"),
             "harbor": pack("harbor"),
             "other_vehicle": pack("other_vehicle"),
+            "equipment": pack("equipment"),
         },
     }

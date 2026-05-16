@@ -28,6 +28,7 @@ def init_db():
     """Tạo bảng và (nếu cần) seed tài khoản super admin từ .env."""
     from models import user as _  # noqa: F401
     from models import device as _  # noqa: F401
+    from models import emission_source as _  # noqa: F401
     from models import electrical_item as _  # noqa: F401
     from models import audit_log as _  # noqa: F401
     from models import container as _  # noqa: F401

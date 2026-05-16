@@ -15,8 +15,11 @@ from core.security import decode_token, get_token_payload
 
 # Container Services & Schemas
 from services import container_service, container_activity_service
+from services import equipment_service
 from services.scope3_period_service import compute_scope3_period, build_scope3_comparison_payload
 from schemas.container import ContainerCreate, ContainerUpdate
+from schemas.emission_source import EquipmentCreate, EquipmentUpdate, EquipmentRecordCreate, ScopeCategoryCreate, ScopeCategoryUpdate
+from models.emission_source import CalculationMethodEnum
 
 # Ship Services & Schemas
 from services import ship_service, ship_activity_service, ship_voyage_service
@@ -258,6 +261,7 @@ async def scope3_page(
     
     y = year or datetime.now().year
     s3 = compute_scope3_period(db, y, month, quarter)
+    equipment_summary = equipment_service.summary_by_scope(db, 3, year=y, month=month, quarter=quarter)
     summary = {
         "total_co2": round(s3["total_co2e"], 2),
         "total_co2e": round(s3["total_co2e"], 2),
@@ -266,10 +270,16 @@ async def scope3_page(
         "voyage_co2e": round(s3.get("voyage_co2e", 0.0), 2),
         "harbor_co2e": round(s3["harbor_co2e"], 2),
         "other_vehicle_co2e": round(s3["other_vehicle_co2e"], 2),
+        "equipment_co2e": round(equipment_summary["total_co2e"], 2),
         "total_trips": s3["record_count"],
         "total_ships": s3["n_ships"],
         "n_other_vehicles": s3["n_other_vehicles"],
     }
+
+    equipment_service.ensure_default_scope3_categories(db)
+    categories = equipment_service.list_categories(db, 3)
+    equipments = equipment_service.list_equipments(db, 3)
+    records = equipment_service.list_records(db, 3, year=y, month=month, quarter=quarter)
 
     return templates.TemplateResponse(
         "scope/scope3.html",
@@ -277,6 +287,35 @@ async def scope3_page(
             "request": request,
             "user": current_user,
             "summary": summary,
+            "scope3_categories_json": [
+                {
+                    "id": category.id,
+                    "scope": category.scope,
+                    "code": category.code,
+                    "name": category.name,
+                    "description": category.description,
+                    "sort_order": category.sort_order,
+                    "is_active": bool(category.is_active),
+                }
+                for category in categories
+            ],
+            "scope3_equipments_json": [
+                {
+                    "id": equipment.id,
+                    "category_id": equipment.category_id,
+                    "code": equipment.code,
+                    "name": equipment.name,
+                    "quantity": equipment.quantity,
+                    "unit": equipment.unit,
+                    "calculation_method": equipment.calculation_method.value if equipment.calculation_method else None,
+                    "category_code": next((category.code for category in categories if category.id == equipment.category_id), ""),
+                    "category_name": next((category.name for category in categories if category.id == equipment.category_id), ""),
+                    "total_co2e": next((item["total_co2e"] for item in equipment_summary["equipment_totals"] if item["id"] == equipment.id), 0.0),
+                }
+                for equipment in equipments
+            ],
+            "scope3_records_json": equipment_summary["records"],
+            "scope3_calculation_methods": [m.value for m in CalculationMethodEnum],
         },
     )
 
@@ -373,6 +412,173 @@ async def scope3_ship_voyage_map_page(request: Request):
 async def scope3_voyage_route_data():
     file_path = Path(__file__).resolve().parent.parent / "templates" / "data" / "voyage_route_data.js"
     return FileResponse(str(file_path), media_type="application/javascript")
+
+@router.get("/api/scope3/equipment/categories")
+async def list_scope3_equipment_categories(db: Session = Depends(get_db)):
+    equipment_service.ensure_default_scope3_categories(db)
+    categories = equipment_service.list_categories(db, 3)
+    return {
+        "items": [
+            {
+                "id": category.id,
+                "scope": category.scope,
+                "code": category.code,
+                "name": category.name,
+                "description": category.description,
+                "sort_order": category.sort_order,
+                "is_active": bool(category.is_active),
+            }
+            for category in categories
+        ]
+    }
+
+
+@router.post("/api/scope3/equipment/categories")
+async def create_scope3_equipment_category(payload: ScopeCategoryCreate, db: Session = Depends(get_db)):
+    if int(payload.scope) != 3:
+        raise HTTPException(status_code=400, detail="Scope 3 chỉ nhận phạm vi scope = 3")
+    category = equipment_service.create_category(db, payload)
+    return {
+        "id": category.id,
+        "scope": category.scope,
+        "code": category.code,
+        "name": category.name,
+        "description": category.description,
+        "sort_order": category.sort_order,
+        "is_active": bool(category.is_active),
+    }
+
+
+@router.get("/api/scope3/equipment/items")
+async def list_scope3_equipment_items(db: Session = Depends(get_db)):
+    equipment_service.ensure_default_scope3_categories(db)
+    equipments = equipment_service.list_equipments(db, 3)
+    categories = {category.id: category for category in equipment_service.list_categories(db, 3)}
+    summary = equipment_service.summary_by_scope(db, 3)
+    return {
+        "items": [
+            {
+                "id": equipment.id,
+                "category_id": equipment.category_id,
+                "code": equipment.code,
+                "name": equipment.name,
+                "quantity": equipment.quantity,
+                "unit": equipment.unit,
+                "calculation_method": equipment.calculation_method.value if equipment.calculation_method else None,
+                "emission_factor_json": equipment.emission_factor_json,
+                "description": equipment.description,
+                "category_code": categories.get(equipment.category_id).code if categories.get(equipment.category_id) else "",
+                "category_name": categories.get(equipment.category_id).name if categories.get(equipment.category_id) else "",
+                "total_co2e": next((item["total_co2e"] for item in summary["equipment_totals"] if item["id"] == equipment.id), 0.0),
+            }
+            for equipment in equipments
+        ]
+    }
+
+
+@router.post("/api/scope3/equipment/items")
+async def create_scope3_equipment_item(payload: EquipmentCreate, db: Session = Depends(get_db)):
+    equipment = equipment_service.create_equipment(db, 3, payload)
+    category = equipment_service.get_equipment_detail(db, 3, equipment.id)["category"]
+    return {
+        "id": equipment.id,
+        "category_id": equipment.category_id,
+        "code": equipment.code,
+        "name": equipment.name,
+        "quantity": equipment.quantity,
+        "unit": equipment.unit,
+        "calculation_method": equipment.calculation_method.value if equipment.calculation_method else None,
+        "emission_factor_json": equipment.emission_factor_json,
+        "description": equipment.description,
+        "category_code": category.code if category else "",
+        "category_name": category.name if category else "",
+        "was_quantity_incremented": bool(getattr(equipment, "_was_quantity_incremented", False)),
+    }
+
+
+@router.get("/api/scope3/equipment/items/{equipment_id}")
+async def get_scope3_equipment_item(equipment_id: int, db: Session = Depends(get_db)):
+    payload = equipment_service.get_equipment_detail(db, 3, equipment_id)
+    total_co2e = sum(float(record.co2e or 0.0) for record in payload["records"])
+    return {
+        "equipment": {
+            "id": payload["equipment"].id,
+            "category_id": payload["equipment"].category_id,
+            "code": payload["equipment"].code,
+            "name": payload["equipment"].name,
+            "quantity": payload["equipment"].quantity,
+            "unit": payload["equipment"].unit,
+            "calculation_method": payload["equipment"].calculation_method.value if payload["equipment"].calculation_method else None,
+            "emission_factor_json": payload["equipment"].emission_factor_json,
+            "description": payload["equipment"].description,
+        },
+        "category": {
+            "id": payload["category"].id,
+            "scope": payload["category"].scope,
+            "code": payload["category"].code,
+            "name": payload["category"].name,
+        } if payload["category"] else None,
+        "records": [
+            {
+                "id": record.id,
+                "record_time": record.record_time.strftime("%d/%m/%Y %H:%M") if record.record_time else "",
+                "co2e": record.co2e,
+                "input_json": record.input_json,
+            }
+            for record in payload["records"]
+        ],
+        "total_co2e": total_co2e,
+    }
+
+
+@router.put("/api/scope3/equipment/items/{equipment_id}")
+async def update_scope3_equipment_item(equipment_id: int, payload: EquipmentUpdate, db: Session = Depends(get_db)):
+    equipment = equipment_service.update_equipment(db, 3, equipment_id, payload)
+    detail = equipment_service.get_equipment_detail(db, 3, equipment.id)
+    category = detail["category"]
+    return {
+        "id": equipment.id,
+        "category_id": equipment.category_id,
+        "code": equipment.code,
+        "name": equipment.name,
+        "quantity": equipment.quantity,
+        "unit": equipment.unit,
+        "calculation_method": equipment.calculation_method.value if equipment.calculation_method else None,
+        "emission_factor_json": equipment.emission_factor_json,
+        "description": equipment.description,
+        "category_code": category.code if category else "",
+        "category_name": category.name if category else "",
+        "total_co2e": sum(float(record.co2e or 0.0) for record in detail["records"]),
+    }
+
+
+@router.delete("/api/scope3/equipment/items/{equipment_id}")
+async def delete_scope3_equipment_item(equipment_id: int, db: Session = Depends(get_db)):
+    return equipment_service.delete_equipment(db, 3, equipment_id)
+
+
+@router.post("/api/scope3/equipment/records")
+async def create_scope3_equipment_record(payload: EquipmentRecordCreate, db: Session = Depends(get_db)):
+    record = equipment_service.create_record(db, 3, payload)
+    return {
+        "id": record.id,
+        "equipment_id": record.equipment_id,
+        "record_time": record.record_time.strftime("%d/%m/%Y %H:%M") if record.record_time else "",
+        "input_json": record.input_json,
+        "co2e": record.co2e,
+    }
+
+
+@router.get("/api/scope3/equipment/records")
+async def list_scope3_equipment_records(db: Session = Depends(get_db)):
+    summary = equipment_service.summary_by_scope(db, 3)
+    return {"items": summary["records"], "count": len(summary["records"])}
+
+
+@router.delete("/api/scope3/equipment/records/{record_id}")
+async def delete_scope3_equipment_record(record_id: int, db: Session = Depends(get_db)):
+    return equipment_service.delete_record(db, 3, record_id)
+
 
 # =====================================================================
 # ─── EXCEL IMPORT & TEMPLATE ENDPOINTS ───────────────────────────────
@@ -961,6 +1167,7 @@ async def get_scope3_summary(
         "harbor_co2e": round(s3["harbor_co2e"], 2),
         "truck_co2e": round(s3["truck_co2e"], 2),
         "other_vehicle_co2e": round(s3["other_vehicle_co2e"], 2),
+        "equipment_co2e": round(s3.get("equipment_co2e", 0.0), 2),
         "record_count": s3["record_count"],
         "total_trips": s3["record_count"],
         "total_ships": s3["n_ships"],
@@ -972,6 +1179,7 @@ async def get_scope3_summary(
         "trend_voyage_monthly": s3.get("trend_voyage_monthly", [0.0] * 12),
         "trend_harbor_monthly": s3["trend_harbor_monthly"],
         "trend_other_vehicle_monthly": s3["trend_other_vehicle_monthly"],
+        "trend_equipment_monthly": s3.get("trend_equipment_monthly", [0.0] * 12),
         "trend_monthly": s3["trend_monthly"],
     }
 

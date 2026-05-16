@@ -1,0 +1,45 @@
+Trước tiên là tạo model cho thiết bị
+Một thiết bị sẽ có những thông tin như sau 
+1. Tên thiết bị (Tủ lạnh, máy bơm PCCC, ...)
+2. Số lượng 
+3. Đơn vị (Cái, Xe, Cẩu, Bình, Chuyến, ... có thể cho người dùng nhập vào)
+4. Phạm vi (sẽ có những phạm vi bên dưới)
+SCOPE 1: 
+1A. Phát thải trực tiếp từ quá trình đốt cháy tĩnh
+1B. Phát thải trực tiếp từ quá trình đốt cháy di động
+1C. Phát thải trực tiếp từ các quá trình công nghiệp
+1D. Phát thải trực tiếp từ việc giải phóng KNK trong các hệ thống do con người gây ra
+1E. Phát thải và loại bỏ trực tiếp từ sử dụng đất, thay đổi sử dụng đất và lâm nghiệp (LULUCF)
+
+SCOPE 3: 
+3A. Phát thải từ vận chuyển và phân phối ngược dòng (upstream) cho hàng hóa
+3B. Phát thải từ vận chuyển và phân phối upstream/downstream cho hàng hóa
+3C. Phát thải từ việc đi lại của nhân viên 
+3D. Phát thải từ việc vận chuyển khách hàng và khách 
+3E. Phát thải do đi công tác
+3F. Phát thải từ hàng hóa đã mua
+3G. Phát thải từ mua các dịch vụ
+
+5. Cách tính 
+Cách tính 1: Tính theo TJ (lít DO)
+Cách tính 2: Tính theo GWP
+Cách tính 3: Tính cho xử lý chất thải và nước thải
+Cách tính 4: Loại đặc biệt
+
+6. Hệ số phát thải
+
+Sau khi mà ấn lưu ấy thì khi đó MÃ THIẾT BỊ được định nghĩa là 1.Phạm vi.STT (Ví dụ 1.A.1, 1.A.2, ...) nếu là scope1, nếu là scope 3 sẽ là 3.A.1, ..
+
+Sau đó làm giao diện quản lý, ở scope 1 tạo một sub-nav tên là Tier 1
+Hiện từng mã ra theo dòng (tham khảo thử scope1_tier1.png)
+
+Bước 2: Sau khi đã có từng loại thiết bị, nếu ấn vào thì sẽ cho nhập thông tin chi tiết như sau 
+1. Nếu thiết bị có cách tính 1, thì hiện ra cho nhập vào EF_co2, EF_CH4, EF_N20, DO (đơn vị là lít) và công thức tính sẽ ở cachtinh1.png 
+Nếu thiết bị có cách tính 2, 3 thì cho nhập Khối lượng, EF và công thức tính sẽ ở cachtinh2.png và cachtinh3.png 
+Nếu thiết bị là cách tính 4 thì cho nhập số lít và công thức ở cachtinh4.png
+2. Ngày tháng năm nhập để tính lượng phát thải cho thời gian đó để còn filter.
+
+Đó là giao diện scope 1.
+Còn ở scope 3 thì ở tab nhập dữ liệu, thêm một tab nữa cho nhập và tất nhiên là thông tin cũng giống scope1, chỉ là tách ra làm scope 3 thôi
+
+Sau đó nhớ cộng tổng lượng phát thải vào từng scope nếu mà thiết bị đó gây ra lượng phát thải 

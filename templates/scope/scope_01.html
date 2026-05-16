@@ -95,7 +95,10 @@
         <div class="kpi-value">{{ "{:,.1f}".format(total_hours) }} <span class="kpi-unit">h</span></div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">Tổng phát thải CO₂e</div>
+        <div class="kpi-label">
+          Tổng phát thải CO₂e
+          <div style="font-size: 0.65rem; font-weight: normal; opacity: 0.8; margin-top: 2px; text-transform: none;">(Quản lý phát thải + Thiết bị Tier 1)</div>
+        </div>
         <div class="kpi-value">{{ "{:,.2f}".format(dashboard_json.kpis.total_co2e) }} <span class="kpi-unit">tCO₂e</span></div>
       </div>
       <div class="kpi-card">
