@@ -1,10 +1,27 @@
 <style>
   /* Scope trong .sidebar để không bị CSS .nav-expand / .submenu trùng tên từ <head>
 <link rel="icon" type="image/png" href="/static/favicon.png"> các trang Scope (vd: scope3) ghi đè */
-  .sidebar .submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
-  .sidebar .submenu.open { max-height: 180px; }
-  .sidebar .nav-item.sub { padding-left: 44px; font-size: 0.83rem; }
-  .sidebar .nav-item.sub.active { background: rgba(46,125,247,0.06); color: var(--accent); font-weight: 600; }
+  .sidebar .submenu {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+
+  .sidebar .submenu.open {
+    max-height: 180px;
+  }
+
+  .sidebar .nav-item.sub {
+    padding-left: 44px;
+    font-size: 0.83rem;
+  }
+
+  .sidebar .nav-item.sub.active {
+    background: rgba(46, 125, 247, 0.06);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
   .sidebar .nav-expand {
     font-size: 0.7rem;
     margin-left: auto;
@@ -13,9 +30,11 @@
     transition: transform 0.3s ease;
     transform: rotate(0deg);
   }
+
   .sidebar .nav-expand.nav-expand--open {
     transform: rotate(180deg);
   }
+
   .sidebar .sidebar-logo a {
     justify-content: flex-start;
   }
@@ -28,22 +47,25 @@
   </div>
   <nav class="nav-items">
     <div class="nav-section">Menu chính</div>
-    <a href="/dashboard" class="nav-item"><i class="fa-solid fa-chart-pie" style="width:16px;color:var(--text-muted)"></i> Dashboard</a>
+    <a href="/dashboard" class="nav-item"><i class="fa-solid fa-chart-pie"
+        style="width:16px;color:var(--text-muted)"></i> Dashboard</a>
 
     <a href="/scope1" class="nav-item">
       <i class="fa-solid fa-industry" style="width:16px;color:var(--text-muted)"></i>
       Scope 1
-      <i class="fa-solid fa-chevron-down nav-expand" onclick="event.preventDefault(); event.stopPropagation(); toggleSidebarMenu('scope1Menu')"></i>
+      <i class="fa-solid fa-chevron-down nav-expand"
+        onclick="event.preventDefault(); event.stopPropagation(); toggleSidebarMenu('scope1Menu')"></i>
     </a>
     <div id="scope1Menu" class="submenu">
       <a href="/scope1/emission-source" class="nav-item sub">Quản lý nguồn phát thải</a>
-      <a href="/scope1/tier1" class="nav-item sub">Tier 1</a>
+      <a href="/scope1/tier1" class="nav-item sub">Thiết bị Tier 1</a>
     </div>
 
     <a href="/scope2" class="nav-item">
       <i class="fa-solid fa-bolt" style="width:16px;color:var(--text-muted)"></i>
       Scope 2
-      <i class="fa-solid fa-chevron-down nav-expand" onclick="event.preventDefault(); event.stopPropagation(); toggleSidebarMenu('scope2Menu')"></i>
+      <i class="fa-solid fa-chevron-down nav-expand"
+        onclick="event.preventDefault(); event.stopPropagation(); toggleSidebarMenu('scope2Menu')"></i>
     </a>
     <div id="scope2Menu" class="submenu">
       <a href="/scope2/manager" class="nav-item sub">Lịch sử hoạt động</a>
@@ -52,37 +74,40 @@
     <a href="/scope3" class="nav-item">
       <i class="fa-solid fa-ship" style="width:16px;color:var(--text-muted)"></i>
       Scope 3
-      <i class="fa-solid fa-chevron-down nav-expand" onclick="event.preventDefault(); event.stopPropagation(); toggleSidebarMenu('scope3Menu')"></i>
+      <i class="fa-solid fa-chevron-down nav-expand"
+        onclick="event.preventDefault(); event.stopPropagation(); toggleSidebarMenu('scope3Menu')"></i>
     </a>
     <div id="scope3Menu" class="submenu">
       <a href="/scope3/manager" class="nav-item sub">Lịch sử hoạt động</a>
     </div>
 
     <div class="nav-section" style="margin-top:10px">Báo cáo</div>
-    <a href="/reports" class="nav-item"><i class="fa-solid fa-file-lines" style="width:16px;color:var(--text-muted)"></i> Reports</a>
+    <a href="/reports" class="nav-item"><i class="fa-solid fa-file-lines"
+        style="width:16px;color:var(--text-muted)"></i> Reports</a>
   </nav>
   <div class="nav-bottom">
     {% set is_admin = false %}
     {% if admin is defined and admin and (admin.is_admin or admin.get("is_admin")) %}
-        {% set is_admin = true %}
+    {% set is_admin = true %}
     {% elif user is defined and user and (user.is_admin or (user.get and user.get("is_admin"))) %}
-        {% set is_admin = true %}
+    {% set is_admin = true %}
     {% elif request is defined and request.state.user and request.state.user.get("is_admin") %}
-        {% set is_admin = true %}
+    {% set is_admin = true %}
     {% endif %}
 
     {% if is_admin %}
-    <a href="/settings" class="nav-item"><i class="fa-solid fa-gear" style="width:16px;color:var(--text-muted)"></i> Settings</a>
+    <a href="/settings" class="nav-item"><i class="fa-solid fa-gear" style="width:16px;color:var(--text-muted)"></i>
+      Settings</a>
     {% endif %}
   </div>
 </div>
 
 <script>
-  document.addEventListener("DOMContentLoaded", function() {
+  document.addEventListener("DOMContentLoaded", function () {
     const path = window.location.pathname;
     const links = document.querySelectorAll('.sidebar a.nav-item');
 
-    links.forEach(function(link) {
+    links.forEach(function (link) {
       link.classList.remove('active');
       const icon = link.querySelector('i:not(.nav-expand)');
       if (icon) {
@@ -91,7 +116,7 @@
     });
 
     // Keep all sub-links consistently styled
-    document.querySelectorAll('#scope1Menu a, #scope2Menu a, #scope3Menu a').forEach(function(link) {
+    document.querySelectorAll('#scope1Menu a, #scope2Menu a, #scope3Menu a').forEach(function (link) {
       link.classList.add('sub');
     });
 
@@ -105,7 +130,7 @@
       '/scope3/manager': 'scope3Menu'
     };
 
-    links.forEach(function(link) {
+    links.forEach(function (link) {
       const href = link.getAttribute('href');
       if (href === path) {
         link.classList.add('active');
@@ -131,7 +156,7 @@
           }
           // #region agent log
           if (openMenuId === 'scope3Menu') {
-            fetch('http://127.0.0.1:7421/ingest/06293622-fe7d-46c9-938d-6bb69b1d75f5',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'fb11ac'},body:JSON.stringify({sessionId:'fb11ac',runId:'verify-scope3-chevron',hypothesisId:'H1',location:'sidebar.html:DOMContentLoaded',message:'auto-open submenu',data:{path,openMenuId,submenuOpen:submenu.classList.contains('open'),expandHasOpen:!!(expandIcon&&expandIcon.classList.contains('nav-expand--open')),cs:expandIcon?getComputedStyle(expandIcon).transition:''},timestamp:Date.now()})}).catch(function(){});
+            fetch('http://127.0.0.1:7421/ingest/06293622-fe7d-46c9-938d-6bb69b1d75f5', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'fb11ac' }, body: JSON.stringify({ sessionId: 'fb11ac', runId: 'verify-scope3-chevron', hypothesisId: 'H1', location: 'sidebar.html:DOMContentLoaded', message: 'auto-open submenu', data: { path, openMenuId, submenuOpen: submenu.classList.contains('open'), expandHasOpen: !!(expandIcon && expandIcon.classList.contains('nav-expand--open')), cs: expandIcon ? getComputedStyle(expandIcon).transition : '' }, timestamp: Date.now() }) }).catch(function () { });
           }
           // #endregion
         }
@@ -150,7 +175,7 @@
       }
       // #region agent log
       if (id === 'scope3Menu') {
-        fetch('http://127.0.0.1:7421/ingest/06293622-fe7d-46c9-938d-6bb69b1d75f5',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'fb11ac'},body:JSON.stringify({sessionId:'fb11ac',runId:'verify-scope3-chevron',hypothesisId:'H2',location:'sidebar.html:toggleSidebarMenu',message:'scope3 toggle',data:{id,menuOpen:menu.classList.contains('open'),prevTag:prev?prev.tagName:null,hasExpand:!!expandIcon,expandOpen:!!(expandIcon&&expandIcon.classList.contains('nav-expand--open')),cs:expandIcon?getComputedStyle(expandIcon).transition:''},timestamp:Date.now()})}).catch(function(){});
+        fetch('http://127.0.0.1:7421/ingest/06293622-fe7d-46c9-938d-6bb69b1d75f5', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'fb11ac' }, body: JSON.stringify({ sessionId: 'fb11ac', runId: 'verify-scope3-chevron', hypothesisId: 'H2', location: 'sidebar.html:toggleSidebarMenu', message: 'scope3 toggle', data: { id, menuOpen: menu.classList.contains('open'), prevTag: prev ? prev.tagName : null, hasExpand: !!expandIcon, expandOpen: !!(expandIcon && expandIcon.classList.contains('nav-expand--open')), cs: expandIcon ? getComputedStyle(expandIcon).transition : '' }, timestamp: Date.now() }) }).catch(function () { });
       }
       // #endregion
     }
