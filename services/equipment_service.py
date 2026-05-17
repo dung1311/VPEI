@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from io import BytesIO
 from typing import Any, Optional, Type
 
 from fastapi import HTTPException
 from fastapi.encoders import jsonable_encoder
+from openpyxl import load_workbook
 from sqlalchemy import extract, func, or_, and_
 from sqlalchemy.orm import Session
 
@@ -90,7 +92,7 @@ def _calculate_co2e(method: CalculationMethodEnum, data: dict[str, Any]) -> floa
             * do_liters
             * 0.85
             * 43
-            / 1_000_000,
+            / 1_000_000_000,
             6,
         )
 
@@ -481,4 +483,171 @@ def summary_by_scope(db: Session, scope: int, year: Optional[int] = None, month:
             "name": top_equipment.name if top_equipment else None,
             "co2e": float(equipment_totals.get(top_equipment.id, 0.0)) if top_equipment else 0.0,
         } if top_equipment else None,
+    }
+
+
+def import_equipments_from_excel(db: Session, scope: int, file_bytes: bytes) -> dict[str, Any]:
+    try:
+        wb = load_workbook(filename=BytesIO(file_bytes), data_only=True)
+    except Exception:
+        raise HTTPException(status_code=400, detail="File Excel không hợp lệ hoặc bị lỗi")
+
+    ws = wb.active
+    rows = list(ws.iter_rows(values_only=True))
+    if not rows:
+        return {"ok": True, "imported": 0, "failed": 0, "errors": []}
+
+    headers = [str(h).strip().lower() if h is not None else "" for h in rows[0]]
+    idx_by_header = {h: i for i, h in enumerate(headers) if h}
+
+    def find_index(*candidates: str) -> int:
+        for c in candidates:
+            if c in idx_by_header:
+                return idx_by_header[c]
+        return -1
+
+    idx_cat = find_index("mã phân loại", "ma phan loai", "phân loại", "phan loai", "category_code", "category", "mã scope", "ma scope")
+    idx_name = find_index("tên thiết bị", "ten thiet bi", "name", "tên", "ten")
+    idx_quantity = find_index("số lượng", "so luong", "quantity", "qty")
+    idx_unit = find_index("đơn vị tính", "don vi tinh", "đơn vị", "don vi", "unit")
+    idx_method = find_index("cách tính", "cach tinh", "calculation_method", "method")
+    idx_ef_co2 = find_index("ef co2", "ef_co2")
+    idx_ef_ch4 = find_index("ef ch4", "ef_ch4")
+    idx_ef_n2o = find_index("ef n2o", "ef_n2o")
+    idx_gwp = find_index("gwp")
+    idx_ef = find_index("ef")
+    idx_desc = find_index("mô tả", "mo ta", "ghi chú", "ghi chu", "description", "desc", "note")
+
+    if min(idx_cat, idx_name, idx_unit, idx_method) < 0:
+        raise HTTPException(
+            status_code=400,
+            detail="File Excel phải chứa các cột bắt buộc: Mã phân loại, Tên thiết bị, Đơn vị tính, Cách tính",
+        )
+
+    categories = db.query(ScopeCategory).filter(ScopeCategory.scope == int(scope)).all()
+    cat_by_code = {c.code.strip().upper(): c for c in categories}
+
+    imported = 0
+    failed = 0
+    errors: list[str] = []
+
+    for row_no, row in enumerate(rows[1:], start=2):
+        try:
+            # Skip empty rows
+            cat_val = str(row[idx_cat] or "").strip() if idx_cat >= 0 else ""
+            name = str(row[idx_name] or "").strip() if idx_name >= 0 else ""
+            if not cat_val and not name:
+                continue
+
+            if not cat_val:
+                raise ValueError("Mã phân loại không được để trống")
+            if not name:
+                raise ValueError("Tên thiết bị không được để trống")
+
+            cat_code = cat_val.upper()
+            if "." in cat_code:
+                parts = cat_code.split(".")
+                if parts[0].isdigit() and len(parts) > 1:
+                    cat_code = parts[1]
+
+            category = cat_by_code.get(cat_code)
+            if not category:
+                category = next((c for c in categories if c.name.strip().upper().startswith(cat_code)), None)
+                if not category:
+                    raise ValueError(f"Không tìm thấy phân loại '{cat_val}' cho Scope {scope}")
+
+            qty = 1.0
+            if idx_quantity >= 0 and row[idx_quantity] is not None:
+                try:
+                    qty = float(row[idx_quantity])
+                    if qty <= 0:
+                        qty = 1.0
+                except (ValueError, TypeError):
+                    qty = 1.0
+
+            unit = str(row[idx_unit] or "").strip() if idx_unit >= 0 else "Cái"
+            if not unit:
+                unit = "Cái"
+
+            method_raw = str(row[idx_method] or "").strip() if idx_method >= 0 else ""
+            method_str = "Cách tính 1"
+            if "1" in method_raw:
+                method_str = "Cách tính 1"
+            elif "2" in method_raw:
+                method_str = "Cách tính 2"
+            elif "3" in method_raw:
+                method_str = "Cách tính 3"
+            elif "4" in method_raw:
+                method_str = "Cách tính 4"
+            else:
+                raise ValueError(f"Cách tính '{method_raw}' không hợp lệ (hợp lệ: Cách tính 1, 2, 3, 4)")
+
+            try:
+                calculation_method = CalculationMethodEnum(method_str)
+            except ValueError:
+                calculation_method = CalculationMethodEnum.METHOD_1
+
+            ef_json = {}
+            if calculation_method == CalculationMethodEnum.METHOD_1:
+                ef_co2 = float(row[idx_ef_co2]) if idx_ef_co2 >= 0 and row[idx_ef_co2] is not None else 0.0
+                ef_ch4 = float(row[idx_ef_ch4]) if idx_ef_ch4 >= 0 and row[idx_ef_ch4] is not None else 0.0
+                ef_n2o = float(row[idx_ef_n2o]) if idx_ef_n2o >= 0 and row[idx_ef_n2o] is not None else 0.0
+                ef_json = {"ef_co2": ef_co2, "ef_ch4": ef_ch4, "ef_n2o": ef_n2o}
+            elif calculation_method == CalculationMethodEnum.METHOD_2:
+                gwp = float(row[idx_gwp]) if idx_gwp >= 0 and row[idx_gwp] is not None else 0.0
+                ef_json = {"gwp": gwp}
+            elif calculation_method in [CalculationMethodEnum.METHOD_3, CalculationMethodEnum.METHOD_4]:
+                ef = float(row[idx_ef]) if idx_ef >= 0 and row[idx_ef] is not None else 0.0
+                ef_json = {"ef": ef}
+
+            desc = str(row[idx_desc] or "").strip() if idx_desc >= 0 and row[idx_desc] is not None else ""
+
+            equipment_model, _ = _scope_models(scope)
+            normalized_name = name.strip().casefold()
+            existing = next(
+                (
+                    eq
+                    for eq in db.query(equipment_model).filter(equipment_model.category_id == category.id).all()
+                    if (eq.name or "").strip().casefold() == normalized_name
+                ),
+                None,
+            )
+            if existing:
+                existing.quantity = float(existing.quantity or 0.0) + qty
+                if unit:
+                    existing.unit = unit
+                if desc:
+                    existing.description = desc
+                if ef_json:
+                    existing.emission_factor_json = ef_json
+            else:
+                sequence_no = _next_sequence(db, equipment_model, category.id)
+                code = _format_code(scope, category.code, sequence_no)
+
+                equipment = equipment_model(
+                    category_id=category.id,
+                    sequence_no=sequence_no,
+                    code=code,
+                    name=name,
+                    quantity=qty,
+                    unit=unit,
+                    calculation_method=calculation_method,
+                    emission_factor_json=ef_json,
+                    description=desc,
+                )
+                db.add(equipment)
+
+            imported += 1
+        except Exception as ex:
+            failed += 1
+            errors.append(f"Dòng {row_no}: {str(ex)}")
+
+    db.commit()
+    return {
+        "ok": True,
+        "imported": imported,
+        "failed": failed,
+        "total_rows": imported + failed,
+        "failed_rows": failed,
+        "errors": errors,
     }

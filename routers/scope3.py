@@ -515,6 +515,21 @@ async def create_scope3_equipment_item(payload: EquipmentCreate, request: Reques
     }
 
 
+@router.post("/api/scope3/equipment/items/import")
+async def import_scope3_equipments(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    actor = _actor_from_request(request)
+    contents = await file.read()
+    res = equipment_service.import_equipments_from_excel(db, 3, contents)
+    if res.get("ok") and res.get("imported", 0) > 0:
+        container_activity_service.record_activity(
+            db,
+            actor,
+            "Import thiết bị Tier 1 từ Excel",
+            f"Đã nhập thành công {res['imported']} thiết bị, thất bại {res['failed']} thiết bị từ file {file.filename}.",
+        )
+    return res
+
+
 @router.get("/api/scope3/equipment/items/{equipment_id}")
 async def get_scope3_equipment_item(equipment_id: int, db: Session = Depends(get_db)):
     payload = equipment_service.get_equipment_detail(db, 3, equipment_id)

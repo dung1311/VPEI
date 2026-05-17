@@ -363,6 +363,12 @@ async def create_tier1_equipment(payload: EquipmentCreate, db: Session = Depends
     }
 
 
+@router.post("/api/scope1/tier1/equipments/import")
+async def import_tier1_equipments(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    contents = await file.read()
+    return equipment_service.import_equipments_from_excel(db, 1, contents)
+
+
 @router.get("/api/scope1/tier1/equipments/{equipment_id}")
 async def get_tier1_equipment(equipment_id: int, db: Session = Depends(get_db)):
     payload = equipment_service.get_equipment_detail(db, 1, equipment_id)
