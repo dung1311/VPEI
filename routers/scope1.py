@@ -34,6 +34,13 @@ def _user_from_request(request: Request):
         return None
 
 
+def _actor_from_request(request: Request) -> str:
+    user = _user_from_request(request)
+    if not user:
+        return "system"
+    return user.get("sub") or "system"
+
+
 def _resolve_scope1_months(month: Optional[int], quarter: Optional[int]) -> List[int]:
     if month is not None:
         return [month]
@@ -197,6 +204,13 @@ async def scope1_tier1_page(
             "category_code": category.code if category else "",
             "category_name": category.name if category else "",
             "total_co2e": next((item["total_co2e"] for item in summary["equipment_totals"] if item["id"] == equipment.id), 0.0),
+            "total_consumption": sum(
+                float(r.input_json.get("do_liters") or 0.0) if equipment.calculation_method == CalculationMethodEnum.METHOD_1
+                else float(r.input_json.get("mass") or 0.0) if equipment.calculation_method in [CalculationMethodEnum.METHOD_2, CalculationMethodEnum.METHOD_3]
+                else float(r.input_json.get("liters") or 0.0) if equipment.calculation_method == CalculationMethodEnum.METHOD_4
+                else 0.0
+                for r in records if r.equipment_id == equipment.id and r.input_json
+            ),
         })
 
     records_for_ui = summary["records"]
@@ -273,10 +287,16 @@ async def delete_tier1_category(category_id: int, db: Session = Depends(get_db))
 
 
 @router.get("/api/scope1/tier1/equipments")
-async def list_tier1_equipments(db: Session = Depends(get_db)):
+async def list_tier1_equipments(
+    year: int | None = Query(default=None),
+    month: int | None = Query(default=None),
+    quarter: int | None = Query(default=None),
+    db: Session = Depends(get_db)
+):
     equipments = equipment_service.list_equipments(db, 1)
     categories = {category.id: category for category in equipment_service.list_categories(db, 1)}
-    summary = equipment_service.summary_by_scope(db, 1)
+    summary = equipment_service.summary_by_scope(db, 1, year=year, month=month, quarter=quarter)
+    records = equipment_service.list_records(db, 1, year=year, month=month, quarter=quarter)
     return {
         "items": [
             {
@@ -292,6 +312,13 @@ async def list_tier1_equipments(db: Session = Depends(get_db)):
                 "category_code": categories.get(equipment.category_id).code if categories.get(equipment.category_id) else "",
                 "category_name": categories.get(equipment.category_id).name if categories.get(equipment.category_id) else "",
                 "total_co2e": next((item["total_co2e"] for item in summary["equipment_totals"] if item["id"] == equipment.id), 0.0),
+                "total_consumption": sum(
+                    float(r.input_json.get("do_liters") or 0.0) if equipment.calculation_method == CalculationMethodEnum.METHOD_1
+                    else float(r.input_json.get("mass") or 0.0) if equipment.calculation_method in [CalculationMethodEnum.METHOD_2, CalculationMethodEnum.METHOD_3]
+                    else float(r.input_json.get("liters") or 0.0) if equipment.calculation_method == CalculationMethodEnum.METHOD_4
+                    else 0.0
+                    for r in records if r.equipment_id == equipment.id and r.input_json
+                ),
             }
             for equipment in equipments
         ]
@@ -342,6 +369,7 @@ async def get_tier1_equipment(equipment_id: int, db: Session = Depends(get_db)):
                 "record_time": record.record_time.strftime("%d/%m/%Y %H:%M") if record.record_time else "",
                 "co2e": record.co2e,
                 "input_json": record.input_json,
+                "created_by": record.input_json.get("created_by") if record.input_json else None,
             }
             for record in payload["records"]
         ],
@@ -396,7 +424,8 @@ async def list_tier1_records(
 
 
 @router.post("/api/scope1/tier1/records")
-async def create_tier1_record(payload: EquipmentRecordCreate, db: Session = Depends(get_db)):
+async def create_tier1_record(payload: EquipmentRecordCreate, request: Request, db: Session = Depends(get_db)):
+    payload.created_by = _actor_from_request(request)
     record = equipment_service.create_record(db, 1, payload)
     return {
         "id": record.id,
@@ -409,6 +438,38 @@ async def create_tier1_record(payload: EquipmentRecordCreate, db: Session = Depe
 @router.delete("/api/scope1/tier1/records/{record_id}")
 async def delete_tier1_record(record_id: int, db: Session = Depends(get_db)):
     return equipment_service.delete_record(db, 1, record_id)
+
+
+@router.post("/api/scope1/tier1/records/{record_id}/evidence")
+async def upload_record_evidence(record_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    import os
+    import shutil
+    from models.emission_source import Scope1EmissionRecord
+    
+    record = db.query(Scope1EmissionRecord).filter(Scope1EmissionRecord.id == record_id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bản ghi")
+        
+    os.makedirs("uploads", exist_ok=True)
+    filename = f"evidence_{record_id}_{file.filename}"
+    filepath = os.path.join("uploads", filename)
+    
+    with open(filepath, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    input_json = dict(record.input_json or {})
+    input_json["evidence_path"] = f"/uploads/{filename}"
+    
+    from sqlalchemy.orm.attributes import flag_modified
+    record.input_json = input_json
+    flag_modified(record, "input_json")
+    db.commit()
+    db.refresh(record)
+    
+    return {
+        "success": True,
+        "evidence_path": input_json["evidence_path"]
+    }
 
 # --- API ENDPOINTS ---
 @router.post("/scope1/categories")

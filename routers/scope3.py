@@ -473,6 +473,13 @@ async def list_scope3_equipment_items(db: Session = Depends(get_db)):
                 "category_code": categories.get(equipment.category_id).code if categories.get(equipment.category_id) else "",
                 "category_name": categories.get(equipment.category_id).name if categories.get(equipment.category_id) else "",
                 "total_co2e": next((item["total_co2e"] for item in summary["equipment_totals"] if item["id"] == equipment.id), 0.0),
+                "total_consumption": sum(
+                    float(r.input_json.get("do_liters") or 0.0) if equipment.calculation_method == CalculationMethodEnum.METHOD_1
+                    else float(r.input_json.get("mass") or 0.0) if equipment.calculation_method in [CalculationMethodEnum.METHOD_2, CalculationMethodEnum.METHOD_3]
+                    else float(r.input_json.get("liters") or 0.0) if equipment.calculation_method == CalculationMethodEnum.METHOD_4
+                    else 0.0
+                    for r in equipment.records if r.input_json
+                ),
             }
             for equipment in equipments
         ]
@@ -536,6 +543,7 @@ async def get_scope3_equipment_item(equipment_id: int, db: Session = Depends(get
                 "record_time": record.record_time.strftime("%d/%m/%Y %H:%M") if record.record_time else "",
                 "co2e": record.co2e,
                 "input_json": record.input_json,
+                "created_by": record.input_json.get("created_by") if record.input_json else None,
             }
             for record in payload["records"]
         ],
@@ -594,6 +602,7 @@ async def delete_scope3_equipment_item(equipment_id: int, request: Request, db: 
 @router.post("/api/scope3/equipment/records")
 async def create_scope3_equipment_record(payload: EquipmentRecordCreate, request: Request, db: Session = Depends(get_db)):
     actor = _actor_from_request(request)
+    payload.created_by = actor
     record = equipment_service.create_record(db, 3, payload)
     
     equipment = db.query(Scope3Equipment).filter(Scope3Equipment.id == record.equipment_id).first()

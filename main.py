@@ -23,6 +23,10 @@ if os.path.isdir("static"):
 if os.path.isdir("templates/assets"):
     app.mount("/assets", StaticFiles(directory="templates/assets"), name="assets")
 
+# Ensure and mount root-level uploads folder
+os.makedirs("uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
 app.include_router(auth.router)
 app.include_router(dashboard.router)
 app.include_router(admin.router)

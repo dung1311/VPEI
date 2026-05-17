@@ -89,6 +89,7 @@ class EquipmentRecordCreate(EquipmentRecordBase):
     ef: Optional[float] = None
     liters: Optional[float] = None
     note: Optional[str] = None
+    created_by: Optional[str] = None
 
 
 class EquipmentRecordResponse(BaseModel):
