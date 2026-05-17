@@ -328,6 +328,39 @@
       color: var(--navy);
     }
 
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .kpi-card {
+      background: white;
+      border-radius: 14px;
+      padding: 18px 22px;
+      border: 2px solid #000080;
+    }
+    .kpi-label {
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .kpi-value {
+      font-family: 'Sora', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--navy);
+    }
+    .kpi-unit {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
     /* DATA INPUT */
     .data-section {
       background: white;
@@ -491,6 +524,48 @@
       justify-content: flex-end;
       margin-top: 20px;
     }
+    
+    /* CHARTS */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .chart-card {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      border: 2px solid #000080;
+    }
+    .chart-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .toggle-btn {
+      display: flex;
+      gap: 4px;
+    }
+    .tbtn {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      border: 2px solid #000080;
+      background: white;
+      color: #4a5a7b;
+      transition: all 0.2s;
+    }
+    .tbtn.active {
+      background: var(--navy);
+      color: white;
+      border-color: var(--navy);
+    }
   </style>
 </head>
 
@@ -505,16 +580,56 @@
     {% include 'components/topbar.html' %}
 
     <div class="content">
-    <div style="margin-bottom: 20px;">
-      <div style="display: inline-block; background: white; border: 1.5px solid var(--accent); border-radius: 14px; padding: 18px 26px; min-width: 260px; box-shadow: 0 4px 12px rgba(46, 125, 247, 0.04);">
-        <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; line-height: 1.4; margin-bottom: 8px;">
-          Tổng phát thải<br>Scope 1 (tCO₂e)
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Tổng thời gian hoạt động</div>
+        <div class="kpi-value">{{ "{:,.1f}".format(total_hours|default(0)) }} <span class="kpi-unit">h</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Tổng phát thải Tier 3</div>
+        <div class="kpi-value">{{ "{:,.2f}".format(total_scope1_co2|default(0)) }} <span class="kpi-unit">tCO₂e</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Thiết bị phát thải cao nhất</div>
+        <div class="kpi-value" style="font-size: 1.12rem;">
+          {{ top_emitter_name }} 
+          {% if top_emitter_co2e > 0 %}
+            <span class="kpi-unit">({{ "{:,.1f}".format(top_emitter_co2e) }} tCO₂e)</span>
+          {% endif %}
         </div>
-        <div style="font-family: 'Sora', sans-serif; font-size: 2.2rem; font-weight: 800; color: var(--navy); line-height: 1.2;">
-          {{ "{:,.2f}".format(total_scope1_co2|default(0)) }}
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">So với kỳ trước</div>
+        <div class="kpi-value">
+          {% if mom_growth > 0 %}
+            <span style="color: var(--red);">▲ +{{ "{:,.1f}".format(mom_growth) }}%</span>
+          {% else %}
+            <span style="color: var(--green);">▼ {{ "{:,.1f}".format(mom_growth) }}%</span>
+          {% endif %}
         </div>
       </div>
     </div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-title">Phát thải theo loại thiết bị</div>
+          <div style="height: 180px; position: relative;">
+            <canvas id="deviceBar"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">
+            Xu hướng phát thải
+            <div class="toggle-btn">
+              <button id="btn-6m" class="tbtn" onclick="updateTrendChart(6)">6 tháng</button>
+              <button id="btn-12m" class="tbtn active" onclick="updateTrendChart(12)">12 tháng</button>
+            </div>
+          </div>
+          <div style="height: 180px; position: relative;">
+            <canvas id="trendLine"></canvas>
+          </div>
+        </div>
+      </div>
 
       <div class="section-header">
         <div class="section-title">Tổng quan phân bổ thiết bị</div>
@@ -605,22 +720,6 @@
             {% endfor %}
           </tbody>
         </table>
-      </div>
-
-      <div class="summary-row">
-        <div class="summary-card">
-          <div class="chart-mini-title">Total Scope 1 Emissions</div>
-          <div class="summary-total">{{ "{:,.2f}".format(total_scope1_co2) }}</div>
-          <div style="font-size:0.9rem;color:var(--text-muted);font-weight:500;margin-top:4px;">tCO₂e</div>
-        </div>
-        <div class="summary-card">
-          <div class="chart-mini-title">Emission by Equipment</div>
-          <canvas id="equipBar" height="100"></canvas>
-        </div>
-        <div class="summary-card">
-          <div class="chart-mini-title">Emission Trend</div>
-          <canvas id="miniTrend" height="100"></canvas>
-        </div>
       </div>
     </div>
   </div>
@@ -840,6 +939,9 @@
       return { min: format(minDate), max: format(maxDate), minDate: minDate, maxDate: maxDate };
     }
 
+    let trendChartObj = null;
+    let fullTrendData = null;
+
     document.addEventListener("DOMContentLoaded", function () {
       const categoriesData = JSON.parse(document.getElementById('categories-data').textContent);
       const groupedData = categoriesData.reduce((acc, cat) => {
@@ -851,24 +953,68 @@
       const chartLabels = Object.keys(groupedData);
       const chartValues = Object.values(groupedData);
 
-      const eb = document.getElementById('equipBar').getContext('2d');
-      new Chart(eb, {
+      const dbCtx = document.getElementById('deviceBar').getContext('2d');
+      new Chart(dbCtx, {
         type: 'bar',
-        data: { labels: chartLabels, datasets: [{ data: chartValues, backgroundColor: '#2e7df7', borderRadius: 4 }] },
-        options: { plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 9 } } }, y: { display: false } } }
+        data: {
+          labels: chartLabels,
+          datasets: [{ data: chartValues, backgroundColor: '#2e7df7', borderRadius: 5, borderSkipped: false }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+            y: { grid: { color: '#f0f0f0' }, ticks: { font: { size: 10 } } }
+          }
+        }
       });
 
-      const trendData = JSON.parse(document.getElementById('trend-data').textContent);
-      const mt = document.getElementById('miniTrend').getContext('2d');
-      new Chart(mt, {
+      fullTrendData = JSON.parse(document.getElementById('trend-data').textContent);
+      const tlCtx = document.getElementById('trendLine').getContext('2d');
+      trendChartObj = new Chart(tlCtx, {
         type: 'line',
         data: {
-          labels: trendData.labels,
-          datasets: [{ data: trendData.values, borderColor: '#2e7df7', borderWidth: 2, pointRadius: 0, fill: false, tension: 0.4 }]
+          labels: fullTrendData.labels,
+          datasets: [{
+            data: fullTrendData.values,
+            borderColor: '#2e7df7', borderWidth: 2, pointRadius: 3,
+            backgroundColor: 'rgba(46,125,247,0.08)', fill: true, tension: 0.4,
+            pointBackgroundColor: '#2e7df7'
+          }]
         },
-        options: { plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+            y: { grid: { color: '#f0f0f0' }, ticks: { font: { size: 10 } } }
+          }
+        }
       });
     });
+
+    function updateTrendChart(months) {
+        document.getElementById('btn-6m').classList.remove('active');
+        document.getElementById('btn-12m').classList.remove('active');
+        
+        if (months === 6) {
+            document.getElementById('btn-6m').classList.add('active');
+        } else {
+            document.getElementById('btn-12m').classList.add('active');
+        }
+
+        const slicedLabels = fullTrendData.labels.slice(-months);
+        const slicedValues = fullTrendData.values.slice(-months);
+
+        if (trendChartObj) {
+            trendChartObj.data.labels = slicedLabels;
+            trendChartObj.data.datasets[0].data = slicedValues;
+            trendChartObj.update();
+        }
+    }
 
     // ---------------------------------------------------------
     // CATEGORY (DEVICE) CRUD

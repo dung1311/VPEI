@@ -184,7 +184,7 @@
 
     .card {
       background: white;
-      border: 1px solid var(--gray-border);
+      border: 2px solid #000080;
       border-radius: 14px;
       box-shadow: 0 8px 28px rgba(13, 31, 60, .04);
     }
@@ -459,6 +459,103 @@
       font-weight: 700;
       color: var(--navy);
     }
+
+    /* Scope 2 Style Emulations for Detail Modal */
+    .modal-summary {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+    .modal-summary-item {
+      border: 2px solid #000080;
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: #fafbfd;
+      flex: 1;
+      min-width: 200px;
+      box-shadow: 0 8px 28px rgba(13, 31, 60, .04);
+    }
+    .modal-summary-item .k {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .modal-summary-item .v {
+      margin-top: 4px;
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--navy);
+    }
+    .modal-card-box {
+      background: #fff;
+      border: 2px solid #000080;
+      border-radius: 14px;
+      overflow: hidden;
+      margin-top: 10px;
+      box-shadow: 0 8px 28px rgba(13, 31, 60, .04);
+    }
+    .modal-card-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--gray-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fff;
+    }
+    .modal-card-title {
+      font-size: .8rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--navy);
+    }
+    .modal-card-body {
+      padding: 0;
+    }
+
+    /* CHARTS */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .chart-card {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      border: 2px solid #000080;
+    }
+    .chart-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .toggle-btn {
+      display: flex;
+      gap: 4px;
+    }
+    .tbtn {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      border: 2px solid #000080;
+      background: white;
+      color: #4a5a7b;
+      transition: all 0.2s;
+    }
+    .tbtn.active {
+      background: var(--navy);
+      color: white;
+      border-color: var(--navy);
+    }
   </style>
 </head>
 
@@ -496,97 +593,84 @@
         </div>
       </div>
 
-      <div class="section-header" style="margin-top: 8px; display:flex; align-items:center; justify-content:space-between;">
-        <div class="section-title">Tổng quan thiết bị</div>
-        <button class="btn primary" onclick="openEquipmentModal()">+ Tạo thiết bị</button>
-      </div>
-      <div class="device-grid">
-        {% for equipment in equipments_json %}
-        <div class="device-card row-click" style="cursor: pointer; position: relative;" onclick="openRecordModalFor({{ equipment.id }})">
-          <div style="position: absolute; top: 12px; right: 12px; display: flex; gap: 8px;">
-            <button onclick="event.stopPropagation(); startEditEquipment({{ equipment.id }})" style="color:#f59e0b; border:none; background:transparent; cursor:pointer;" title="Sửa"><i class="fa-solid fa-pencil"></i></button>
-            <button onclick="event.stopPropagation(); deleteEquipment({{ equipment.id }})" style="color:var(--red); border:none; background:transparent; cursor:pointer;" title="Xóa"><i class="fa-solid fa-trash"></i></button>
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-title">Phát thải theo phạm vi</div>
+          <div style="height: 180px; position: relative;">
+            <canvas id="deviceBar"></canvas>
           </div>
-          <div class="device-name" style="padding-right: 40px;">{{ equipment.name }}</div>
-          <div class="device-count">
-            <div class="count-badge">Tổng: {{ equipment.quantity | int }} {{ equipment.unit }}</div>
-          </div>
-          <div class="device-emission-label">Mã thiết bị</div>
-          <div class="device-emission-val" style="margin-bottom: 8px; color: var(--accent); font-size: 0.85rem;">{{ equipment.code }}</div>
-          <div class="device-emission-label">Tổng phát thải</div>
-          <div class="device-emission-val">{{ "{:,.2f}".format(equipment.total_co2e|default(0)) }} tCO₂e</div>
         </div>
-        {% else %}
-        <div class="muted" style="grid-column: 1 / -1; font-size: 0.85rem;">Chưa có thiết bị nào.</div>
-        {% endfor %}
+        <div class="chart-card">
+          <div class="chart-title">
+            Xu hướng phát thải
+            <div class="toggle-btn">
+              <button id="btn-6m" class="tbtn" onclick="updateTrendChart(6)">6 tháng</button>
+              <button id="btn-12m" class="tbtn active" onclick="updateTrendChart(12)">12 tháng</button>
+            </div>
+          </div>
+          <div style="height: 180px; position: relative;">
+            <canvas id="trendLine"></canvas>
+          </div>
+        </div>
       </div>
+
+      <!-- Deleted separate card-style "Tổng quan thiết bị" as requested -->
 
       <div class="grid">
-        <!-- Danh mục phạm vi - Tạm ẩn theo yêu cầu, chỉ dùng các phạm vi cố định -->
-        <!--
-      <div class="card pad span-7">
-        <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-          <div class="section-title">Danh mục phạm vi</div>
-          <button class="btn primary" onclick="openCategoryModal()">+ Thêm phạm vi</button>
-        </div>
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Mã</th>
-              <th>Tên phạm vi</th>
-              <th>Tổng CO₂e</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for category in categories_json %}
-            <tr>
-              <td><span class="pill">{{ category.code }}</span></td>
-              <td>{{ category.name }}</td>
-              <td>{{ "{:,.2f}".format(category.total_co2e|default(0)) }}</td>
-            </tr>
-            {% else %}
-            <tr><td colspan="3" class="muted">Chưa có phạm vi nào.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      -->
-
-
         <div class="card pad span-12">
           <div class="section-header"
             style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
             <div class="section-title">Danh sách dữ liệu hoạt động</div>
+            <button class="btn primary" onclick="openEquipmentModal()">+ Tạo thiết bị</button>
           </div>
           <table class="table">
             <thead>
               <tr>
-                <th>ID B/Ghi</th>
-                <th>Thiết bị</th>
-                <th>Cách tính</th>
-                <th>Thời gian ghi nhận</th>
-                <th>Tổng phát thải (tCO₂e)</th>
+                <th>STT</th>
+                <th>Mã thiết bị</th>
+                <th>Tên thiết bị</th>
+                <th>Mức độ tiêu thụ nhiên liệu</th>
+                <th>Tổng lượng phát thải</th>
                 <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
-              {% for record in records_json %}
+              {% for equipment in equipments_json %}
               <tr>
                 <td>{{ loop.index }}</td>
-                <td><b>[{{ record.equipment_code }}]</b> {{ record.equipment_name }}</td>
+                <td><b>{{ equipment.code }}</b></td>
+                <td>{{ equipment.name }}</td>
                 <td>
-                  {% set eq = equipments_json | selectattr('id', 'equalto', record.equipment_id) | first %}
-                  {{ eq.calculation_method if eq else '' }}
+                  <span style="font-weight: 600;">
+                    {% if equipment.calculation_method == 'Cách tính 1' %}
+                      {{ "{:,.2f}".format(equipment.total_consumption|default(0)) }} lít DO
+                    {% elif equipment.calculation_method in ['Cách tính 2', 'Cách tính 3'] %}
+                      {{ "{:,.2f}".format(equipment.total_consumption|default(0)) }} kg
+                    {% elif equipment.calculation_method == 'Cách tính 4' %}
+                      {{ "{:,.2f}".format(equipment.total_consumption|default(0)) }} lít
+                    {% else %}
+                      {{ "{:,.2f}".format(equipment.total_consumption|default(0)) }}
+                    {% endif %}
+                  </span>
                 </td>
-                <td>{{ record.record_time }}</td>
-                <td><span style="font-weight:600; color:var(--navy);">{{ "{:,.2f}".format(record.co2e) }}</span></td>
-                <td style="display:flex;gap:12px;align-items:center;height:100%;">
-                  <button onclick="deleteRecord({{ record.id }})" style="color:var(--red); border:none; background:transparent; cursor:pointer;" title="Xóa"><i class="fa-solid fa-trash"></i></button>
+                <td><span style="font-weight: 700; color: var(--navy);">{{ "{:,.2f}".format(equipment.total_co2e|default(0)) }}</span> tCO₂e</td>
+                <td>
+                  <div style="display: flex; gap: 12px; align-items: center;">
+                    <button class="btn" style="padding: 4px 8px; font-size: 0.75rem; background: var(--gray-soft); color: var(--navy); border: 1.5px solid var(--gray-border);" onclick="openEquipmentDetail({{ equipment.id }})">
+                      <i class="fa-solid fa-eye" style="margin-right: 4px;"></i> Xem chi tiết
+                    </button>
+                    <button onclick="startEditEquipment({{ equipment.id }})" style="color:#f59e0b; border:none; background:transparent; cursor:pointer;" title="Sửa">
+                      <i class="fa-solid fa-pencil"></i>
+                    </button>
+                    <button onclick="deleteEquipment({{ equipment.id }})" style="color:var(--red); border:none; background:transparent; cursor:pointer;" title="Xóa">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </div>
                 </td>
               </tr>
               {% else %}
               <tr>
-                <td colspan="6" class="muted">Chưa có dữ liệu hoạt động.</td>
+                <td colspan="6" class="muted">Chưa có thiết bị nào.</td>
               </tr>
               {% endfor %}
             </tbody>
@@ -639,6 +723,30 @@
           <label>Ghi chú</label>
           <input id="equipmentDescInline">
         </div>
+        <div id="equipmentEfFields" style="grid-column: span 2; display: none;">
+          <div class="form-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 10px;">
+            <div id="eqEfCo2Container">
+              <label>EF CO2</label>
+              <input type="number" id="equipmentEfCo2" step="0.000001" placeholder="VD: 1.234">
+            </div>
+            <div id="eqEfCh4Container">
+              <label>EF CH4</label>
+              <input type="number" id="equipmentEfCh4" step="0.000001" placeholder="VD: 0.045">
+            </div>
+            <div id="eqEfN2oContainer">
+              <label>EF N2O</label>
+              <input type="number" id="equipmentEfN2o" step="0.000001" placeholder="VD: 0.002">
+            </div>
+            <div id="eqGwpContainer">
+              <label>GWP</label>
+              <input type="number" id="equipmentGwp" step="0.01" placeholder="VD: 2000">
+            </div>
+            <div id="eqEfContainer">
+              <label>EF</label>
+              <input type="number" id="equipmentEf" step="0.000001" placeholder="VD: 2.5">
+            </div>
+          </div>
+        </div>
       </div>
       <div class="actions" style="margin-top:20px; display:flex; gap:12px; justify-content:flex-end;">
         <button class="btn" onclick="cancelEditEquipment()">Hủy</button>
@@ -679,8 +787,11 @@
 
 
   <div class="modal-overlay" id="detailModal">
-    <div class="modal-card">
-      <div class="modal-title" id="detailTitle">Chi tiết thiết bị</div>
+    <div class="modal-card" style="max-width: 980px; width: 95%;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div class="modal-title" id="detailTitle" style="margin-bottom: 0;">Chi tiết thiết bị</div>
+        <button class="btn" onclick="closeModal('detailModal')" style="padding: 6px 12px; background: transparent; border: none; cursor: pointer; font-size: 1.2rem; color: var(--text-muted);"><i class="fa-solid fa-xmark"></i></button>
+      </div>
       <div id="detailBody" class="stack"></div>
     </div>
   </div>
@@ -722,6 +833,10 @@
           <label>Số lít</label>
           <input id="recordLiters" type="number" step="0.01">
         </div>
+        <div>
+          <label>GWP</label>
+          <input id="recordGwp" type="number" step="0.01">
+        </div>
       </div>
       <div style="margin-top:12px;">
         <label>Ghi chú</label>
@@ -732,7 +847,8 @@
         <button class="btn primary" onclick="createRecord()">Lưu bản ghi</button>
       </div>
     </div>
-  </div>
+  <script id="categories-data" type="application/json">{{ summary_json.category_totals | default([]) | tojson | safe }}</script>
+  <script id="trend-data" type="application/json">{{ trend_data | default({"labels":[], "values":[]}) | tojson | safe }}</script>
 
   <script>
     const equipmentData = {{ equipments_json | tojson }};
@@ -750,23 +866,51 @@
 
 
 
+    document.getElementById('equipmentMethodInline').addEventListener('change', toggleEquipmentEfFields);
+
+    function toggleEquipmentEfFields() {
+      const method = document.getElementById('equipmentMethodInline').value;
+      const efFields = document.getElementById('equipmentEfFields');
+      const isMethod1 = method === 'Cách tính 1';
+      const isMethod2 = method === 'Cách tính 2';
+      const isMethod3 = method === 'Cách tính 3';
+
+      document.getElementById('eqEfCo2Container').style.display = isMethod1 ? 'block' : 'none';
+      document.getElementById('eqEfCh4Container').style.display = isMethod1 ? 'block' : 'none';
+      document.getElementById('eqEfN2oContainer').style.display = isMethod1 ? 'block' : 'none';
+      document.getElementById('eqGwpContainer').style.display = isMethod2 ? 'block' : 'none';
+      document.getElementById('eqEfContainer').style.display = isMethod3 ? 'block' : 'none';
+
+      if (isMethod1 || isMethod2 || isMethod3) {
+        efFields.style.display = 'block';
+      } else {
+        efFields.style.display = 'none';
+      }
+    }
+
     function methodHint(method) {
-      if (method === 'Cách tính 1') return 'Cách tính 1: nhập EF CO2, EF CH4, EF N2O và DO (lít).';
-      if (method === 'Cách tính 2' || method === 'Cách tính 3') return 'Cách tính 2/3: nhập khối lượng và EF.';
-      if (method === 'Cách tính 4') return 'Cách tính 4: nhập số lít và EF.';
+      if (method === 'Cách tính 1') return 'Cách tính 1: nhập DO (lít). Hệ số phát thải EF được lấy tự động từ thiết bị.';
+      if (method === 'Cách tính 2') return 'Cách tính 2: nhập Khối lượng. Môi chất lạnh GWP được lấy tự động từ thiết bị.';
+      if (method === 'Cách tính 3') return 'Cách tính 3: nhập Khối lượng. Hệ số EF được lấy tự động từ thiết bị.';
+      if (method === 'Cách tính 4') return 'Cách tính 4: nhập Số lít. Hệ số EF được lấy tự động từ thiết bị.';
       return 'Chưa xác định cách tính.';
     }
 
     function toggleRecordFields(method) {
       const isMethod1 = method === 'Cách tính 1';
-      const isMethod23 = method === 'Cách tính 2' || method === 'Cách tính 3';
+      const isMethod2 = method === 'Cách tính 2';
+      const isMethod3 = method === 'Cách tính 3';
       const isMethod4 = method === 'Cách tính 4';
-      document.getElementById('recordEfCo2').parentElement.style.display = isMethod1 ? 'block' : 'none';
-      document.getElementById('recordEfCh4').parentElement.style.display = isMethod1 ? 'block' : 'none';
-      document.getElementById('recordEfN2o').parentElement.style.display = isMethod1 ? 'block' : 'none';
+
+      // Hide EF/GWP inputs in record modal when they are pre-configured in the equipment (Method 1, 2, 3, 4)
+      document.getElementById('recordEfCo2').parentElement.style.display = 'none';
+      document.getElementById('recordEfCh4').parentElement.style.display = 'none';
+      document.getElementById('recordEfN2o').parentElement.style.display = 'none';
+      document.getElementById('recordGwp').parentElement.style.display = 'none';
+      document.getElementById('recordEf').parentElement.style.display = 'none';
+
       document.getElementById('recordDo').parentElement.style.display = isMethod1 ? 'block' : 'none';
-      document.getElementById('recordMass').parentElement.style.display = isMethod23 ? 'block' : 'none';
-      document.getElementById('recordEf').parentElement.style.display = (isMethod23 || isMethod4) ? 'block' : 'none';
+      document.getElementById('recordMass').parentElement.style.display = (isMethod2 || isMethod3) ? 'block' : 'none';
       document.getElementById('recordLiters').parentElement.style.display = isMethod4 ? 'block' : 'none';
     }
 
@@ -801,6 +945,23 @@
         emission_factor_json: null,
         description: document.getElementById('equipmentDescInline').value.trim(),
       };
+
+      if (payload.calculation_method === 'Cách tính 1') {
+        payload.emission_factor_json = {
+          ef_co2: Number(document.getElementById('equipmentEfCo2').value || 0),
+          ef_ch4: Number(document.getElementById('equipmentEfCh4').value || 0),
+          ef_n2o: Number(document.getElementById('equipmentEfN2o').value || 0)
+        };
+      } else if (payload.calculation_method === 'Cách tính 2') {
+        payload.emission_factor_json = {
+          gwp: Number(document.getElementById('equipmentGwp').value || 0)
+        };
+      } else if (payload.calculation_method === 'Cách tính 3' || payload.calculation_method === 'Cách tính 4') {
+        payload.emission_factor_json = {
+          ef: Number(document.getElementById('equipmentEf').value || 0)
+        };
+      }
+
       const isEdit = !!editingEquipmentId;
       const url = isEdit ? `/api/scope1/tier1/equipments/${editingEquipmentId}` : '/api/scope1/tier1/equipments';
       const method = isEdit ? 'PUT' : 'POST';
@@ -830,29 +991,121 @@
       const data = await res.json();
       currentMethod = data.equipment.calculation_method;
       document.getElementById('detailTitle').textContent = `${data.equipment.code} - ${data.equipment.name}`;
+      
+      const recordsTableRows = (data.records || []).map((record, index) => {
+        const method = data.equipment.calculation_method;
+        let consumptionStr = '0.00';
+        if (record.input_json) {
+          if (method === 'Cách tính 1') {
+            consumptionStr = `${Number(record.input_json.do_liters || 0).toLocaleString()} lít DO`;
+          } else if (method === 'Cách tính 2' || method === 'Cách tính 3') {
+            consumptionStr = `${Number(record.input_json.mass || 0).toLocaleString()} kg`;
+          } else if (method === 'Cách tính 4') {
+            consumptionStr = `${Number(record.input_json.liters || 0).toLocaleString()} lít`;
+          }
+        }
+        
+        const evidenceHtml = record.input_json && record.input_json.evidence_path ? 
+          `<a href="${record.input_json.evidence_path}" target="_blank" style="color: var(--accent); font-weight: 600; display: inline-flex; align-items: center; gap: 4px; text-decoration: none;"><i class="fa-solid fa-image"></i> Xem ảnh</a>` : 
+          `<div id="evidence-container-${record.id}">
+            <input type="file" id="evidence-file-${record.id}" style="display:none;" onchange="uploadEvidence(${record.id}, this)" accept="image/*" />
+            <button class="btn" style="padding: 2px 8px; font-size: 0.72rem; background: var(--gray-soft); border: 1.5px solid var(--gray-border); color: var(--navy);" onclick="document.getElementById('evidence-file-${record.id}').click()">
+              <i class="fa-solid fa-upload" style="margin-right: 4px;"></i> Tải lên
+            </button>
+           </div>`;
+           
+        return `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${record.record_time}</td>
+            <td style="font-weight: 600;">${consumptionStr}</td>
+            <td><span style="font-weight: 700; color: var(--navy);">${Number(record.co2e || 0).toFixed(2)}</span> tCO₂e</td>
+            <td><span class="pill" style="font-size: 0.75rem; background: rgba(46, 125, 247, 0.08); color: var(--accent); font-weight: 600; padding: 2px 8px; border-radius: 4px;">${record.created_by || 'system'}</span></td>
+            <td>
+              <button onclick="deleteRecord(${record.id})" style="color:var(--red); border:none; background:transparent; cursor:pointer;" title="Xóa">
+                <i class="fa-solid fa-trash"></i> Xóa
+              </button>
+            </td>
+            <td>${evidenceHtml}</td>
+          </tr>
+        `;
+      }).join('');
+
       document.getElementById('detailBody').innerHTML = `
-    <div class="detail-box">
-      <div><b>Phạm vi:</b> ${data.category.code} - ${data.category.name}</div>
-      <div><b>Số lượng:</b> ${data.equipment.quantity} ${data.equipment.unit}</div>
-      <div><b>Cách tính:</b> ${data.equipment.calculation_method}</div>
-      <div><b>Tổng phát thải:</b> ${Number(data.total_co2e || 0).toFixed(2)} tCO₂e</div>
+    <div class="modal-summary">
+      <div class="modal-summary-item">
+        <div class="k">Phạm vi</div>
+        <div class="v" style="font-size: 0.95rem;">${data.category ? data.category.code + ' - ' + data.category.name : 'N/A'}</div>
+      </div>
+      <div class="modal-summary-item">
+        <div class="k">Số lượng</div>
+        <div class="v">${data.equipment.quantity} ${data.equipment.unit}</div>
+      </div>
+      <div class="modal-summary-item">
+        <div class="k">Cách tính</div>
+        <div class="v">${data.equipment.calculation_method}</div>
+      </div>
+      <div class="modal-summary-item">
+        <div class="k">Tổng phát thải</div>
+        <div class="v" style="color: var(--accent);">${Number(data.total_co2e || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} tCO₂e</div>
+      </div>
     </div>
-    <div class="detail-box">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
-        <div style="font-weight:800;">Bản ghi phát thải</div>
+
+    <div class="modal-card-box">
+      <div class="modal-card-header">
+        <div class="modal-card-title"><i class="fa-solid fa-list" style="margin-right:8px; color: var(--accent);"></i>Danh sách hoạt động</div>
         <button class="btn primary" onclick="openRecordModal()">+ Nhập dữ liệu</button>
       </div>
-      <div style="margin-top:12px;max-height:320px;overflow:auto;">
-        <table class="table">
-          <thead><tr><th>Ngày</th><th>CO₂e</th><th>Input</th></tr></thead>
-          <tbody>
-            ${(data.records || []).map(record => `<tr><td>${record.record_time}</td><td>${Number(record.co2e || 0).toFixed(2)}</td><td><pre style="white-space:pre-wrap;font-size:0.78rem;">${JSON.stringify(record.input_json, null, 2)}</pre></td></tr>`).join('') || '<tr><td colspan="3" class="muted">Chưa có bản ghi nào.</td></tr>'}
-          </tbody>
-        </table>
+      <div class="modal-card-body">
+        <div style="max-height:420px; overflow:auto;">
+          <table class="table" style="margin-bottom:0;">
+            <thead>
+              <tr>
+                <th>STT</th>
+                <th>Thời gian</th>
+                <th>Mức tiêu thụ</th>
+                <th>Tổng phát thải</th>
+                <th>Người thêm</th>
+                <th>Thao tác</th>
+                <th>Minh chứng</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${recordsTableRows || '<tr><td colspan="7" class="muted" style="text-align:center; padding: 24px;">Chưa có bản ghi nào.</td></tr>'}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   `;
       document.getElementById('detailModal').classList.add('show');
+    }
+
+    async function uploadEvidence(recordId, input) {
+      if (!input.files || input.files.length === 0) return;
+      const file = input.files[0];
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const container = document.getElementById(`evidence-container-${recordId}`);
+      const originalHtml = container.innerHTML;
+      container.innerHTML = `<span style="font-size:0.75rem; color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</span>`;
+      
+      try {
+        const res = await fetch(`/api/scope1/tier1/records/${recordId}/evidence`, {
+          method: 'POST',
+          credentials: 'include',
+          body: formData
+        });
+        if (!res.ok) {
+          throw new Error('Lỗi tải ảnh lên');
+        }
+        const data = await res.json();
+        container.innerHTML = `<a href="${data.evidence_path}" target="_blank" style="color: var(--accent); font-weight: 600; display: inline-flex; align-items: center; gap: 4px; text-decoration: none;"><i class="fa-solid fa-image"></i> Xem ảnh</a>`;
+      } catch (err) {
+        alert(err.message);
+        container.innerHTML = originalHtml;
+      }
     }
 
     function openRecordModalFor(id) {
@@ -869,6 +1122,19 @@
       currentMethod = equipment.calculation_method;
       document.getElementById('recordFormHint').textContent = methodHint(currentMethod);
       toggleRecordFields(currentMethod);
+
+      // Reset record form inputs
+      document.getElementById('recordTime').value = '';
+      document.getElementById('recordEfCo2').value = '';
+      document.getElementById('recordEfCh4').value = '';
+      document.getElementById('recordEfN2o').value = '';
+      document.getElementById('recordDo').value = '';
+      document.getElementById('recordMass').value = '';
+      document.getElementById('recordGwp').value = '';
+      document.getElementById('recordEf').value = '';
+      document.getElementById('recordLiters').value = '';
+      document.getElementById('recordNote').value = '';
+
       document.getElementById('recordModal').classList.add('show');
     }
 
@@ -885,6 +1151,7 @@
         ef_n2o: document.getElementById('recordEfN2o').value ? Number(document.getElementById('recordEfN2o').value) : null,
         do_liters: document.getElementById('recordDo').value ? Number(document.getElementById('recordDo').value) : null,
         mass: document.getElementById('recordMass').value ? Number(document.getElementById('recordMass').value) : null,
+        gwp: document.getElementById('recordGwp').value ? Number(document.getElementById('recordGwp').value) : null,
         ef: document.getElementById('recordEf').value ? Number(document.getElementById('recordEf').value) : null,
         liters: document.getElementById('recordLiters').value ? Number(document.getElementById('recordLiters').value) : null,
         note: document.getElementById('recordNote').value.trim(),
@@ -911,6 +1178,12 @@
       document.getElementById('equipmentUnitInline').value = '';
       document.getElementById('equipmentQuantityInline').value = '1';
       document.getElementById('equipmentDescInline').value = '';
+      document.getElementById('equipmentEfCo2').value = '';
+      document.getElementById('equipmentEfCh4').value = '';
+      document.getElementById('equipmentEfN2o').value = '';
+      document.getElementById('equipmentGwp').value = '';
+      document.getElementById('equipmentEf').value = '';
+      toggleEquipmentEfFields();
 
       document.getElementById('equipmentModalTitle').textContent = '+ Tạo thiết bị Scope 1';
       document.getElementById('equipmentCreateBtn').textContent = '+ Tạo thiết bị';
@@ -928,6 +1201,14 @@
       document.getElementById('equipmentQuantityInline').value = equipment.quantity || 1;
       document.getElementById('equipmentDescInline').value = equipment.description || '';
 
+      const efJson = equipment.emission_factor_json || {};
+      document.getElementById('equipmentEfCo2').value = efJson.ef_co2 !== undefined ? efJson.ef_co2 : '';
+      document.getElementById('equipmentEfCh4').value = efJson.ef_ch4 !== undefined ? efJson.ef_ch4 : '';
+      document.getElementById('equipmentEfN2o').value = efJson.ef_n2o !== undefined ? efJson.ef_n2o : '';
+      document.getElementById('equipmentGwp').value = efJson.gwp !== undefined ? efJson.gwp : '';
+      document.getElementById('equipmentEf').value = efJson.ef !== undefined ? efJson.ef : '';
+      toggleEquipmentEfFields();
+
       document.getElementById('equipmentModalTitle').textContent = 'Sửa thiết bị Scope 1';
       document.getElementById('equipmentCreateBtn').textContent = 'Lưu thay đổi';
       document.getElementById('equipmentModal').classList.add('show');
@@ -939,6 +1220,11 @@
       document.getElementById('equipmentUnitInline').value = '';
       document.getElementById('equipmentQuantityInline').value = '1';
       document.getElementById('equipmentDescInline').value = '';
+      document.getElementById('equipmentEfCo2').value = '';
+      document.getElementById('equipmentEfCh4').value = '';
+      document.getElementById('equipmentEfN2o').value = '';
+      document.getElementById('equipmentGwp').value = '';
+      document.getElementById('equipmentEf').value = '';
 
       document.getElementById('equipmentCreateBtn').textContent = '+ Tạo thiết bị';
       document.getElementById('equipmentModal').classList.remove('show');
@@ -970,6 +1256,87 @@
         return;
       }
       location.reload();
+    }
+    let trendChartObj = null;
+    let fullTrendData = null;
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const categoriesData = JSON.parse(document.getElementById('categories-data').textContent);
+      const chartLabels = categoriesData.map(c => c.code);
+      const chartValues = categoriesData.map(c => c.total_co2e);
+
+      const dbCtx = document.getElementById('deviceBar').getContext('2d');
+      new Chart(dbCtx, {
+        type: 'bar',
+        data: {
+          labels: chartLabels,
+          datasets: [{ data: chartValues, backgroundColor: '#2e7df7', borderRadius: 5, borderSkipped: false }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: function(tooltipItems) {
+                  const idx = tooltipItems[0].dataIndex;
+                  const c = categoriesData[idx];
+                  return `${c.code} - ${c.name}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+            y: { grid: { color: '#f0f0f0' }, ticks: { font: { size: 10 } } }
+          }
+        }
+      });
+
+      fullTrendData = JSON.parse(document.getElementById('trend-data').textContent);
+      const tlCtx = document.getElementById('trendLine').getContext('2d');
+      trendChartObj = new Chart(tlCtx, {
+        type: 'line',
+        data: {
+          labels: fullTrendData.labels,
+          datasets: [{
+            data: fullTrendData.values,
+            borderColor: '#2e7df7', borderWidth: 2, pointRadius: 3,
+            backgroundColor: 'rgba(46,125,247,0.08)', fill: true, tension: 0.4,
+            pointBackgroundColor: '#2e7df7'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+            y: { grid: { color: '#f0f0f0' }, ticks: { font: { size: 10 } } }
+          }
+        }
+      });
+    });
+
+    function updateTrendChart(months) {
+        document.getElementById('btn-6m').classList.remove('active');
+        document.getElementById('btn-12m').classList.remove('active');
+        
+        if (months === 6) {
+            document.getElementById('btn-6m').classList.add('active');
+        } else {
+            document.getElementById('btn-12m').classList.add('active');
+        }
+
+        const slicedLabels = fullTrendData.labels.slice(-months);
+        const slicedValues = fullTrendData.values.slice(-months);
+
+        if (trendChartObj) {
+            trendChartObj.data.labels = slicedLabels;
+            trendChartObj.data.datasets[0].data = slicedValues;
+            trendChartObj.update();
+        }
     }
 
     window.addEventListener('click', function (event) {

@@ -91,19 +91,16 @@
   <div class="content">
     <div class="kpi-row">
       <div class="kpi-card">
-        <div class="kpi-label">Tổng thời gian hoạt động</div>
-        <div class="kpi-value">{{ "{:,.1f}".format(total_hours) }} <span class="kpi-unit">h</span></div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">
-          Tổng phát thải CO₂e
-          <div style="font-size: 0.65rem; font-weight: normal; opacity: 0.8; margin-top: 2px; text-transform: none;">(Quản lý phát thải + Thiết bị Tier 1)</div>
-        </div>
+        <div class="kpi-label">Tổng phát thải Scope 1</div>
         <div class="kpi-value">{{ "{:,.2f}".format(dashboard_json.kpis.total_co2e) }} <span class="kpi-unit">tCO₂e</span></div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">Thiết bị phát thải cao nhất</div>
-        <div class="kpi-value" style="font-size:1.15rem;">{{ dashboard_json.kpis.top_emitter_name }} <span class="kpi-unit">({{ "{:,.1f}".format(dashboard_json.kpis.top_emitter_co2e) }} tCO₂e)</span></div>
+        <div class="kpi-label">Phát thải theo Tier 1</div>
+        <div class="kpi-value">{{ "{:,.2f}".format(dashboard_json.kpis.t1_total) }} <span class="kpi-unit">tCO₂e</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Phát thải Trang thiết bị Tier 3</div>
+        <div class="kpi-value">{{ "{:,.2f}".format(dashboard_json.kpis.t3_total) }} <span class="kpi-unit">tCO₂e</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">So với kỳ trước</div>
@@ -119,8 +116,10 @@
 
     <div class="charts-row">
       <div class="chart-card">
-        <div class="chart-title">Phát thải theo loại thiết bị</div>
-        <canvas id="deviceBar" height="180"></canvas>
+        <div class="chart-title">Phân bổ phát thải theo nhóm (Tier)</div>
+        <div style="height: 180px; display: flex; justify-content: center; align-items: center;">
+          <canvas id="tierDoughnut"></canvas>
+        </div>
       </div>
       <div class="chart-card">
         <div class="chart-title">
@@ -130,48 +129,10 @@
             <button id="btn-12m" class="tbtn active" onclick="updateTrendChart(12)">12 tháng</button>
           </div>
         </div>
-        <canvas id="trendLine" height="180"></canvas>
-      </div>
-    </div>
-
-    <div class="table-card">
-      <div class="table-header">
-        <div class="table-title">Chi tiết lịch sử hoạt động</div>
-        <div style="display:flex; gap:10px;">
-          <button class="export-btn" onclick="exportExcel()">[ Xuất Excel ]</button>
-          <button class="export-btn">[ Xuất PDF ]</button>
+        <div style="height: 180px; position: relative;">
+          <canvas id="trendLine"></canvas>
         </div>
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Mã (ID)</th>
-            <th>Tên thiết bị</th>
-            <th>Power (kW)</th>
-            <th>TG hoạt động (h)</th>
-            <th>LF (%)</th>
-            <th>Thời gian ghi nhận</th>
-            <th>Tổng phát thải (tCO₂e)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in dashboard_json.table_data %}
-          <tr>
-            <td><span class="device-badge">{{ row.device_id }}</span></td>
-            <td style="font-weight: 600;">{{ row.device_name }}</td>
-            <td>{{ "{:,.1f}".format(row.power) }}</td>
-            <td>{{ "{:,.1f}".format(row.operating_hours) }}</td>
-            <td>{{ "{:,.1f}".format(row.lf) }}</td>
-            <td>{{ row.record_time }}</td>
-            <td><span class="emission-val">{{ "{:,.1f}".format(row.total_co2e) }}</span></td>
-          </tr>
-          {% else %}
-          <tr>
-            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 20px;">Chưa có dữ liệu hoạt động trong kỳ báo cáo này.</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
     </div>
   </div>
 </div>
@@ -195,29 +156,125 @@ document.addEventListener("DOMContentLoaded", function() {
     const rawData = JSON.parse(document.getElementById('chart-data').textContent);
     fullTrendData = rawData.line_chart;
     
-    const dbCtx = document.getElementById('deviceBar').getContext('2d');
-    new Chart(dbCtx, {
-      type:'bar',
-      data:{
-        labels: rawData.bar_chart.labels,
-        datasets:[{ data: rawData.bar_chart.values, backgroundColor:'#2e7df7', borderRadius:5, borderSkipped:false }]
-      },
-      options:{plugins:{legend:{display:false}}, scales:{x:{grid:{display:false},ticks:{font:{size:10}}}, y:{grid:{color:'#f0f0f0'},ticks:{font:{size:10}}}}}
-    });
-
-    const tlCtx = document.getElementById('trendLine').getContext('2d');
-    trendChartObj = new Chart(tlCtx,{
-      type:'line',
-      data:{
-        labels: fullTrendData.labels,
-        datasets:[{
-          data: fullTrendData.values,
-          borderColor:'#2e7df7', borderWidth:2, pointRadius:3,
-          backgroundColor:'rgba(46,125,247,0.08)', fill:true, tension:0.4,
-          pointBackgroundColor:'#2e7df7'
+    // 1. Doughnut Chart for Tier 1 vs Tier 3
+    const dnCtx = document.getElementById('tierDoughnut').getContext('2d');
+    new Chart(dnCtx, {
+      type: 'doughnut',
+      data: {
+        labels: rawData.doughnut_chart.labels,
+        datasets: [{
+          data: rawData.doughnut_chart.values,
+          backgroundColor: ['#2e7df7', '#10b981'],
+          borderWidth: 2,
+          borderColor: '#ffffff'
         }]
       },
-      options:{plugins:{legend:{display:false}}, scales:{x:{grid:{display:false},ticks:{font:{size:10}}}, y:{grid:{color:'#f0f0f0'},ticks:{font:{size:10}}}}}
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'right',
+            labels: {
+              boxWidth: 12,
+              font: { size: 10 },
+              generateLabels: function(chart) {
+                const data = chart.data;
+                if (data.labels.length && data.datasets.length) {
+                  const dataset = data.datasets[0];
+                  const total = dataset.data.reduce((sum, val) => sum + val, 0);
+                  return data.labels.map((label, i) => {
+                    const val = dataset.data[i];
+                    const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+                    return {
+                      text: `${label}: ${pct}%`,
+                      fillStyle: dataset.backgroundColor[i],
+                      strokeStyle: dataset.borderColor || '#ffffff',
+                      lineWidth: dataset.borderWidth || 2,
+                      hidden: isNaN(dataset.data[i]) || chart.getDatasetMeta(0).data[i].hidden,
+                      index: i
+                    };
+                  });
+                }
+                return [];
+              }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                let label = context.label || '';
+                if (label) {
+                  label += ': ';
+                }
+                let sum = context.dataset.data.reduce((s, v) => s + v, 0);
+                let val = context.raw || 0;
+                let pct = sum > 0 ? ((val / sum) * 100).toFixed(1) : 0;
+                label += `${val.toLocaleString()} tCO₂e (${pct}%)`;
+                return label;
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // 2. Multi-Line Trend Chart (Tier 1 vs Tier 3)
+    const tlCtx = document.getElementById('trendLine').getContext('2d');
+    trendChartObj = new Chart(tlCtx, {
+      type: 'line',
+      data: {
+        labels: fullTrendData.labels,
+        datasets: [
+          {
+            label: 'Tính theo Tier 1',
+            data: fullTrendData.t1_values,
+            borderColor: '#2e7df7',
+            borderWidth: 2.5,
+            pointRadius: 3,
+            backgroundColor: 'rgba(46, 125, 247, 0.05)',
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#2e7df7'
+          },
+          {
+            label: 'Trang thiết bị Tier 3',
+            data: fullTrendData.t3_values,
+            borderColor: '#10b981',
+            borderWidth: 2.5,
+            pointRadius: 3,
+            backgroundColor: 'rgba(16, 185, 129, 0.05)',
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#10b981'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: {
+              boxWidth: 12,
+              font: { size: 10 }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { font: { size: 10 } }
+          },
+          y: {
+            grid: { color: '#f0f0f0' },
+            ticks: { font: { size: 10 } }
+          }
+        }
+      }
     });
 });
 
@@ -232,18 +289,15 @@ function updateTrendChart(months) {
     }
 
     const slicedLabels = fullTrendData.labels.slice(-months);
-    const slicedValues = fullTrendData.values.slice(-months);
+    const slicedT1 = fullTrendData.t1_values.slice(-months);
+    const slicedT3 = fullTrendData.t3_values.slice(-months);
 
     if (trendChartObj) {
         trendChartObj.data.labels = slicedLabels;
-        trendChartObj.data.datasets[0].data = slicedValues;
+        trendChartObj.data.datasets[0].data = slicedT1;
+        trendChartObj.data.datasets[1].data = slicedT3;
         trendChartObj.update();
     }
-}
-
-function exportExcel() {
-  const urlParams = new URLSearchParams(window.location.search);
-  window.location.href = `/api/scope1/dashboard/export-excel?${urlParams.toString()}`;
 }
 </script>
 </body>

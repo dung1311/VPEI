@@ -23,8 +23,8 @@ from schemas.emission_source import (
     ScopeCategoryUpdate,
 )
 
-GWP_CH4 = 28.0
-GWP_N2O = 265.0
+GWP_CH4 = 27.9
+GWP_N2O = 273
 
 DEFAULT_SCOPE3_CATEGORIES = (
     ("A", "Phát thải từ vận chuyển và phân phối ngược dòng cho hàng hóa"),
@@ -80,15 +80,37 @@ def _calculate_co2e(method: CalculationMethodEnum, data: dict[str, Any]) -> floa
         ef_ch4 = float(data.get("ef_ch4") or 0.0)
         ef_n2o = float(data.get("ef_n2o") or 0.0)
         do_liters = float(data.get("do_liters") or 0.0)
-        return round(do_liters * (ef_co2 + ef_ch4 * GWP_CH4 + ef_n2o * GWP_N2O), 6)
-    if method in (CalculationMethodEnum.METHOD_2, CalculationMethodEnum.METHOD_3):
+
+        return round(
+            (
+                (ef_co2 * 1)
+                + (ef_ch4 * GWP_CH4)
+                + (ef_n2o * GWP_N2O)
+            )
+            * do_liters
+            * 0.85
+            * 43
+            / 1_000_000,
+            6,
+        )
+
+    if method == CalculationMethodEnum.METHOD_2:
+        mass = float(data.get("mass") or 0.0)
+        gwp = float(data.get("gwp") or 0.0)
+
+        return round(mass * gwp / 1000, 6)
+
+    if method == CalculationMethodEnum.METHOD_3:
         mass = float(data.get("mass") or 0.0)
         ef = float(data.get("ef") or 0.0)
-        return round(mass * ef, 6)
+
+        return round(mass * ef / 1_000_000, 6)
+
     if method == CalculationMethodEnum.METHOD_4:
         liters = float(data.get("liters") or 0.0)
-        ef = float(data.get("ef") or 0.0)
-        return round(liters * ef, 6)
+
+        return round(liters * 0.19130156 / 1_000_000, 6)
+
     raise HTTPException(status_code=400, detail="Cách tính không hợp lệ")
 
 
@@ -304,6 +326,27 @@ def create_record(db: Session, scope: int, payload: EquipmentRecordCreate) -> An
         raise HTTPException(status_code=404, detail="Không tìm thấy thiết bị")
 
     input_json = _record_input(payload)
+    if equipment.calculation_method == CalculationMethodEnum.METHOD_1:
+        ef_json = equipment.emission_factor_json or {}
+        if "ef_co2" not in input_json or input_json["ef_co2"] is None:
+            input_json["ef_co2"] = ef_json.get("ef_co2")
+        if "ef_ch4" not in input_json or input_json["ef_ch4"] is None:
+            input_json["ef_ch4"] = ef_json.get("ef_ch4")
+        if "ef_n2o" not in input_json or input_json["ef_n2o"] is None:
+            input_json["ef_n2o"] = ef_json.get("ef_n2o")
+    elif equipment.calculation_method == CalculationMethodEnum.METHOD_2:
+        ef_json = equipment.emission_factor_json or {}
+        if "gwp" not in input_json or input_json["gwp"] is None:
+            input_json["gwp"] = ef_json.get("gwp")
+    elif equipment.calculation_method == CalculationMethodEnum.METHOD_3:
+        ef_json = equipment.emission_factor_json or {}
+        if "ef" not in input_json or input_json["ef"] is None:
+            input_json["ef"] = ef_json.get("ef")
+    elif equipment.calculation_method == CalculationMethodEnum.METHOD_4:
+        ef_json = equipment.emission_factor_json or {}
+        if "ef" not in input_json or input_json["ef"] is None:
+            input_json["ef"] = ef_json.get("ef")
+
     co2e = _calculate_co2e(equipment.calculation_method, input_json)
     record = record_model(
         equipment_id=equipment.id,
