@@ -639,6 +639,30 @@
           <label>Ghi chú</label>
           <input id="equipmentDescInline">
         </div>
+        <div id="equipmentEfFields" style="grid-column: span 2; display: none;">
+          <div class="form-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 10px;">
+            <div id="eqEfCo2Container">
+              <label>EF CO2</label>
+              <input type="number" id="equipmentEfCo2" step="0.000001" placeholder="VD: 1.234">
+            </div>
+            <div id="eqEfCh4Container">
+              <label>EF CH4</label>
+              <input type="number" id="equipmentEfCh4" step="0.000001" placeholder="VD: 0.045">
+            </div>
+            <div id="eqEfN2oContainer">
+              <label>EF N2O</label>
+              <input type="number" id="equipmentEfN2o" step="0.000001" placeholder="VD: 0.002">
+            </div>
+            <div id="eqGwpContainer">
+              <label>GWP</label>
+              <input type="number" id="equipmentGwp" step="0.01" placeholder="VD: 2000">
+            </div>
+            <div id="eqEfContainer">
+              <label>EF</label>
+              <input type="number" id="equipmentEf" step="0.000001" placeholder="VD: 2.5">
+            </div>
+          </div>
+        </div>
       </div>
       <div class="actions" style="margin-top:20px; display:flex; gap:12px; justify-content:flex-end;">
         <button class="btn" onclick="cancelEditEquipment()">Hủy</button>
@@ -722,6 +746,10 @@
           <label>Số lít</label>
           <input id="recordLiters" type="number" step="0.01">
         </div>
+        <div>
+          <label>GWP</label>
+          <input id="recordGwp" type="number" step="0.01">
+        </div>
       </div>
       <div style="margin-top:12px;">
         <label>Ghi chú</label>
@@ -750,23 +778,52 @@
 
 
 
+    document.getElementById('equipmentMethodInline').addEventListener('change', toggleEquipmentEfFields);
+
+    function toggleEquipmentEfFields() {
+      const method = document.getElementById('equipmentMethodInline').value;
+      const efFields = document.getElementById('equipmentEfFields');
+      const isMethod1 = method === 'Cách tính 1';
+      const isMethod2 = method === 'Cách tính 2';
+      const isMethod3 = method === 'Cách tính 3';
+      const isMethod4 = method === 'Cách tính 4';
+
+      document.getElementById('eqEfCo2Container').style.display = isMethod1 ? 'block' : 'none';
+      document.getElementById('eqEfCh4Container').style.display = isMethod1 ? 'block' : 'none';
+      document.getElementById('eqEfN2oContainer').style.display = isMethod1 ? 'block' : 'none';
+      document.getElementById('eqGwpContainer').style.display = isMethod2 ? 'block' : 'none';
+      document.getElementById('eqEfContainer').style.display = (isMethod3 || isMethod4) ? 'block' : 'none';
+
+      if (isMethod1 || isMethod2 || isMethod3 || isMethod4) {
+        efFields.style.display = 'block';
+      } else {
+        efFields.style.display = 'none';
+      }
+    }
+
     function methodHint(method) {
-      if (method === 'Cách tính 1') return 'Cách tính 1: nhập EF CO2, EF CH4, EF N2O và DO (lít).';
-      if (method === 'Cách tính 2' || method === 'Cách tính 3') return 'Cách tính 2/3: nhập khối lượng và EF.';
-      if (method === 'Cách tính 4') return 'Cách tính 4: nhập số lít và EF.';
+      if (method === 'Cách tính 1') return 'Cách tính 1: nhập DO (lít). Hệ số phát thải EF được lấy tự động từ thiết bị.';
+      if (method === 'Cách tính 2') return 'Cách tính 2: nhập Khối lượng. Môi chất lạnh GWP được lấy tự động từ thiết bị.';
+      if (method === 'Cách tính 3') return 'Cách tính 3: nhập Khối lượng. Hệ số EF được lấy tự động từ thiết bị.';
+      if (method === 'Cách tính 4') return 'Cách tính 4: nhập Số lít. Hệ số EF được lấy tự động từ thiết bị.';
       return 'Chưa xác định cách tính.';
     }
 
     function toggleRecordFields(method) {
       const isMethod1 = method === 'Cách tính 1';
-      const isMethod23 = method === 'Cách tính 2' || method === 'Cách tính 3';
+      const isMethod2 = method === 'Cách tính 2';
+      const isMethod3 = method === 'Cách tính 3';
       const isMethod4 = method === 'Cách tính 4';
-      document.getElementById('recordEfCo2').parentElement.style.display = isMethod1 ? 'block' : 'none';
-      document.getElementById('recordEfCh4').parentElement.style.display = isMethod1 ? 'block' : 'none';
-      document.getElementById('recordEfN2o').parentElement.style.display = isMethod1 ? 'block' : 'none';
+
+      // Hide EF/GWP inputs in record modal when they are pre-configured in the equipment (Method 1, 2, 3, 4)
+      document.getElementById('recordEfCo2').parentElement.style.display = 'none';
+      document.getElementById('recordEfCh4').parentElement.style.display = 'none';
+      document.getElementById('recordEfN2o').parentElement.style.display = 'none';
+      document.getElementById('recordGwp').parentElement.style.display = 'none';
+      document.getElementById('recordEf').parentElement.style.display = 'none';
+
       document.getElementById('recordDo').parentElement.style.display = isMethod1 ? 'block' : 'none';
-      document.getElementById('recordMass').parentElement.style.display = isMethod23 ? 'block' : 'none';
-      document.getElementById('recordEf').parentElement.style.display = (isMethod23 || isMethod4) ? 'block' : 'none';
+      document.getElementById('recordMass').parentElement.style.display = (isMethod2 || isMethod3) ? 'block' : 'none';
       document.getElementById('recordLiters').parentElement.style.display = isMethod4 ? 'block' : 'none';
     }
 
@@ -801,6 +858,23 @@
         emission_factor_json: null,
         description: document.getElementById('equipmentDescInline').value.trim(),
       };
+
+      if (payload.calculation_method === 'Cách tính 1') {
+        payload.emission_factor_json = {
+          ef_co2: Number(document.getElementById('equipmentEfCo2').value || 0),
+          ef_ch4: Number(document.getElementById('equipmentEfCh4').value || 0),
+          ef_n2o: Number(document.getElementById('equipmentEfN2o').value || 0)
+        };
+      } else if (payload.calculation_method === 'Cách tính 2') {
+        payload.emission_factor_json = {
+          gwp: Number(document.getElementById('equipmentGwp').value || 0)
+        };
+      } else if (payload.calculation_method === 'Cách tính 3' || payload.calculation_method === 'Cách tính 4') {
+        payload.emission_factor_json = {
+          ef: Number(document.getElementById('equipmentEf').value || 0)
+        };
+      }
+
       const isEdit = !!editingEquipmentId;
       const url = isEdit ? `/api/scope1/tier1/equipments/${editingEquipmentId}` : '/api/scope1/tier1/equipments';
       const method = isEdit ? 'PUT' : 'POST';
@@ -869,6 +943,19 @@
       currentMethod = equipment.calculation_method;
       document.getElementById('recordFormHint').textContent = methodHint(currentMethod);
       toggleRecordFields(currentMethod);
+
+      // Reset record form inputs
+      document.getElementById('recordTime').value = '';
+      document.getElementById('recordEfCo2').value = '';
+      document.getElementById('recordEfCh4').value = '';
+      document.getElementById('recordEfN2o').value = '';
+      document.getElementById('recordDo').value = '';
+      document.getElementById('recordMass').value = '';
+      document.getElementById('recordGwp').value = '';
+      document.getElementById('recordEf').value = '';
+      document.getElementById('recordLiters').value = '';
+      document.getElementById('recordNote').value = '';
+
       document.getElementById('recordModal').classList.add('show');
     }
 
@@ -885,6 +972,7 @@
         ef_n2o: document.getElementById('recordEfN2o').value ? Number(document.getElementById('recordEfN2o').value) : null,
         do_liters: document.getElementById('recordDo').value ? Number(document.getElementById('recordDo').value) : null,
         mass: document.getElementById('recordMass').value ? Number(document.getElementById('recordMass').value) : null,
+        gwp: document.getElementById('recordGwp').value ? Number(document.getElementById('recordGwp').value) : null,
         ef: document.getElementById('recordEf').value ? Number(document.getElementById('recordEf').value) : null,
         liters: document.getElementById('recordLiters').value ? Number(document.getElementById('recordLiters').value) : null,
         note: document.getElementById('recordNote').value.trim(),
@@ -911,6 +999,12 @@
       document.getElementById('equipmentUnitInline').value = '';
       document.getElementById('equipmentQuantityInline').value = '1';
       document.getElementById('equipmentDescInline').value = '';
+      document.getElementById('equipmentEfCo2').value = '';
+      document.getElementById('equipmentEfCh4').value = '';
+      document.getElementById('equipmentEfN2o').value = '';
+      document.getElementById('equipmentGwp').value = '';
+      document.getElementById('equipmentEf').value = '';
+      toggleEquipmentEfFields();
 
       document.getElementById('equipmentModalTitle').textContent = '+ Tạo thiết bị Scope 1';
       document.getElementById('equipmentCreateBtn').textContent = '+ Tạo thiết bị';
@@ -928,6 +1022,14 @@
       document.getElementById('equipmentQuantityInline').value = equipment.quantity || 1;
       document.getElementById('equipmentDescInline').value = equipment.description || '';
 
+      const efJson = equipment.emission_factor_json || {};
+      document.getElementById('equipmentEfCo2').value = efJson.ef_co2 !== undefined ? efJson.ef_co2 : '';
+      document.getElementById('equipmentEfCh4').value = efJson.ef_ch4 !== undefined ? efJson.ef_ch4 : '';
+      document.getElementById('equipmentEfN2o').value = efJson.ef_n2o !== undefined ? efJson.ef_n2o : '';
+      document.getElementById('equipmentGwp').value = efJson.gwp !== undefined ? efJson.gwp : '';
+      document.getElementById('equipmentEf').value = efJson.ef !== undefined ? efJson.ef : '';
+      toggleEquipmentEfFields();
+
       document.getElementById('equipmentModalTitle').textContent = 'Sửa thiết bị Scope 1';
       document.getElementById('equipmentCreateBtn').textContent = 'Lưu thay đổi';
       document.getElementById('equipmentModal').classList.add('show');
@@ -939,6 +1041,11 @@
       document.getElementById('equipmentUnitInline').value = '';
       document.getElementById('equipmentQuantityInline').value = '1';
       document.getElementById('equipmentDescInline').value = '';
+      document.getElementById('equipmentEfCo2').value = '';
+      document.getElementById('equipmentEfCh4').value = '';
+      document.getElementById('equipmentEfN2o').value = '';
+      document.getElementById('equipmentGwp').value = '';
+      document.getElementById('equipmentEf').value = '';
 
       document.getElementById('equipmentCreateBtn').textContent = '+ Tạo thiết bị';
       document.getElementById('equipmentModal').classList.remove('show');

@@ -308,6 +308,7 @@ async def scope3_page(
                     "quantity": equipment.quantity,
                     "unit": equipment.unit,
                     "calculation_method": equipment.calculation_method.value if equipment.calculation_method else None,
+                    "emission_factor_json": equipment.emission_factor_json,
                     "category_code": next((category.code for category in categories if category.id == equipment.category_id), ""),
                     "category_name": next((category.name for category in categories if category.id == equipment.category_id), ""),
                     "total_co2e": next((item["total_co2e"] for item in equipment_summary["equipment_totals"] if item["id"] == equipment.id), 0.0),

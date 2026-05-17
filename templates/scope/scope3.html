@@ -1387,6 +1387,40 @@
                       <div class="form-group"><label class="form-label">Ghi chú</label><input id="s3EquipmentDescInline"
                           class="form-input"></div>
                     </div>
+                    
+                    <!-- Emission Factor / GWP Inputs (Pre-configured at Equipment Level) -->
+                    <div id="s3EquipmentEfFields" style="display:none; margin-bottom:12px; padding:12px; background:rgba(0,0,0,0.02); border-radius:6px;">
+                      <div style="font-weight:700; font-size:0.78rem; margin-bottom:8px; color:var(--text-muted);">
+                        <i class="fa-solid fa-calculator" style="margin-right:4px;"></i> THÔNG SỐ HỆ SỐ PHÁT THẢI (MẶC ĐỊNH CHO THIẾT BỊ)
+                      </div>
+                      <div class="form-row-3" id="s3EqEfCo2Container" style="display:none;">
+                        <div class="form-group">
+                          <label class="form-label">EF CO2</label>
+                          <input type="number" step="0.000001" id="s3EquipmentEfCo2" class="form-input" placeholder="0.0">
+                        </div>
+                        <div class="form-group">
+                          <label class="form-label">EF CH4</label>
+                          <input type="number" step="0.000001" id="s3EquipmentEfCh4" class="form-input" placeholder="0.0">
+                        </div>
+                        <div class="form-group">
+                          <label class="form-label">EF N2O</label>
+                          <input type="number" step="0.000001" id="s3EquipmentEfN2o" class="form-input" placeholder="0.0">
+                        </div>
+                      </div>
+                      <div class="form-row" id="s3EqGwpContainer" style="display:none;">
+                        <div class="form-group">
+                          <label class="form-label">GWP</label>
+                          <input type="number" step="0.01" id="s3EquipmentGwp" class="form-input" placeholder="VD: 2000">
+                        </div>
+                      </div>
+                      <div class="form-row" id="s3EqEfContainer" style="display:none;">
+                        <div class="form-group">
+                          <label class="form-label">Hệ số phát thải (EF)</label>
+                          <input type="number" step="0.000001" id="s3EquipmentEf" class="form-input" placeholder="VD: 2.5">
+                        </div>
+                      </div>
+                    </div>
+                    
                     <div style="display:flex; gap:8px;">
                       <button class="btn-primary" id="s3EquipmentCreateBtn" onclick="createS3EquipmentInline()"
                         style="width:100%; justify-content:center;"><i class="fa-solid fa-plus"></i> Tạo thiết
@@ -1876,6 +1910,34 @@
     let currentS3Method = null;
     let editingS3EquipmentId = null;
 
+    // Attach change listener to s3EquipmentMethodInline
+    document.addEventListener('DOMContentLoaded', () => {
+      const selectEl = document.getElementById('s3EquipmentMethodInline');
+      if (selectEl) {
+        selectEl.addEventListener('change', toggleS3EquipmentEfFields);
+        toggleS3EquipmentEfFields();
+      }
+    });
+
+    function toggleS3EquipmentEfFields() {
+      const method = document.getElementById('s3EquipmentMethodInline').value;
+      const efFields = document.getElementById('s3EquipmentEfFields');
+      const isMethod1 = method === 'Cách tính 1';
+      const isMethod2 = method === 'Cách tính 2';
+      const isMethod3 = method === 'Cách tính 3';
+      const isMethod4 = method === 'Cách tính 4';
+
+      document.getElementById('s3EqEfCo2Container').style.display = isMethod1 ? 'block' : 'none';
+      document.getElementById('s3EqGwpContainer').style.display = isMethod2 ? 'block' : 'none';
+      document.getElementById('s3EqEfContainer').style.display = isMethod3 ? 'block' : 'none';
+
+      if (isMethod1 || isMethod2 || isMethod3) {
+        efFields.style.display = 'block';
+      } else {
+        efFields.style.display = 'none';
+      }
+    }
+
     function closeS3Modal(id) {
       const modal = document.getElementById(id);
       if (modal) modal.classList.remove('show');
@@ -1890,33 +1952,47 @@
     }
 
     function s3MethodHint(method) {
-      if (method === 'Cách tính 1') return 'Cách tính 1: nhập EF CO2, EF CH4, EF N2O và DO (lít).';
-      if (method === 'Cánh tính 2' || method === 'Cách tính 3') return 'Cách tính 2/3: nhập khối lượng và EF.';
-      if (method === 'Cách tính 4') return 'Cách tính 4: nhập số lít và EF.';
+      if (method === 'Cách tính 1') return 'Cách tính 1: nhập DO (lít). Các hệ số phát thải EF được lấy tự động từ thiết bị.';
+      if (method === 'Cách tính 2') return 'Cách tính 2: nhập Khối lượng. Môi chất lạnh GWP được lấy tự động từ thiết bị.';
+      if (method === 'Cách tính 3') return 'Cách tính 3: nhập Khối lượng. Hệ số EF được lấy tự động từ thiết bị.';
+      if (method === 'Cách tính 4') return 'Cách tính 4: nhập Số lít. Hệ số EF được tự động tính (0.19130156 tCO2e/lít).';
       return 'Chưa xác định cách tính.';
     }
 
     function toggleS3RecordFields(method) {
       const isMethod1 = method === 'Cách tính 1';
-      const isMethod23 = method === 'Cách tính 2' || method === 'Cách tính 3';
+      const isMethod2 = method === 'Cách tính 2';
+      const isMethod3 = method === 'Cách tính 3';
       const isMethod4 = method === 'Cách tính 4';
-      document.getElementById('s3RecordEfCo2').parentElement.style.display = isMethod1 ? 'block' : 'none';
-      document.getElementById('s3RecordEfCh4').parentElement.style.display = isMethod1 ? 'block' : 'none';
-      document.getElementById('s3RecordEfN2o').parentElement.style.display = isMethod1 ? 'block' : 'none';
+
+      // Hide all EFs/GWP inputs in record modal
+      document.getElementById('s3RecordEfCo2').parentElement.style.display = 'none';
+      document.getElementById('s3RecordEfCh4').parentElement.style.display = 'none';
+      document.getElementById('s3RecordEfN2o').parentElement.style.display = 'none';
+      document.getElementById('s3RecordEf').parentElement.style.display = 'none';
+
+      // Toggle recorded quantity inputs
       document.getElementById('s3RecordDo').parentElement.style.display = isMethod1 ? 'block' : 'none';
-      document.getElementById('s3RecordMass').parentElement.style.display = isMethod23 ? 'block' : 'none';
-      document.getElementById('s3RecordEf').parentElement.style.display = (isMethod23 || isMethod4) ? 'block' : 'none';
+      document.getElementById('s3RecordMass').parentElement.style.display = (isMethod2 || isMethod3) ? 'block' : 'none';
       document.getElementById('s3RecordLiters').parentElement.style.display = isMethod4 ? 'block' : 'none';
     }
 
     function setS3InlineRecordFields(method) {
       const isMethod1 = method === 'Cách tính 1';
-      const isMethod23 = method === 'Cách tính 2' || method === 'Cách tính 3';
+      const isMethod2 = method === 'Cách tính 2';
+      const isMethod3 = method === 'Cách tính 3';
       const isMethod4 = method === 'Cách tính 4';
-      document.querySelectorAll('.s3-inline-method-1').forEach((el) => { el.style.display = isMethod1 ? 'block' : 'none'; });
-      document.querySelectorAll('.s3-inline-method-23').forEach((el) => { el.style.display = isMethod23 ? 'block' : 'none'; });
-      document.querySelectorAll('.s3-inline-method-234').forEach((el) => { el.style.display = (isMethod23 || isMethod4) ? 'block' : 'none'; });
-      document.querySelectorAll('.s3-inline-method-4').forEach((el) => { el.style.display = isMethod4 ? 'block' : 'none'; });
+
+      // Hide all EFs/GWP inputs in inline record modal
+      document.getElementById('s3RecordEfCo2Inline').parentElement.style.display = 'none';
+      document.getElementById('s3RecordEfCh4Inline').parentElement.style.display = 'none';
+      document.getElementById('s3RecordEfN2oInline').parentElement.style.display = 'none';
+      document.getElementById('s3RecordEfInline').parentElement.style.display = 'none';
+
+      // Toggle recorded quantity inputs
+      document.getElementById('s3RecordDoInline').parentElement.style.display = isMethod1 ? 'block' : 'none';
+      document.getElementById('s3RecordMassInline').parentElement.style.display = (isMethod2 || isMethod3) ? 'block' : 'none';
+      document.getElementById('s3RecordLitersInline').parentElement.style.display = isMethod4 ? 'block' : 'none';
     }
 
     function selectS3EquipmentForRecord() {
@@ -1997,8 +2073,25 @@
         quantity,
         unit,
         calculation_method: document.getElementById('s3EquipmentMethodInline').value,
+        emission_factor_json: null,
         description: document.getElementById('s3EquipmentDescInline').value.trim(),
       };
+
+      if (payload.calculation_method === 'Cách tính 1') {
+        payload.emission_factor_json = {
+          ef_co2: Number(document.getElementById('s3EquipmentEfCo2').value || 0),
+          ef_ch4: Number(document.getElementById('s3EquipmentEfCh4').value || 0),
+          ef_n2o: Number(document.getElementById('s3EquipmentEfN2o').value || 0)
+        };
+      } else if (payload.calculation_method === 'Cách tính 2') {
+        payload.emission_factor_json = {
+          gwp: Number(document.getElementById('s3EquipmentGwp').value || 0)
+        };
+      } else if (payload.calculation_method === 'Cách tính 3') {
+        payload.emission_factor_json = {
+          ef: Number(document.getElementById('s3EquipmentEf').value || 0)
+        };
+      }
       const btn = document.getElementById('s3EquipmentCreateBtn');
       btn.disabled = true;
       try {
@@ -2047,6 +2140,15 @@
       document.getElementById('s3EquipmentUnitInline').value = equipment.unit || '';
       document.getElementById('s3EquipmentQuantityInline').value = equipment.quantity ?? 1;
       document.getElementById('s3EquipmentDescInline').value = equipment.description || '';
+      
+      const efJson = equipment.emission_factor_json || {};
+      document.getElementById('s3EquipmentEfCo2').value = efJson.ef_co2 || '';
+      document.getElementById('s3EquipmentEfCh4').value = efJson.ef_ch4 || '';
+      document.getElementById('s3EquipmentEfN2o').value = efJson.ef_n2o || '';
+      document.getElementById('s3EquipmentGwp').value = efJson.gwp || '';
+      document.getElementById('s3EquipmentEf').value = efJson.ef || '';
+      toggleS3EquipmentEfFields();
+
       document.getElementById('s3EquipmentFormTitle').innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Sửa thiết bị Scope 3';
       document.getElementById('s3EquipmentCreateBtn').innerHTML = '<i class="fa-solid fa-save"></i> Cập nhật thiết bị';
       document.getElementById('s3EquipmentCancelEditBtn').classList.remove('hidden');
@@ -2058,6 +2160,14 @@
       document.getElementById('s3EquipmentQuantityInline').value = '1';
       document.getElementById('s3EquipmentUnitInline').value = '';
       document.getElementById('s3EquipmentDescInline').value = '';
+
+      document.getElementById('s3EquipmentEfCo2').value = '';
+      document.getElementById('s3EquipmentEfCh4').value = '';
+      document.getElementById('s3EquipmentEfN2o').value = '';
+      document.getElementById('s3EquipmentGwp').value = '';
+      document.getElementById('s3EquipmentEf').value = '';
+      toggleS3EquipmentEfFields();
+
       document.getElementById('s3EquipmentFormTitle').innerHTML = '<i class="fa-solid fa-cubes"></i> Tạo thiết bị Scope 3';
       document.getElementById('s3EquipmentCreateBtn').innerHTML = '<i class="fa-solid fa-plus"></i> Tạo thiết bị';
       document.getElementById('s3EquipmentCancelEditBtn').classList.add('hidden');

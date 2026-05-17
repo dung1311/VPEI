@@ -85,6 +85,7 @@ class EquipmentRecordCreate(EquipmentRecordBase):
     ef_n2o: Optional[float] = None
     do_liters: Optional[float] = None
     mass: Optional[float] = None
+    gwp: Optional[float] = None
     ef: Optional[float] = None
     liters: Optional[float] = None
     note: Optional[str] = None
