@@ -40,7 +40,7 @@
       background: var(--gray-soft);
       color: var(--navy);
       display: flex;
-      min-height: 100vh;
+      height: 100vh;
       overflow: hidden;
     }
 
@@ -875,6 +875,7 @@
         <button class="btn primary" onclick="createRecord()">Lưu bản ghi</button>
       </div>
     </div>
+  </div>
   <script id="categories-data" type="application/json">{{ summary_json.category_totals | default([]) | tojson | safe }}</script>
   <script id="trend-data" type="application/json">{{ trend_data | default({"labels":[], "values":[]}) | tojson | safe }}</script>
 
