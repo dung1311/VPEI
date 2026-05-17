@@ -1481,6 +1481,7 @@
             <div class="section-title"><i class="fa-solid fa-gears"></i> Thiết bị Scope 3</div>
             <div style="display:flex; gap:10px;">
               <button class="btn-primary" onclick="openS3CategoryModal()">+ Thêm phạm vi</button>
+              <button class="btn-secondary" onclick="openS3EquipmentImportExcel()" style="background:#f8fafc; border-color:#cbd5e1; color:var(--navy); font-weight:600;"><i class="fa-solid fa-file-import"></i> Nhập Excel</button>
               <button class="btn-primary" onclick="openS3EquipmentModal()">+ Tạo thiết bị</button>
             </div>
           </div>
@@ -1611,6 +1612,7 @@
           <option value="container">🚛 Xe Container</option>
           <option value="ship">🚢 Tàu Biển</option>
           <option value="harbor_craft">🛥️ Tàu Trong Cảng</option>
+          <option value="equipment">▦ Thiết bị Tier 1</option>
           <!-- Commented out other_vehicle (Xe thường) import option
           <option value="other_vehicle">🚗 Xe Thường</option>
           -->
@@ -1965,6 +1967,12 @@
 
     function openS3EquipmentModal() {
       document.getElementById('s3EquipmentModal').classList.add('show');
+    }
+
+    function openS3EquipmentImportExcel() {
+      document.getElementById('import-vehicle-type').value = 'equipment';
+      document.getElementById('import-file').value = '';
+      document.getElementById('importModal').classList.add('show');
     }
 
     function s3MethodHint(method) {
@@ -3003,6 +3011,7 @@
       if (type === 'ship') url = `/api/scope3/ships/template`;
       else if (type === 'harbor_craft') url = `/api/scope3/harbor_crafts/template?year=${y}&month=${m}`;
       else if (type === 'other_vehicle') url = `/api/scope3/other_vehicles/template`;
+      else if (type === 'equipment') url = `/static/equipment_import_template.xlsx`;
       window.location.href = url;
     }
 
@@ -3038,6 +3047,7 @@
       if (type === 'ship') endpoint = `/api/scope3/ships/import`;
       else if (type === 'harbor_craft') endpoint = `/api/scope3/harbor_crafts/import`;
       else if (type === 'other_vehicle') endpoint = `/api/scope3/other_vehicles/import`;
+      else if (type === 'equipment') endpoint = `/api/scope3/equipment/items/import`;
 
       try {
         const res = await fetch(endpoint, { method: 'POST', body: fd });

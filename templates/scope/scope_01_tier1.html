@@ -40,7 +40,7 @@
       background: var(--gray-soft);
       color: var(--navy);
       display: flex;
-      min-height: 100vh;
+      height: 100vh;
       overflow: hidden;
     }
 
@@ -621,7 +621,10 @@
           <div class="section-header"
             style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
             <div class="section-title">Danh sách dữ liệu hoạt động</div>
-            <button class="btn primary" onclick="openEquipmentModal()">+ Tạo thiết bị</button>
+            <div style="display:flex; gap:8px;">
+              <button class="btn" onclick="openImportExcelModal()" style="display:inline-flex; align-items:center; gap:6px; background:var(--gray-soft); border:1.5px solid var(--gray-border); color:var(--navy);"><i class="fa-solid fa-file-import"></i> Nhập Excel</button>
+              <button class="btn primary" onclick="openEquipmentModal()">+ Tạo thiết bị</button>
+            </div>
           </div>
           <table class="table">
             <thead>
@@ -786,6 +789,31 @@
   </div>
 
 
+  <div class="modal-overlay" id="importExcelModal">
+    <div class="modal-card">
+      <div class="modal-title">Import thiết bị từ Excel</div>
+      <div style="margin-bottom:15px; font-size:0.9rem; color:var(--text-muted);">
+        Tải file Excel mẫu tại đây: 
+        <a href="/static/equipment_import_template.xlsx" download style="color:var(--accent); font-weight:bold; text-decoration:underline;">
+          <i class="fa-solid fa-download"></i> Tải file mẫu .xlsx
+        </a>
+      </div>
+      <div class="form-grid" style="margin-bottom: 20px;">
+        <div style="grid-column: 1 / -1;">
+          <label>Chọn file Excel (.xlsx)</label>
+          <input type="file" id="importExcelFile" accept=".xlsx" style="padding: 10px; border: 1.5px dashed var(--gray-border); width: 100%; border-radius: 6px;">
+        </div>
+      </div>
+      <div id="importResults" style="display:none; max-height:200px; overflow-y:auto; padding:10px; background:#f8fafc; border-radius:6px; border:1px solid #e2e8f0; font-size:0.85rem; margin-bottom:15px;">
+      </div>
+      <div class="actions" style="display:flex; gap:12px; justify-content:flex-end;">
+        <button class="btn" onclick="closeModal('importExcelModal')">Đóng</button>
+        <button class="btn primary" onclick="submitImportExcel()">Import dữ liệu</button>
+      </div>
+    </div>
+  </div>
+
+
   <div class="modal-overlay" id="detailModal">
     <div class="modal-card" style="max-width: 980px; width: 95%;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
@@ -847,6 +875,7 @@
         <button class="btn primary" onclick="createRecord()">Lưu bản ghi</button>
       </div>
     </div>
+  </div>
   <script id="categories-data" type="application/json">{{ summary_json.category_totals | default([]) | tojson | safe }}</script>
   <script id="trend-data" type="application/json">{{ trend_data | default({"labels":[], "values":[]}) | tojson | safe }}</script>
 
@@ -1171,6 +1200,63 @@
     }
 
     let editingEquipmentId = null;
+
+    function openImportExcelModal() {
+      document.getElementById('importExcelFile').value = '';
+      document.getElementById('importResults').style.display = 'none';
+      document.getElementById('importResults').innerHTML = '';
+      document.getElementById('importExcelModal').classList.add('show');
+    }
+
+    async function submitImportExcel() {
+      const fileInput = document.getElementById('importExcelFile');
+      if (!fileInput.files || fileInput.files.length === 0) {
+        alert('Vui lòng chọn file Excel để import');
+        return;
+      }
+      
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+      
+      const resContainer = document.getElementById('importResults');
+      resContainer.style.display = 'block';
+      resContainer.innerHTML = '<span style="color: var(--accent);"><i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...</span>';
+      
+      try {
+        const res = await fetch('/api/scope1/tier1/equipments/import', {
+          method: 'POST',
+          credentials: 'include',
+          body: formData
+        });
+        
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.detail || 'Import thất bại');
+        }
+        
+        const data = await res.json();
+        let html = `<div style="font-weight:bold; color:var(--green); margin-bottom:5px;">Import hoàn tất!</div>`;
+        html += `<div>Thành công: <strong>${data.imported}</strong></div>`;
+        html += `<div>Thất bại: <strong>${data.failed}</strong></div>`;
+        if (data.errors && data.errors.length > 0) {
+          html += `<div style="color:var(--red); margin-top:5px; font-weight:bold;">Chi tiết lỗi:</div>`;
+          html += `<ul style="margin:5px 0; padding-left:15px; color:var(--red); text-align:left;">`;
+          data.errors.forEach(err => {
+            html += `<li>${err}</li>`;
+          });
+          html += `</ul>`;
+        }
+        resContainer.innerHTML = html;
+        
+        if (data.imported > 0) {
+          setTimeout(() => {
+            location.reload();
+          }, 2000);
+        }
+      } catch (err) {
+        resContainer.innerHTML = `<span style="color: var(--red); font-weight:bold;"><i class="fa-solid fa-triangle-exclamation"></i> Lỗi: ${err.message}</span>`;
+      }
+    }
 
     function openEquipmentModal() {
       editingEquipmentId = null;
