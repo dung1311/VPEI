@@ -246,8 +246,10 @@ async def scope3_page(
     other_count = db.query(func.count(OtherVehicle.id)).scalar() or 0
     
     # 4. Gộp dữ liệu Summary
-    total_co2e = container_summary.get("total_co2", 0.0) + ship_total_co2 + harbor_total_co2 + other_total_co2
-    total_trips = container_summary.get("total_trips", 0) + ship_count + harbor_count + other_count
+    # total_co2e = container_summary.get("total_co2", 0.0) + ship_total_co2 + harbor_total_co2 + other_total_co2
+    total_co2e = container_summary.get("total_co2", 0.0) + ship_total_co2 + harbor_total_co2
+    # total_trips = container_summary.get("total_trips", 0) + ship_count + harbor_count + other_count
+    total_trips = container_summary.get("total_trips", 0) + ship_count + harbor_count
     
     summary = {
         **container_summary,

@@ -188,12 +188,15 @@ def compute_scope3_period(
         dt = getattr(ov, "record_time", None)
         if dt:
             m_idx = dt.month - 1
-            s3_trend[m_idx] += val
+            # Commented out: other vehicles not included in scope 3 total
+            # s3_trend[m_idx] += val
             other_trend[m_idx] += val
 
     container_co2e = truck_co2
     equipment_co2 = float(equipment_summary["total_co2e"] or 0.0)
-    total = container_co2e + ship_co2 + voyage_co2 + harbor_co2 + other_ve_co2 + equipment_co2
+    # Commented out: other_ve_co2 is not included in scope 3 total
+    # total = container_co2e + ship_co2 + voyage_co2 + harbor_co2 + other_ve_co2 + equipment_co2
+    total = container_co2e + ship_co2 + voyage_co2 + harbor_co2 + equipment_co2
     s3_trend = [s3_trend[idx] + equipment_trend[idx] for idx in range(12)]
 
     container_trend = truck_trend[:]
@@ -206,7 +209,9 @@ def compute_scope3_period(
         "voyage_co2e": voyage_co2,
         "equipment_co2e": equipment_co2,
         "total_co2e": total,
-        "record_count": n_cont + n_ship + n_voyage + n_other + n_harbor + len(equipment_summary["records"]),
+        # Commented out: other vehicles not included in scope 3 record count
+        # "record_count": n_cont + n_ship + n_voyage + n_other + n_harbor + len(equipment_summary["records"]),
+        "record_count": n_cont + n_ship + n_voyage + n_harbor + len(equipment_summary["records"]),
         "n_containers": n_cont,
         "n_ships": n_ship,
         "n_voyages": n_voyage,

@@ -927,6 +927,7 @@
             <div class="kpi-change neutral" id="kpi-harbor-chg"><i class="fa-solid fa-hand-pointer"
                 style="font-size:0.6rem;margin-right:4px"></i>Nhấn xem xu hướng</div>
           </div>
+          <!-- Commented out other_vehicle (Xe thường) KPI Card
           <div class="kpi-card" onclick="toggleKpiDetailScope3('other_vehicle')" id="kpi-card-other">
             <div class="kpi-icon" style="background:rgba(249,115,22,.1);color:#f97316"><i
                 class="fa-solid fa-car-side"></i></div>
@@ -936,6 +937,7 @@
             <div class="kpi-change neutral" id="kpi-other-chg"><i class="fa-solid fa-hand-pointer"
                 style="font-size:0.6rem;margin-right:4px"></i>Nhấn xem xu hướng</div>
           </div>
+          -->
           <div class="kpi-card" onclick="toggleKpiDetailScope3('equipment')" id="kpi-card-equipment">
             <div class="kpi-icon" style="background:rgba(236,72,153,.1);color:#ec4899"><i class="fa-solid fa-gears"></i>
             </div>
@@ -1000,8 +1002,10 @@
                 <button class="vtab" onclick="selectVehicleType('ship-voyage', this)"><span>⛴️</span> Hải trình</button>
                 <button class="vtab" onclick="selectVehicleType('harbor_craft', this)"><span>🛥️</span> Tàu trong
                   cảng</button>
+                <!-- Commented out other_vehicle (Xe thường) Tab
                 <button class="vtab" onclick="selectVehicleType('other_vehicle', this)"><span>🚗</span> Xe
                   thường</button>
+                -->
                 <button class="vtab" onclick="selectVehicleType('equipment_tier1', this)"><span><i
                       class="fa-solid fa-cubes"></i></span> Thiết bị Tier 1</button>
               </div>
@@ -1542,8 +1546,10 @@
                     style="background:#06b6d4"></span> Hải trình</button>
                 <button class="vtab" onclick="setRecordsFilter('harbor_craft', this)"><span class="vtab-dot"
                     style="background:#8b5cf6"></span> Tàu trong cảng</button>
+                <!-- Commented out other_vehicle (Xe thường) Tab
                 <button class="vtab" onclick="setRecordsFilter('other_vehicle', this)"><span class="vtab-dot"
                     style="background:#f97316"></span> Xe thường</button>
+                -->
                 <button class="vtab" onclick="setRecordsFilter('equipment_tier1', this)"><span class="vtab-dot"
                     style="background:#2e7df7"></span> Thiết bị Tier 1</button>
               </div>
@@ -1597,7 +1603,9 @@
           <option value="container">🚛 Xe Container</option>
           <option value="ship">🚢 Tàu Biển</option>
           <option value="harbor_craft">🛥️ Tàu Trong Cảng</option>
+          <!-- Commented out other_vehicle (Xe thường) import option
           <option value="other_vehicle">🚗 Xe Thường</option>
+          -->
         </select>
       </div>
 
@@ -2840,7 +2848,7 @@
       await updateOverview();
     };
 
-    const RECORDS_CHART_KEYS = ['truck', 'container-ship', 'ship-voyage', 'harbor_craft', 'other_vehicle', 'equipment_tier1'];
+    const RECORDS_CHART_KEYS = ['truck', 'container-ship', 'ship-voyage', 'harbor_craft', 'equipment_tier1'];
 
     function setRecordsDonutVisibility(show) {
       const layout = document.getElementById('recordsLayout');
@@ -2864,7 +2872,7 @@
       const hint = document.getElementById('recordsEmissionHint');
       if (!canvas) return;
 
-      const totals = { truck: 0, 'container-ship': 0, 'ship-voyage': 0, harbor_craft: 0, other_vehicle: 0, equipment_tier1: 0 };
+      const totals = { truck: 0, 'container-ship': 0, 'ship-voyage': 0, harbor_craft: 0, equipment_tier1: 0 };
       periodRecords.forEach((r) => {
         const t = getRecordVehicleType(r);
         if (totals[t] === undefined) return;
@@ -3544,8 +3552,8 @@
         vehicleBarChartRef = new Chart(ctxBar.getContext('2d'), {
           type: 'bar',
           data: {
-            labels: ['Container', 'Tàu biển', 'Hải trình', 'Tàu cảng', 'Xe thường', 'Thiết bị Tier 1'],
-            datasets: [{ data: [containerCo2e, shipCo2e, voyageCo2e, harborCo2e, otherVehicleCo2e, equipmentCo2e], backgroundColor: ['#0ea5e9', '#0d1f3c', '#06b6d4', '#8b5cf6', '#f97316', '#2e7df7'], borderRadius: 6 }]
+            labels: ['Container', 'Tàu biển', 'Hải trình', 'Tàu cảng', 'Thiết bị Tier 1'],
+            datasets: [{ data: [containerCo2e, shipCo2e, voyageCo2e, harborCo2e, equipmentCo2e], backgroundColor: ['#0ea5e9', '#0d1f3c', '#06b6d4', '#8b5cf6', '#2e7df7'], borderRadius: 6 }]
           },
           options: { plugins: { legend: { display: false } }, maintainAspectRatio: false }
         });
@@ -3563,7 +3571,6 @@
               { label: 'Tàu biển', data: trendShip, borderColor: '#0d1f3c', borderWidth: 2, tension: 0.4 },
               { label: 'Hải trình', data: trendVoyage, borderColor: '#06b6d4', borderWidth: 2, tension: 0.4 },
               { label: 'Tàu cảng', data: trendHarbor, borderColor: '#8b5cf6', borderWidth: 2, tension: 0.4 },
-              { label: 'Xe thường', data: trendOther, borderColor: '#f97316', borderWidth: 2, tension: 0.4 },
               { label: 'Thiết bị Tier 1', data: trendEquipment, borderColor: '#2e7df7', borderWidth: 2, tension: 0.4 }
             ]
           },
