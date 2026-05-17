@@ -514,6 +514,48 @@
     .modal-card-body {
       padding: 0;
     }
+
+    /* CHARTS */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .chart-card {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      border: 2px solid #000080;
+    }
+    .chart-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .toggle-btn {
+      display: flex;
+      gap: 4px;
+    }
+    .tbtn {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      border: 2px solid #000080;
+      background: white;
+      color: #4a5a7b;
+      transition: all 0.2s;
+    }
+    .tbtn.active {
+      background: var(--navy);
+      color: white;
+      border-color: var(--navy);
+    }
   </style>
 </head>
 
@@ -548,6 +590,27 @@
           <div class="muted" style="font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;">Bản
             ghi phát thải</div>
           <div class="kpi">{{ records_json|length }}</div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-title">Phát thải theo phạm vi</div>
+          <div style="height: 180px; position: relative;">
+            <canvas id="deviceBar"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">
+            Xu hướng phát thải
+            <div class="toggle-btn">
+              <button id="btn-6m" class="tbtn" onclick="updateTrendChart(6)">6 tháng</button>
+              <button id="btn-12m" class="tbtn active" onclick="updateTrendChart(12)">12 tháng</button>
+            </div>
+          </div>
+          <div style="height: 180px; position: relative;">
+            <canvas id="trendLine"></canvas>
+          </div>
         </div>
       </div>
 
@@ -784,7 +847,8 @@
         <button class="btn primary" onclick="createRecord()">Lưu bản ghi</button>
       </div>
     </div>
-  </div>
+  <script id="categories-data" type="application/json">{{ summary_json.category_totals | default([]) | tojson | safe }}</script>
+  <script id="trend-data" type="application/json">{{ trend_data | default({"labels":[], "values":[]}) | tojson | safe }}</script>
 
   <script>
     const equipmentData = {{ equipments_json | tojson }};
@@ -810,15 +874,14 @@
       const isMethod1 = method === 'Cách tính 1';
       const isMethod2 = method === 'Cách tính 2';
       const isMethod3 = method === 'Cách tính 3';
-      const isMethod4 = method === 'Cách tính 4';
 
       document.getElementById('eqEfCo2Container').style.display = isMethod1 ? 'block' : 'none';
       document.getElementById('eqEfCh4Container').style.display = isMethod1 ? 'block' : 'none';
       document.getElementById('eqEfN2oContainer').style.display = isMethod1 ? 'block' : 'none';
       document.getElementById('eqGwpContainer').style.display = isMethod2 ? 'block' : 'none';
-      document.getElementById('eqEfContainer').style.display = (isMethod3 || isMethod4) ? 'block' : 'none';
+      document.getElementById('eqEfContainer').style.display = isMethod3 ? 'block' : 'none';
 
-      if (isMethod1 || isMethod2 || isMethod3 || isMethod4) {
+      if (isMethod1 || isMethod2 || isMethod3) {
         efFields.style.display = 'block';
       } else {
         efFields.style.display = 'none';
@@ -1193,6 +1256,87 @@
         return;
       }
       location.reload();
+    }
+    let trendChartObj = null;
+    let fullTrendData = null;
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const categoriesData = JSON.parse(document.getElementById('categories-data').textContent);
+      const chartLabels = categoriesData.map(c => c.code);
+      const chartValues = categoriesData.map(c => c.total_co2e);
+
+      const dbCtx = document.getElementById('deviceBar').getContext('2d');
+      new Chart(dbCtx, {
+        type: 'bar',
+        data: {
+          labels: chartLabels,
+          datasets: [{ data: chartValues, backgroundColor: '#2e7df7', borderRadius: 5, borderSkipped: false }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: function(tooltipItems) {
+                  const idx = tooltipItems[0].dataIndex;
+                  const c = categoriesData[idx];
+                  return `${c.code} - ${c.name}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+            y: { grid: { color: '#f0f0f0' }, ticks: { font: { size: 10 } } }
+          }
+        }
+      });
+
+      fullTrendData = JSON.parse(document.getElementById('trend-data').textContent);
+      const tlCtx = document.getElementById('trendLine').getContext('2d');
+      trendChartObj = new Chart(tlCtx, {
+        type: 'line',
+        data: {
+          labels: fullTrendData.labels,
+          datasets: [{
+            data: fullTrendData.values,
+            borderColor: '#2e7df7', borderWidth: 2, pointRadius: 3,
+            backgroundColor: 'rgba(46,125,247,0.08)', fill: true, tension: 0.4,
+            pointBackgroundColor: '#2e7df7'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+            y: { grid: { color: '#f0f0f0' }, ticks: { font: { size: 10 } } }
+          }
+        }
+      });
+    });
+
+    function updateTrendChart(months) {
+        document.getElementById('btn-6m').classList.remove('active');
+        document.getElementById('btn-12m').classList.remove('active');
+        
+        if (months === 6) {
+            document.getElementById('btn-6m').classList.add('active');
+        } else {
+            document.getElementById('btn-12m').classList.add('active');
+        }
+
+        const slicedLabels = fullTrendData.labels.slice(-months);
+        const slicedValues = fullTrendData.values.slice(-months);
+
+        if (trendChartObj) {
+            trendChartObj.data.labels = slicedLabels;
+            trendChartObj.data.datasets[0].data = slicedValues;
+            trendChartObj.update();
+        }
     }
 
     window.addEventListener('click', function (event) {

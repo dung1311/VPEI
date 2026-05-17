@@ -94,12 +94,19 @@ def _scope1_emission_source_context(db: Session, y: int, month: Optional[int], q
         month_rows = scope1_services.ActivityDataService.get_by_record_time(db, y, [m])
         monthly_values.append(sum(float(act.total_co2e or 0.0) for act in month_rows))
 
+    dashboard = scope1_services.DashboardService.get_dashboard_data_for_months(db, y, months)
+    kpis = dashboard.get("kpis", {})
+
     return {
         "categories": device_rows,
         "activities": activity_rows,
         "device_types": [item.value for item in DeviceTypeEnum],
         "fuel_types": [item.value for item in FuelTypeEnum],
         "total_scope1_co2": sum(float(act.total_co2e or 0.0) for act in activities),
+        "total_hours": sum(float(act.operating_hours or 0.0) for act in activities),
+        "top_emitter_name": kpis.get("top_emitter_name", "Chưa có"),
+        "top_emitter_co2e": kpis.get("top_emitter_co2e", 0.0),
+        "mom_growth": kpis.get("mom_growth", 0.0),
         "trend_data": {"labels": [f"T{i}" for i in range(1, 13)], "values": monthly_values},
     }
 
@@ -122,11 +129,26 @@ async def scope1_dashboard_page(
     t1_total = float(s1_summary["total_co2e"] or 0.0)
     t1_trend = [float(v) for v in s1_summary["monthly_totals"]]
 
-    dashboard["kpis"]["total_co2e"] += t1_total
+    t3_total = float(dashboard["kpis"]["total_co2e"] or 0.0)
+    t3_trend = list(dashboard["line_chart"]["values"] or [0.0]*12)
+
+    dashboard["kpis"]["total_co2e"] = t1_total + t3_total
+    dashboard["kpis"]["t1_total"] = t1_total
+    dashboard["kpis"]["t3_total"] = t3_total
     
-    # Update line chart
-    if dashboard["line_chart"]["values"] and len(dashboard["line_chart"]["values"]) == 12:
-        dashboard["line_chart"]["values"] = [a + b for a, b in zip(dashboard["line_chart"]["values"], t1_trend)]
+    # Set up Doughnut/Pie Chart showing percentage of Tier 1 and Tier 3
+    dashboard["doughnut_chart"] = {
+        "labels": ["Tier 1 (Tính theo Tier 1)", "Tier 3 (Trang thiết bị Tier 3)"],
+        "values": [t1_total, t3_total]
+    }
+    
+    # Set up Trend Chart with 2 lines: one for Tier 1, one for Tier 3
+    dashboard["line_chart"] = {
+        "labels": [f"T{i}" for i in range(1, 13)],
+        "t1_values": t1_trend,
+        "t3_values": t3_trend
+    }
+
     return templates.TemplateResponse("scope/scope_01.html", {
         "request": request,
         "user": _user_from_request(request),
