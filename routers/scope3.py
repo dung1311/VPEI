@@ -19,7 +19,7 @@ from services import equipment_service
 from services.scope3_period_service import compute_scope3_period, build_scope3_comparison_payload
 from schemas.container import ContainerCreate, ContainerUpdate
 from schemas.emission_source import EquipmentCreate, EquipmentUpdate, EquipmentRecordCreate, ScopeCategoryCreate, ScopeCategoryUpdate
-from models.emission_source import CalculationMethodEnum
+from models.emission_source import CalculationMethodEnum, Scope3Equipment, Scope3EmissionRecord
 
 # Ship Services & Schemas
 from services import ship_service, ship_activity_service, ship_voyage_service
@@ -480,9 +480,18 @@ async def list_scope3_equipment_items(db: Session = Depends(get_db)):
 
 
 @router.post("/api/scope3/equipment/items")
-async def create_scope3_equipment_item(payload: EquipmentCreate, db: Session = Depends(get_db)):
+async def create_scope3_equipment_item(payload: EquipmentCreate, request: Request, db: Session = Depends(get_db)):
+    actor = _actor_from_request(request)
     equipment = equipment_service.create_equipment(db, 3, payload)
     category = equipment_service.get_equipment_detail(db, 3, equipment.id)["category"]
+    
+    container_activity_service.record_activity(
+        db,
+        actor,
+        "Thêm thiết bị Tier 1",
+        f"Tên: {equipment.name}, Mã: {equipment.code}, Đơn vị: {equipment.unit}, Cách tính: {equipment.calculation_method.value if equipment.calculation_method else ''}",
+    )
+    
     return {
         "id": equipment.id,
         "category_id": equipment.category_id,
@@ -535,10 +544,19 @@ async def get_scope3_equipment_item(equipment_id: int, db: Session = Depends(get
 
 
 @router.put("/api/scope3/equipment/items/{equipment_id}")
-async def update_scope3_equipment_item(equipment_id: int, payload: EquipmentUpdate, db: Session = Depends(get_db)):
+async def update_scope3_equipment_item(equipment_id: int, payload: EquipmentUpdate, request: Request, db: Session = Depends(get_db)):
+    actor = _actor_from_request(request)
     equipment = equipment_service.update_equipment(db, 3, equipment_id, payload)
     detail = equipment_service.get_equipment_detail(db, 3, equipment.id)
     category = detail["category"]
+    
+    container_activity_service.record_activity(
+        db,
+        actor,
+        "Sửa thiết bị Tier 1",
+        f"Tên: {equipment.name}, Mã: {equipment.code}, Đơn vị: {equipment.unit}",
+    )
+    
     return {
         "id": equipment.id,
         "category_id": equipment.category_id,
@@ -556,17 +574,43 @@ async def update_scope3_equipment_item(equipment_id: int, payload: EquipmentUpda
 
 
 @router.delete("/api/scope3/equipment/items/{equipment_id}")
-async def delete_scope3_equipment_item(equipment_id: int, db: Session = Depends(get_db)):
-    return equipment_service.delete_equipment(db, 3, equipment_id)
+async def delete_scope3_equipment_item(equipment_id: int, request: Request, db: Session = Depends(get_db)):
+    actor = _actor_from_request(request)
+    equipment = db.query(Scope3Equipment).filter(Scope3Equipment.id == equipment_id).first()
+    name = equipment.name if equipment else f"ID {equipment_id}"
+    code = equipment.code if equipment else ""
+    
+    result = equipment_service.delete_equipment(db, 3, equipment_id)
+    
+    container_activity_service.record_activity(
+        db,
+        actor,
+        "Xóa thiết bị Tier 1",
+        f"Tên: {name}, Mã: {code}",
+    )
+    return result
 
 
 @router.post("/api/scope3/equipment/records")
-async def create_scope3_equipment_record(payload: EquipmentRecordCreate, db: Session = Depends(get_db)):
+async def create_scope3_equipment_record(payload: EquipmentRecordCreate, request: Request, db: Session = Depends(get_db)):
+    actor = _actor_from_request(request)
     record = equipment_service.create_record(db, 3, payload)
+    
+    equipment = db.query(Scope3Equipment).filter(Scope3Equipment.id == record.equipment_id).first()
+    eq_name = equipment.name if equipment else f"Thiết bị ID {record.equipment_id}"
+    
+    rec_time_str = record.record_time.strftime("%d/%m/%Y %H:%M") if record.record_time else ""
+    container_activity_service.record_activity(
+        db,
+        actor,
+        "Thêm bản ghi thiết bị Tier 1",
+        f"Thiết bị: {eq_name}, Lượng phát thải: {record.co2e:.4f} tCO₂e, Thời gian: {rec_time_str}",
+    )
+    
     return {
         "id": record.id,
         "equipment_id": record.equipment_id,
-        "record_time": record.record_time.strftime("%d/%m/%Y %H:%M") if record.record_time else "",
+        "record_time": rec_time_str,
         "input_json": record.input_json,
         "co2e": record.co2e,
     }
@@ -579,8 +623,29 @@ async def list_scope3_equipment_records(db: Session = Depends(get_db)):
 
 
 @router.delete("/api/scope3/equipment/records/{record_id}")
-async def delete_scope3_equipment_record(record_id: int, db: Session = Depends(get_db)):
-    return equipment_service.delete_record(db, 3, record_id)
+async def delete_scope3_equipment_record(record_id: int, request: Request, db: Session = Depends(get_db)):
+    actor = _actor_from_request(request)
+    record = db.query(Scope3EmissionRecord).filter(Scope3EmissionRecord.id == record_id).first()
+    if record:
+        equipment = db.query(Scope3Equipment).filter(Scope3Equipment.id == record.equipment_id).first()
+        eq_name = equipment.name if equipment else f"Thiết bị ID {record.equipment_id}"
+        co2e = record.co2e
+        rec_time_str = record.record_time.strftime("%d/%m/%Y %H:%M") if record.record_time else ""
+    else:
+        eq_name = ""
+        co2e = 0.0
+        rec_time_str = ""
+        
+    result = equipment_service.delete_record(db, 3, record_id)
+    
+    if eq_name:
+        container_activity_service.record_activity(
+            db,
+            actor,
+            "Xóa bản ghi thiết bị Tier 1",
+            f"Thiết bị: {eq_name}, Lượng phát thải: {co2e:.4f} tCO₂e, Thời gian: {rec_time_str}",
+        )
+    return result
 
 
 # =====================================================================
