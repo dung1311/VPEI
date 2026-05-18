@@ -527,6 +527,14 @@ def import_equipments_from_excel(db: Session, scope: int, file_bytes: bytes) -> 
     categories = db.query(ScopeCategory).filter(ScopeCategory.scope == int(scope)).all()
     cat_by_code = {c.code.strip().upper(): c for c in categories}
 
+    equipment_model, _ = _scope_models(scope)
+    equipments_list = db.query(equipment_model).all()
+
+    next_seq_by_cat: dict[int, int] = {}
+    for eq in equipments_list:
+        if eq.category_id not in next_seq_by_cat or eq.sequence_no > next_seq_by_cat[eq.category_id]:
+            next_seq_by_cat[eq.category_id] = eq.sequence_no
+
     imported = 0
     failed = 0
     errors: list[str] = []
@@ -602,13 +610,12 @@ def import_equipments_from_excel(db: Session, scope: int, file_bytes: bytes) -> 
 
             desc = str(row[idx_desc] or "").strip() if idx_desc >= 0 and row[idx_desc] is not None else ""
 
-            equipment_model, _ = _scope_models(scope)
             normalized_name = name.strip().casefold()
             existing = next(
                 (
                     eq
-                    for eq in db.query(equipment_model).filter(equipment_model.category_id == category.id).all()
-                    if (eq.name or "").strip().casefold() == normalized_name
+                    for eq in equipments_list
+                    if eq.category_id == category.id and (eq.name or "").strip().casefold() == normalized_name
                 ),
                 None,
             )
@@ -621,7 +628,11 @@ def import_equipments_from_excel(db: Session, scope: int, file_bytes: bytes) -> 
                 if ef_json:
                     existing.emission_factor_json = ef_json
             else:
-                sequence_no = _next_sequence(db, equipment_model, category.id)
+                if category.id not in next_seq_by_cat:
+                    next_seq_by_cat[category.id] = 0
+                next_seq_by_cat[category.id] += 1
+                sequence_no = next_seq_by_cat[category.id]
+
                 code = _format_code(scope, category.code, sequence_no)
 
                 equipment = equipment_model(
@@ -636,6 +647,7 @@ def import_equipments_from_excel(db: Session, scope: int, file_bytes: bytes) -> 
                     description=desc,
                 )
                 db.add(equipment)
+                equipments_list.append(equipment)
 
             imported += 1
         except Exception as ex:
