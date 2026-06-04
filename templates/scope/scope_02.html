@@ -937,7 +937,8 @@ async function addCategory() {
     });
 
     if (!res.ok) {
-      alert('Có lỗi xảy ra khi lưu dữ liệu. Vui lòng thử lại.');
+      const errData = await res.json().catch(() => ({}));
+      alert(errData.detail || 'Có lỗi xảy ra khi lưu dữ liệu. Vui lòng thử lại.');
       return;
     }
 
