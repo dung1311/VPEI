@@ -519,7 +519,7 @@ function buildCatList() {
       <input type="checkbox" id="cat${cat.id}" ${chk?'checked':''} onchange="toggleCat(${cat.id})">
       <div class="cat-item-info">
         <div class="cat-item-name">${cat.name}</div>
-        <div class="cat-item-meta"><span class="cat-status ${cat.status||'active'}"></span>${cat.capacity} kW · ${cat.dayLabel}</div>
+        <div class="cat-item-meta"><span class="cat-status ${cat.status||'active'}"></span>${cat.capacity} kWh · ${cat.dayLabel}</div>
       </div>
       <div class="cat-item-right">
         <button class="cat-edit" onclick="editCategory(${cat.id})"><i class="fa-solid fa-pen"></i></button>
@@ -573,9 +573,14 @@ function updateAll() {
 }
 
 function updateBarChart(rows) {
-  const labels=rows.map(r=>r.name.length>12?r.name.substring(0,12)+'…':r.name);
-  const data=rows.map(r=>r.kwh);
-  const bg=rows.map((_,i)=>COLORS[i%COLORS.length]);
+  const map = new Map();
+  rows.forEach(r => map.set(r.name, (map.get(r.name) || 0) + Number(r.kwh || 0)));
+  const aggNames = Array.from(map.keys());
+
+  const labels = aggNames.map(name => name.length > 12 ? name.substring(0, 12) + '…' : name);
+  const data = aggNames.map(name => map.get(name));
+  const bg = aggNames.map((_, i) => COLORS[i % COLORS.length]);
+
   if(barChart) barChart.destroy();
   barChart=new Chart(document.getElementById('deviceBar').getContext('2d'),{
     type:'bar',
@@ -649,8 +654,8 @@ function updateTrendChart() {
       plugins:{legend:{display:datasets.length>1,position:'bottom',labels:{font:{size:9,family:'Montserrat'},boxWidth:10,padding:8}}},
       scales:{
         x:{grid:{display:false},ticks:{font:{size:9,family:'Montserrat'}}},
-        y:{grid:{color:'#f0f0f0'},ticks:{font:{size:9,family:'Montserrat'}},position:'left'},
-        y2:{display:datasets.length>1,grid:{display:false},ticks:{font:{size:9,family:'Montserrat'}},position:'right'}
+        y:{display: (trendViewMode==='electricity' || trendViewMode==='both'), grid:{color:'#f0f0f0'},ticks:{font:{size:9,family:'Montserrat'}},position:'left'},
+        y2:{display: (trendViewMode==='emissions' || trendViewMode==='both'), grid:{display:false},ticks:{font:{size:9,family:'Montserrat'}},position:'right'}
       }
     }
   });
@@ -664,16 +669,21 @@ function setTrendView(mode,btn) {
 }
 
 function updateDonut(rows,total) {
+  const map = new Map();
+  rows.forEach(r => map.set(r.name, (map.get(r.name) || 0) + Number(r.kwh || 0)));
+  const aggNames = Array.from(map.keys());
+  const aggData = aggNames.map(name => map.get(name));
+
   document.getElementById('donutCenterVal').textContent=total>=1000000?(total/1000000).toFixed(1)+'M':total.toLocaleString('vi-VN');
-  document.getElementById('donutLegend').innerHTML=rows.map((r,i)=>`
+  document.getElementById('donutLegend').innerHTML=aggNames.map((name,i)=>`
     <div class="legend-item">
       <div class="legend-dot" style="background:${COLORS[i%COLORS.length]}"></div>
-      ${r.name.length>16?r.name.substring(0,16)+'…':r.name} – ${total>0?((r.kwh/total)*100).toFixed(1):'0.0'}%
+      ${name.length>16?name.substring(0,16)+'…':name} – ${total>0?((aggData[i]/total)*100).toFixed(1):'0.0'}%
     </div>`).join('');
   if(donutChartInstance) donutChartInstance.destroy();
   donutChartInstance=new Chart(document.getElementById('donutChart').getContext('2d'),{
     type:'doughnut',
-    data:{labels:rows.map(r=>r.name),datasets:[{data:rows.map(r=>r.kwh),backgroundColor:rows.map((_,i)=>COLORS[i%COLORS.length]),borderWidth:2,borderColor:'#fff',hoverOffset:4}]},
+    data:{labels:aggNames,datasets:[{data:aggData,backgroundColor:aggNames.map((_,i)=>COLORS[i%COLORS.length]),borderWidth:2,borderColor:'#fff',hoverOffset:4}]},
     options:{cutout:'68%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${total>0?((ctx.raw/total)*100).toFixed(1):'0.0'}%`}}}}
   });
 }
@@ -804,7 +814,11 @@ async function addCategory() {
   try {
     const endpoint=editingItemId?`/api/scope2/items/${editingItemId}`:'/api/scope2/items';
     const res=await fetch(endpoint,{method:editingItemId?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-    if(!res.ok){alert('Có lỗi khi lưu dữ liệu.');return;}
+    if(!res.ok){
+      const errData = await res.json().catch(() => ({}));
+      alert(errData.detail || 'Có lỗi khi lưu dữ liệu.');
+      return;
+    }
     const saved=await res.json();
     if(editingItemId) categories=categories.map(c=>c.id===editingItemId?saved:c);
     else{categories.push(saved);selected.add(saved.id);}
