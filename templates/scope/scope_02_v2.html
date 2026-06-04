@@ -814,7 +814,11 @@ async function addCategory() {
   try {
     const endpoint=editingItemId?`/api/scope2/items/${editingItemId}`:'/api/scope2/items';
     const res=await fetch(endpoint,{method:editingItemId?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-    if(!res.ok){alert('Có lỗi khi lưu dữ liệu.');return;}
+    if(!res.ok){
+      const errData = await res.json().catch(() => ({}));
+      alert(errData.detail || 'Có lỗi khi lưu dữ liệu.');
+      return;
+    }
     const saved=await res.json();
     if(editingItemId) categories=categories.map(c=>c.id===editingItemId?saved:c);
     else{categories.push(saved);selected.add(saved.id);}

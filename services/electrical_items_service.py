@@ -159,22 +159,38 @@ def create_electrical_item(item_data, db: Session, actor: str = "system") -> Dic
     except ValueError:
         location_enum = ItemLocation.MAIN_PORT
 
+    period_val = dt.strftime("%Y-%m-%d")
+    
+    month_prefix = dt.strftime("%Y-%m-")
+    dup_item = db.query(ElectricalItem).filter(
+        ElectricalItem.name == item_data.name,
+        ElectricalItem.period_value.like(f"{month_prefix}%")
+    ).first()
+
+    if dup_item:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Đã có thiết bị này trong tháng, vui lòng cập nhật bằng tay."
+        )
+
     db_item = ElectricalItem(
         name=item_data.name,
         power=item_data.power,
         location=location_enum,
         description=item_data.description,
         period_type="day",
-        period_value=dt.strftime("%Y-%m-%d")
+        period_value=period_val
     )
     db.add(db_item)
+    action_desc = "Thêm item (nhập thủ công)"
+        
     db.commit()
     db.refresh(db_item)
 
     record_activity(
         db,
         actor,
-        "Thêm item (nhập thủ công)",
+        action_desc,
         f"{db_item.name} - {db_item.power:g} kWh - {_format_activity_date(db_item.period_value)}",
     )
     
@@ -320,16 +336,29 @@ def import_scope2_items_from_excel(file_bytes: bytes, db: Session, actor: str = 
             except ValueError as ex:
                 raise ValueError(str(ex))
 
-            db_item = ElectricalItem(
-                name=name,
-                power=power,
-                location=location,
-                description=note,
-                period_type="day",
-                period_value=dt.strftime("%Y-%m-%d"),
-            )
-            db.add(db_item)
-            imported += 1
+            period_val = dt.strftime("%Y-%m-%d")
+            existing_item = db.query(ElectricalItem).filter(
+                ElectricalItem.name == name,
+                ElectricalItem.location == location,
+                ElectricalItem.period_value == period_val
+            ).first()
+
+            if existing_item:
+                existing_item.power += power
+                if note:
+                    existing_item.description = note
+                imported += 1
+            else:
+                db_item = ElectricalItem(
+                    name=name,
+                    power=power,
+                    location=location,
+                    description=note,
+                    period_type="day",
+                    period_value=period_val,
+                )
+                db.add(db_item)
+                imported += 1
         except Exception as ex:
             failed += 1
             errors.append(f"Row {row_no}: {ex}")
