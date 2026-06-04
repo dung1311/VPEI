@@ -140,7 +140,7 @@ def get_scope2_categories(db: Session) -> List[Dict[str, Any]]:
             "capacity": item.power,
             "area": item.location.value if item.location else "Cảng chính",
             "entry_date": entry_date,
-            "kwh": int(item.power * 720 * 0.8),
+            "kwh": item.power,
             "note": item.description or ""
         })
     return categories
@@ -175,7 +175,7 @@ def create_electrical_item(item_data, db: Session, actor: str = "system") -> Dic
         db,
         actor,
         "Thêm item (nhập thủ công)",
-        f"{db_item.name} - {db_item.power:g} kW - {_format_activity_date(db_item.period_value)}",
+        f"{db_item.name} - {db_item.power:g} kWh - {_format_activity_date(db_item.period_value)}",
     )
     
     return {
@@ -184,7 +184,7 @@ def create_electrical_item(item_data, db: Session, actor: str = "system") -> Dic
         "capacity": db_item.power,
         "area": db_item.location.value if db_item.location else "Cảng chính",
         "entry_date": db_item.period_value,
-        "kwh": int(db_item.power * 720 * 0.8),
+        "kwh": db_item.power,
         "note": db_item.description or ""
     }
 
@@ -227,7 +227,7 @@ def update_electrical_item(item_id: int, item_data, db: Session, actor: str = "s
         db,
         actor,
         "Sửa item",
-        f"{db_item.name} - {db_item.power:g} kW - {_format_activity_date(db_item.period_value)} - Lý do: {reason}",
+        f"{db_item.name} - {db_item.power:g} kWh - {_format_activity_date(db_item.period_value)} - Lý do: {reason}",
     )
 
     return {
@@ -236,7 +236,7 @@ def update_electrical_item(item_id: int, item_data, db: Session, actor: str = "s
         "capacity": db_item.power,
         "area": db_item.location.value if db_item.location else "Cảng chính",
         "entry_date": db_item.period_value,
-        "kwh": int(db_item.power * 720 * 0.8),
+        "kwh": db_item.power,
         "note": db_item.description or "",
     }
 
@@ -260,7 +260,7 @@ def delete_electrical_item(item_id: int, db: Session, actor: str = "system") -> 
         db,
         actor,
         "Xóa item",
-        f"{deleted_snapshot['name']} - {deleted_snapshot['power']:g} kW - {_format_activity_date(deleted_snapshot['period_value'])}",
+        f"{deleted_snapshot['name']} - {deleted_snapshot['power']:g} kWh - {_format_activity_date(deleted_snapshot['period_value'])}",
     )
 
     return {"ok": True, "deleted_id": item_id}
@@ -357,7 +357,7 @@ def export_scope2_items_excel(
     wb = Workbook()
     ws = wb.active
     ws.title = "Scope2"
-    ws.append(["STT", "Name", "Power(kW)", "Location", "Entry Date", "Description", "kWh (estimated)"])
+    ws.append(["STT", "Name", "Điện năng(kWh)", "Location", "Entry Date", "Description", "kWh"])
     count = 0
     for item in items_db:
         count += 1
@@ -368,7 +368,7 @@ def export_scope2_items_excel(
             item.location.value if item.location else "Cảng chính",
             item.period_value or "",
             item.description or "",
-            int(item.power * 720 * 0.8),
+            item.power,
         ])
 
     out = BytesIO()
@@ -419,7 +419,7 @@ def export_scope2_items_pdf(
         Spacer(1, 12),
     ]
 
-    data = [["STT", "Name", "Power(kW)", "Location", "Entry Date", "kWh"]]
+    data = [["STT", "Name", "Điện năng(kWh)", "Location", "Entry Date", "kWh"]]
     count = 0
     for item in items_db:
         count += 1
@@ -429,7 +429,7 @@ def export_scope2_items_pdf(
             f"{item.power:g}",
             _safe_pdf_text(item.location.value if item.location else "Cảng chính"),
             _safe_pdf_text(item.period_value or ""),
-            str(int(item.power * 720 * 0.8)),
+            f"{item.power:g}",
         ])
 
     table = Table(data, repeatRows=1)
